@@ -1,0 +1,183 @@
+.App {
+  min-height: 100vh;
+  background: #000000;
+}
+
+/* App content with nav offset */
+.app-content--with-nav {
+  padding-top: 0;
+}
+
+/* Feature Card */
+.feature-card {
+  background: #0a0a0a;
+  border: 1px solid #1a1a1a;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.feature-card:hover {
+  background: #111111;
+  border-color: #333;
+  transform: translateY(-2px);
+}
+
+/* Stats Card */
+.stat-card {
+  background: #0a0a0a;
+  border: 1px solid #1a1a1a;
+  border-radius: 12px;
+}
+
+.stat-card:hover {
+  border-color: #333;
+}
+
+/* Badge Styles */
+.achievement-badge {
+  background: white;
+  color: black;
+}
+
+/* Progress Bar */
+.progress-bar {
+  background: white;
+}
+
+/* Leaderboard Rank Colors */
+.rank-1 {
+  color: #ffd700;
+}
+
+.rank-2 {
+  color: #c0c0c0;
+}
+
+.rank-3 {
+  color: #cd7f32;
+}
+
+/* Card Styles */
+.card {
+  background: #0a0a0a;
+  border: 1px solid #1a1a1a;
+  border-radius: 12px;
+}
+
+/* Button Styles */
+.btn-white {
+  background: white;
+  color: black;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-white:hover {
+  background: #e5e5e5;
+}
+
+.btn-outline {
+  background: transparent;
+  color: white;
+  border: 1px solid #333;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-outline:hover {
+  background: #1a1a1a;
+  border-color: #555;
+}
+
+/* Input Styles */
+.input-dark {
+  background: #0a0a0a;
+  border: 1px solid #1a1a1a;
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  transition: border-color 0.2s ease;
+}
+
+.input-dark:focus {
+  outline: none;
+  border-color: white;
+}
+
+.input-dark::placeholder {
+  color: #666;
+}
+
+/* Page Header */
+.page-header {
+  padding: 2rem 0;
+  border-bottom: 1px solid #1a1a1a;
+  margin-bottom: 2rem;
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+}
+
+.page-subtitle {
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+/* Section Styles */
+.section {
+  padding: 2rem 0;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 1rem;
+}
+
+/* Grid Layouts */
+.grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Status Indicators */
+.status-success {
+  color: #22c55e;
+}
+
+.status-warning {
+  color: #f59e0b;
+}
+
+.status-error {
+  color: #ef4444;
+}
+
+/* Loading Spinner */
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #333;
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -1,0 +1,141 @@
+{
+  "typography": {
+    "fonts": {
+      "heading": "Manrope, sans-serif",
+      "body": "Public Sans, sans-serif",
+      "code": "JetBrains Mono, monospace"
+    },
+    "weights": {
+      "heading": "700",
+      "subheading": "600",
+      "body": "400",
+      "bold": "600"
+    },
+    "sizes": {
+      "h1": "text-4xl md:text-6xl tracking-tight",
+      "h2": "text-3xl md:text-4xl tracking-tight",
+      "h3": "text-2xl md:text-3xl tracking-tight",
+      "body": "text-base leading-relaxed",
+      "small": "text-sm leading-normal"
+    },
+    "installation": "Import fonts via Google Fonts in index.css: @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;600;700;800&family=Public+Sans:wght@300;400;500;600&display=swap');"
+  },
+  "colors": {
+    "theme": "hybrid",
+    "light": {
+      "background": "#F8FAFC",
+      "foreground": "#0F172A",
+      "card": "#FFFFFF",
+      "card_foreground": "#0F172A",
+      "primary": "#0F172A",
+      "primary_foreground": "#F8FAFC",
+      "secondary": "#F1F5F9",
+      "secondary_foreground": "#0F172A",
+      "muted": "#F1F5F9",
+      "muted_foreground": "#64748B",
+      "accent": "#3B82F6",
+      "accent_foreground": "#FFFFFF",
+      "destructive": "#EF4444",
+      "destructive_foreground": "#FFFFFF",
+      "border": "#E2E8F0",
+      "input": "#E2E8F0",
+      "ring": "#0F172A"
+    },
+    "dark": {
+      "background": "#020617",
+      "foreground": "#F8FAFC",
+      "card": "#0F172A",
+      "card_foreground": "#F8FAFC",
+      "primary": "#F8FAFC",
+      "primary_foreground": "#0F172A",
+      "secondary": "#1E293B",
+      "secondary_foreground": "#F8FAFC",
+      "muted": "#1E293B",
+      "muted_foreground": "#94A3B8",
+      "accent": "#3B82F6",
+      "accent_foreground": "#FFFFFF",
+      "destructive": "#7F1D1D",
+      "destructive_foreground": "#F8FAFC",
+      "border": "#1E293B",
+      "input": "#1E293B",
+      "ring": "#CBD5E1"
+    },
+    "semantic": {
+      "success": "#10B981",
+      "warning": "#F59E0B",
+      "info": "#3B82F6",
+      "code_bg": "#0F172A"
+    }
+  },
+  "layout": {
+    "spacing": {
+      "container_padding": "p-6 md:p-12 lg:p-16",
+      "section_gap": "gap-12 md:gap-24",
+      "element_gap": "gap-4 md:gap-8"
+    },
+    "grids": {
+      "marketing": "grid grid-cols-1 md:grid-cols-12 gap-8",
+      "dashboard": "grid grid-cols-1 md:grid-cols-4 gap-6",
+      "bento_hero": "col-span-full md:col-span-8 row-span-2",
+      "bento_sidebar": "col-span-full md:col-span-4 row-span-2"
+    },
+    "container": {
+      "max_width": "max-w-7xl mx-auto"
+    }
+  },
+  "components": {
+    "buttons": {
+      "default": "rounded-full font-semibold transition-transform active:scale-95",
+      "primary": "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20",
+      "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+      "ghost": "hover:bg-accent/10 hover:text-accent",
+      "outline": "border-2 border-input hover:bg-accent hover:text-accent-foreground"
+    },
+    "cards": {
+      "default": "bg-card text-card-foreground rounded-xl border border-border/50 shadow-sm hover:shadow-md transition-shadow duration-300",
+      "glass": "bg-white/70 dark:bg-black/60 backdrop-blur-xl border border-white/20 shadow-lg",
+      "interactive": "cursor-pointer hover:-translate-y-1 transition-all duration-300"
+    },
+    "inputs": {
+      "default": "rounded-lg border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+    }
+  },
+  "assets": {
+    "images": {
+      "hero_student": "https://images.pexels.com/photos/4050291/pexels-photo-4050291.jpeg",
+      "team_meeting": "https://images.pexels.com/photos/3810792/pexels-photo-3810792.jpeg",
+      "abstract_tech": "https://images.pexels.com/photos/17485657/pexels-photo-17485657.png",
+      "coding_laptop": "https://images.pexels.com/photos/4050290/pexels-photo-4050290.jpeg",
+      "office_collaboration": "https://images.pexels.com/photos/35335985/pexels-photo-35335985.jpeg"
+    },
+    "icons": {
+      "library": "lucide-react",
+      "style": "stroke-width={1.5} className='w-5 h-5'"
+    }
+  },
+  "motion": {
+    "transitions": {
+      "default": "transition-all duration-300 ease-in-out",
+      "slow": "transition-all duration-700 ease-out",
+      "hover": "transition-transform duration-200 ease-out"
+    },
+    "animations": {
+      "fade_in": "animate-in fade-in duration-500",
+      "slide_up": "animate-in slide-in-from-bottom-4 duration-500",
+      "pulse_slow": "animate-pulse duration-[3000ms]"
+    }
+  },
+  "universal_guidelines": [
+    "Avoid 'AI Slop': Do not use generic centered layouts or default Shadcn styles without customization.",
+    "Contrast is King: Ensure text is readable. Use 'text-slate-900' on light backgrounds, not 'text-gray-500'.",
+    "Spacing: Use 'p-8' or 'p-12' for sections. Give content room to breathe.",
+    "Micro-interactions: Every button and card must have a hover state (scale, shadow, or color shift).",
+    "Data-TestID: All interactive elements must have 'data-testid' attributes.",
+    "No Gradients on Text: Unless it's a very specific hero title, avoid gradient text. It looks cheap.",
+    "Glassmorphism: Use it for sticky headers and floating panels, but keep it subtle (blur-xl).",
+    "Bento Grids: Use asymmetrical grids for marketing sections. Don't just use 3 equal columns.",
+    "Code Editor: MUST be Dark Mode always, even if the rest of the app is Light Mode.",
+    "Charts: Use Recharts with the defined semantic colors. Keep them clean and minimal."
+  ],
+  "instructions_to_main_agent": "You are building a high-end EdTech & Career platform. Use the 'Manrope' font for headings to give it a modern, technical feel. The 'Public Sans' body font ensures high readability for long educational content. The 'JetBrains Mono' is non-negotiable for code snippets. Use the 'Hybrid' theme strategy: Marketing pages and Dashboards are Light Mode (clean, trustworthy), but the 'Coding Arena' and 'IDE' components must be Dark Mode (developer standard). Use the provided image URLs for placeholders. Implement 'Sonner' for toasts. Use 'Lucide-React' for icons. Follow the 'Bento' grid layouts for the landing page features."
+}

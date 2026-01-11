@@ -1,0 +1,282 @@
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { toast } from "sonner";
+import { Button } from "../components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import { API, setAuthToken, setUser } from "../lib/utils";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../components/ui/tabs";
+import { Brain } from "lucide-react";
+
+const AuthPage = () => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+
+  // Login state
+  const [loginData, setLoginData] = useState({ email: "", password: "" });
+
+  // Register state
+  const [registerData, setRegisterData] = useState({
+    email: "",
+    password: "",
+    name: "",
+    role: "student",
+  });
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const response = await axios.post(`${API}/auth/login`, loginData);
+      setAuthToken(response.data.token);
+      setUser(response.data.user);
+
+      // Dispatch auth change event for App to detect
+      window.dispatchEvent(new Event("authChange"));
+
+      toast.success("Login successful!");
+
+      // Navigate based on role
+      const role = response.data.user.role;
+      if (role === "company") navigate("/company");
+      else if (role === "college_admin") navigate("/college");
+      else navigate("/dashboard");
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const response = await axios.post(`${API}/auth/register`, registerData);
+      setAuthToken(response.data.token);
+      setUser(response.data.user);
+
+      // Dispatch auth change event for App to detect
+      window.dispatchEvent(new Event("authChange"));
+
+      toast.success("Registration successful!");
+
+      // Navigate based on role
+      const role = response.data.user.role;
+      if (role === "company") navigate("/company");
+      else if (role === "college_admin") navigate("/college");
+      else navigate("/dashboard");
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Registration failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-black p-6">
+      <Card className="w-full max-w-md bg-zinc-900 border-zinc-800">
+        <CardHeader className="text-center pb-4">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+            <Brain className="w-8 h-8 text-white" />
+          </div>
+          <CardTitle className="text-3xl font-bold text-white">
+            AI Learning Platform
+          </CardTitle>
+          <CardDescription className="text-zinc-400">
+            Master skills, ace interviews, build your career
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6 bg-zinc-800">
+              <TabsTrigger
+                data-testid="login-tab"
+                value="login"
+                className="data-[state=active]:bg-white data-[state=active]:text-black"
+              >
+                Login
+              </TabsTrigger>
+              <TabsTrigger
+                data-testid="register-tab"
+                value="register"
+                className="data-[state=active]:bg-white data-[state=active]:text-black"
+              >
+                Register
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="login">
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="login-email" className="text-zinc-300">
+                    Email
+                  </Label>
+                  <Input
+                    data-testid="login-email-input"
+                    id="login-email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={loginData.email}
+                    onChange={(e) =>
+                      setLoginData({ ...loginData, email: e.target.value })
+                    }
+                    required
+                    className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="login-password" className="text-zinc-300">
+                    Password
+                  </Label>
+                  <Input
+                    data-testid="login-password-input"
+                    id="login-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={loginData.password}
+                    onChange={(e) =>
+                      setLoginData({ ...loginData, password: e.target.value })
+                    }
+                    required
+                    className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                    className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                  />
+                </div>
+                <Button
+                  data-testid="login-submit-btn"
+                  type="submit"
+                  className="w-full rounded-full font-semibold bg-white text-black hover:bg-zinc-200"
+                  disabled={loading}
+                >
+                  {loading ? "Logging in..." : "Login"}
+                </Button>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="register">
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="register-name" className="text-zinc-300">
+                    Full Name
+                  </Label>
+                  <Input
+                    data-testid="register-name-input"
+                    id="register-name"
+                    type="text"
+                    placeholder="John Doe"
+                    value={registerData.name}
+                    onChange={(e) =>
+                      setRegisterData({ ...registerData, name: e.target.value })
+                    }
+                    required
+                    className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="register-email" className="text-zinc-300">
+                    Email
+                  </Label>
+                  <Input
+                    data-testid="register-email-input"
+                    id="register-email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={registerData.email}
+                    onChange={(e) =>
+                      setRegisterData({
+                        ...registerData,
+                        email: e.target.value,
+                      })
+                    }
+                    required
+                    className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="register-password" className="text-zinc-300">
+                    Password
+                  </Label>
+                  <Input
+                    data-testid="register-password-input"
+                    id="register-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={registerData.password}
+                    onChange={(e) =>
+                      setRegisterData({
+                        ...registerData,
+                        password: e.target.value,
+                      })
+                    }
+                    required
+                    className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="register-role" className="text-zinc-300">
+                    I am a
+                  </Label>
+                  <Select
+                    value={registerData.role}
+                    onValueChange={(value) =>
+                      setRegisterData({ ...registerData, role: value })
+                    }
+                  >
+                    <SelectTrigger
+                      data-testid="register-role-select"
+                      id="register-role"
+                      className="bg-zinc-800 border-zinc-700 text-white"
+                    >
+                      <SelectValue placeholder="Select your role" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-zinc-900 border-zinc-800">
+                      <SelectItem value="student">Student</SelectItem>
+                      <SelectItem value="job_seeker">Job Seeker</SelectItem>
+                      <SelectItem value="company">Company/Recruiter</SelectItem>
+                      <SelectItem value="college_admin">
+                        College Admin
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  data-testid="register-submit-btn"
+                  type="submit"
+                  className="w-full rounded-full font-semibold bg-white text-black hover:bg-zinc-200"
+                  disabled={loading}
+                >
+                  {loading ? "Creating account..." : "Create Account"}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default AuthPage;
