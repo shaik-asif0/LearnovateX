@@ -175,36 +175,8 @@ const NavigationBar = () => {
             className="flex items-center gap-3 cursor-pointer group"
             onClick={() => navigate("/dashboard")}
           >
-            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center">
-              {/* Custom LearnovateX Logo: Thin, simple, unique, black & white */}
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M12 2L2 7L12 12L22 7L12 2Z"
-                  fill="#111"
-                />
-                <path
-                  d="M2 17L12 22L22 17V7L12 12L2 7V17Z"
-                  fill="#111"
-                />
-                <path
-                  d="M6 10L18 10"
-                  stroke="#111"
-                  strokeWidth="1"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M8 12L16 12"
-                  stroke="#111"
-                  strokeWidth="1"
-                  strokeLinecap="round"
-                />
-              </svg>
+            <div className="w-12 h-12 rounded-full bg-black flex items-center justify-center">
+              <img src="/logo.jpeg" alt="Logo" className="w-10 h-10 rounded-full" />
             </div>
             <div className="hidden sm:block">
               <p className="text-xs text-zinc-500 font-medium tracking-wider uppercase">
