@@ -410,39 +410,165 @@ const CareerReadinessPage = () => {
 
                   <div className="grid grid-cols-2 gap-4 lg:gap-6">
                     <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
-                      <div className="text-2xl font-bold text-zinc-300 mb-1">
-                        {stats?.total_problems_solved || 0}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-2xl font-bold text-zinc-300 mb-1">
+                          {stats?.total_problems_solved || 0}
+                        </div>
+                        {/* Progress bars for problems solved */}
+                        <div className="flex space-x-1">
+                          {[...Array(5)].map((_, i) => (
+                            <div
+                              key={i}
+                              className={`w-1 h-4 rounded-sm transition-all duration-300 ${
+                                i <
+                                Math.min(
+                                  Math.floor(
+                                    (stats?.total_problems_solved || 0) / 20
+                                  ),
+                                  5
+                                )
+                                  ? "bg-gradient-to-t from-blue-400 to-blue-600"
+                                  : "bg-zinc-600"
+                              }`}
+                            />
+                          ))}
+                        </div>
                       </div>
                       <div className="text-sm text-zinc-400 flex items-center gap-1">
                         <Code className="w-3 h-3" />
                         Problems Solved
                       </div>
+                      <div className="w-full bg-zinc-700 rounded-full h-1 mt-2">
+                        <div
+                          className="bg-gradient-to-r from-blue-400 to-blue-600 h-1 rounded-full transition-all duration-500"
+                          style={{
+                            width: `${Math.min(
+                              ((stats?.total_problems_solved || 0) / 100) * 100,
+                              100
+                            )}%`,
+                          }}
+                        ></div>
+                      </div>
                     </div>
                     <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
-                      <div className="text-2xl font-bold text-zinc-300 mb-1">
-                        {stats?.resume_analyses || 0}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-2xl font-bold text-zinc-300 mb-1">
+                          {stats?.resume_analyses || 0}
+                        </div>
+                        {/* Progress bars for resume analyses */}
+                        <div className="flex space-x-1">
+                          {[...Array(5)].map((_, i) => (
+                            <div
+                              key={i}
+                              className={`w-1 h-4 rounded-sm transition-all duration-300 ${
+                                i <
+                                Math.min(
+                                  Math.floor((stats?.resume_analyses || 0) / 2),
+                                  5
+                                )
+                                  ? "bg-gradient-to-t from-green-400 to-green-600"
+                                  : "bg-zinc-600"
+                              }`}
+                            />
+                          ))}
+                        </div>
                       </div>
                       <div className="text-sm text-zinc-400 flex items-center gap-1">
                         <FileText className="w-3 h-3" />
                         Resume Reviews
                       </div>
+                      <div className="w-full bg-zinc-700 rounded-full h-1 mt-2">
+                        <div
+                          className="bg-gradient-to-r from-green-400 to-green-600 h-1 rounded-full transition-all duration-500"
+                          style={{
+                            width: `${Math.min(
+                              ((stats?.resume_analyses || 0) / 10) * 100,
+                              100
+                            )}%`,
+                          }}
+                        ></div>
+                      </div>
                     </div>
                     <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
-                      <div className="text-2xl font-bold text-zinc-300 mb-1">
-                        {stats?.interviews_taken || 0}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-2xl font-bold text-zinc-300 mb-1">
+                          {stats?.interviews_taken || 0}
+                        </div>
+                        {/* Progress bars for interviews */}
+                        <div className="flex space-x-1">
+                          {[...Array(5)].map((_, i) => (
+                            <div
+                              key={i}
+                              className={`w-1 h-4 rounded-sm transition-all duration-300 ${
+                                i <
+                                Math.min(
+                                  Math.floor(
+                                    (stats?.interviews_taken || 0) / 2
+                                  ),
+                                  5
+                                )
+                                  ? "bg-gradient-to-t from-purple-400 to-purple-600"
+                                  : "bg-zinc-600"
+                              }`}
+                            />
+                          ))}
+                        </div>
                       </div>
                       <div className="text-sm text-zinc-400 flex items-center gap-1">
                         <MessageSquare className="w-3 h-3" />
                         Mock Interviews
                       </div>
+                      <div className="w-full bg-zinc-700 rounded-full h-1 mt-2">
+                        <div
+                          className="bg-gradient-to-r from-purple-400 to-purple-600 h-1 rounded-full transition-all duration-500"
+                          style={{
+                            width: `${Math.min(
+                              ((stats?.interviews_taken || 0) / 10) * 100,
+                              100
+                            )}%`,
+                          }}
+                        ></div>
+                      </div>
                     </div>
                     <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
-                      <div className="text-2xl font-bold text-zinc-300 mb-1">
-                        {stats?.learning_sessions || 0}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-2xl font-bold text-zinc-300 mb-1">
+                          {stats?.learning_sessions || 0}
+                        </div>
+                        {/* Progress bars for learning sessions */}
+                        <div className="flex space-x-1">
+                          {[...Array(5)].map((_, i) => (
+                            <div
+                              key={i}
+                              className={`w-1 h-4 rounded-sm transition-all duration-300 ${
+                                i <
+                                Math.min(
+                                  Math.floor(
+                                    (stats?.learning_sessions || 0) / 10
+                                  ),
+                                  5
+                                )
+                                  ? "bg-gradient-to-t from-orange-400 to-orange-600"
+                                  : "bg-zinc-600"
+                              }`}
+                            />
+                          ))}
+                        </div>
                       </div>
                       <div className="text-sm text-zinc-400 flex items-center gap-1">
                         <BookOpen className="w-3 h-3" />
                         Learning Sessions
+                      </div>
+                      <div className="w-full bg-zinc-700 rounded-full h-1 mt-2">
+                        <div
+                          className="bg-gradient-to-r from-orange-400 to-orange-600 h-1 rounded-full transition-all duration-500"
+                          style={{
+                            width: `${Math.min(
+                              ((stats?.learning_sessions || 0) / 50) * 100,
+                              100
+                            )}%`,
+                          }}
+                        ></div>
                       </div>
                     </div>
                   </div>

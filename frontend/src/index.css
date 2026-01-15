@@ -119,4 +119,13 @@ select:focus {
   outline: none;
   border-color: white;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+  text-align: left !important;
+}
+
+/* Ensure all form inputs and labels are left-aligned */
+input,
+textarea,
+select,
+label {
+  text-align: left !important;
 }

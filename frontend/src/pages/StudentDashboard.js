@@ -281,10 +281,35 @@ const StudentDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-white">
-                  {stats.avg_code_score}%
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-3xl font-bold text-white">
+                    {stats.avg_code_score}%
+                  </div>
+                  {/* Horizontal meter with segments */}
+                  <div className="flex items-center space-x-1">
+                    {[...Array(10)].map((_, i) => (
+                      <div
+                        key={i}
+                        className={`w-3 h-1 rounded-sm transition-all duration-300 ${
+                          i < Math.floor(stats.avg_code_score / 10)
+                            ? "bg-gradient-to-r from-green-400 to-green-600"
+                            : "bg-gray-600"
+                        }`}
+                      />
+                    ))}
+                  </div>
                 </div>
-                <p className="text-gray-300 text-sm mt-1">Excellent work!</p>
+                <div className="w-full bg-gray-700 rounded-full h-3">
+                  <div
+                    className="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full transition-all duration-500"
+                    style={{
+                      width: `${Math.min(stats.avg_code_score, 100)}%`,
+                    }}
+                  ></div>
+                </div>
+                <p className="text-gray-300 text-sm mt-2">
+                  Excellent progress!
+                </p>
               </CardContent>
             </Card>
             <Card className="bg-black border-gray-700 hover:border-gray-600 hover:ring-1 hover:ring-white transition-all duration-300 hover:scale-105">
@@ -311,37 +336,112 @@ const StudentDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-white">
-                  {stats.learning_sessions}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-3xl font-bold text-white">
+                    {stats.learning_sessions}
+                  </div>
+                  {/* Progress indicator */}
+                  <div className="flex items-center space-x-1">
+                    {[...Array(5)].map((_, i) => (
+                      <div
+                        key={i}
+                        className={`w-2 h-6 rounded-sm transition-all duration-300 ${
+                          i <
+                          Math.min(Math.floor(stats.learning_sessions / 10), 5)
+                            ? "bg-gradient-to-t from-blue-400 to-blue-600"
+                            : "bg-gray-600"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-2">
+                  <div
+                    className="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full transition-all duration-500"
+                    style={{
+                      width: `${Math.min(
+                        (stats.learning_sessions / 50) * 100,
+                        100
+                      )}%`,
+                    }}
+                  ></div>
                 </div>
                 <p className="text-gray-300 text-sm mt-1">Keep learning!</p>
               </CardContent>
             </Card>
-            <Card className="bg-black border-gray-700 hover:border-gray-600 hover:ring-1 hover:ring-white transition-all duration-300 hover:scale-105">
+            <Card className="bg-black border-gray-700 hover:border-gray-600 hover:ring-1 hover:ring-white transition-all duration-300 hover:scale-105 overflow-hidden">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-white flex items-center">
                   <Trophy className="w-4 h-4 mr-2" />
                   Career Readiness Score
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-white">
-                  {stats.career_readiness_score}/100
-                </div>
-                <div className="mt-3">
-                  <div className="w-full bg-gray-700 rounded-full h-3">
-                    <div
-                      className="bg-gradient-to-r from-white to-gray-300 h-3 rounded-full transition-all duration-500"
-                      style={{
-                        width: `${Math.min(
-                          stats.career_readiness_score,
-                          100
-                        )}%`,
-                      }}
-                    ></div>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="text-2xl font-bold text-white mb-1">
+                      {stats.career_readiness_score}/100
+                    </div>
+                    <p className="text-gray-300 text-xs">You're on track!</p>
+                  </div>
+                  {/* Circular Progress Ring */}
+                  <div className="relative w-14 h-14 ml-4 flex-shrink-0">
+                    <svg
+                      className="w-14 h-14 transform -rotate-90"
+                      viewBox="0 0 36 36"
+                    >
+                      {/* Background circle */}
+                      <path
+                        d="M18 2.0845
+                          a 15.9155 15.9155 0 0 1 0 31.831
+                          a 15.9155 15.9155 0 0 1 0 -31.831"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        className="text-gray-700"
+                      />
+                      {/* Progress circle */}
+                      <path
+                        d="M18 2.0845
+                          a 15.9155 15.9155 0 0 1 0 31.831
+                          a 15.9155 15.9155 0 0 1 0 -31.831"
+                        fill="none"
+                        stroke="url(#careerGradient)"
+                        strokeWidth="3"
+                        strokeDasharray={`${
+                          (stats.career_readiness_score / 100) * 100
+                        }, 100`}
+                        strokeLinecap="round"
+                        className="transition-all duration-1000 ease-out"
+                      />
+                      <defs>
+                        <linearGradient
+                          id="careerGradient"
+                          x1="0%"
+                          y1="0%"
+                          x2="100%"
+                          y2="0%"
+                        >
+                          <stop offset="0%" stopColor="#fbbf24" />
+                          <stop offset="100%" stopColor="#f97316" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-xs font-bold text-white">
+                        {stats.career_readiness_score}%
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <p className="text-gray-300 text-sm mt-2">You're on track!</p>
+                <div className="w-full bg-gray-700 rounded-full h-3">
+                  <div
+                    className="bg-gradient-to-r from-yellow-400 to-orange-400 h-3 rounded-full transition-all duration-500"
+                    style={{
+                      width: `${Math.min(stats.career_readiness_score, 100)}%`,
+                    }}
+                  ></div>
+                </div>
               </CardContent>
             </Card>
           </div>

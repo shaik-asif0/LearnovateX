@@ -49,6 +49,90 @@
   color: #ffd700;
 }
 
+/* Custom animations for Landing Page */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 1s ease-out;
+}
+
+/* Button glow effects */
+.hover\:shadow-glow:hover {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(59, 130, 246, 0.3);
+}
+
+.hover\:shadow-glow-outline:hover {
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+}
+
+/* Liquid blob animation */
+@keyframes liquid-blob {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.1) rotate(90deg);
+  }
+  50% {
+    transform: scale(0.9) rotate(180deg);
+  }
+  75% {
+    transform: scale(1.05) rotate(270deg);
+  }
+}
+
+.liquid-blob {
+  animation: liquid-blob 6s ease-in-out infinite;
+}
+
+/* Liquid card effect */
+.liquid-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.liquid-card::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(59, 130, 246, 0.1),
+    transparent
+  );
+  transform: rotate(45deg);
+  transition: all 0.6s ease;
+  opacity: 0;
+}
+
+.liquid-card:hover::before {
+  opacity: 1;
+  animation: liquid-flow 1.5s ease-in-out;
+}
+
+@keyframes liquid-flow {
+  0% {
+    transform: rotate(45deg) translateX(-100%) translateY(-100%);
+  }
+  100% {
+    transform: rotate(45deg) translateX(100%) translateY(100%);
+  }
+}
+
 .rank-2 {
   color: #c0c0c0;
 }
@@ -281,8 +365,36 @@
 body {
   background-color: rgba(0, 0, 0, 1);
   font-weight: 600;
-  text-align: center !important;
+  text-align: left;
   color: white;
+}
+
+/* Ensure form elements are left-aligned */
+input,
+textarea,
+select,
+label,
+button:not([class*="text-center"]) {
+  text-align: left !important;
+}
+
+/* Input placeholders should be left-aligned */
+input::placeholder,
+textarea::placeholder {
+  text-align: left !important;
+}
+
+/* Select dropdowns should be left-aligned */
+select,
+[role="combobox"],
+[role="textbox"] {
+  text-align: left !important;
+}
+
+/* Center only specific elements that should be centered */
+.text-center,
+[class*="text-center"] {
+  text-align: center !important;
 }
 
 nav {

@@ -446,27 +446,100 @@ const ProfilePage = () => {
             {/* Quick Stats */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6 pt-6 border-t border-zinc-800">
               <div className="text-center">
-                <p className="text-2xl font-bold text-white">
-                  {stats?.code_submissions || 0}
-                </p>
+                <div className="flex items-center justify-center mb-1">
+                  <div className="text-2xl font-bold text-white mr-2">
+                    {stats?.code_submissions || 0}
+                  </div>
+                  {/* Progress bars for problems solved */}
+                  <div className="flex space-x-1">
+                    {[...Array(3)].map((_, i) => (
+                      <div
+                        key={i}
+                        className={`w-1 h-3 rounded-sm transition-all duration-300 ${
+                          i <
+                          Math.min(
+                            Math.floor((stats?.code_submissions || 0) / 20),
+                            3
+                          )
+                            ? "bg-gradient-to-t from-blue-400 to-blue-600"
+                            : "bg-zinc-600"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
                 <p className="text-xs text-zinc-400">Problems Solved</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-white">
-                  {stats?.avg_code_score || 0}%
-                </p>
+                <div className="flex items-center justify-center mb-1">
+                  <div className="text-2xl font-bold text-white mr-2">
+                    {stats?.avg_code_score || 0}%
+                  </div>
+                  {/* Horizontal meter for avg score */}
+                  <div className="flex space-x-1">
+                    {[...Array(5)].map((_, i) => (
+                      <div
+                        key={i}
+                        className={`w-1 h-3 rounded-sm transition-all duration-300 ${
+                          i <
+                          Math.floor(((stats?.avg_code_score || 0) / 100) * 5)
+                            ? "bg-gradient-to-t from-green-400 to-green-600"
+                            : "bg-zinc-600"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
                 <p className="text-xs text-zinc-400">Avg Score</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-white">
-                  {stats?.learning_sessions || 0}
-                </p>
+                <div className="flex items-center justify-center mb-1">
+                  <div className="text-2xl font-bold text-white mr-2">
+                    {stats?.learning_sessions || 0}
+                  </div>
+                  {/* Progress bars for sessions */}
+                  <div className="flex space-x-1">
+                    {[...Array(3)].map((_, i) => (
+                      <div
+                        key={i}
+                        className={`w-1 h-3 rounded-sm transition-all duration-300 ${
+                          i <
+                          Math.min(
+                            Math.floor((stats?.learning_sessions || 0) / 10),
+                            3
+                          )
+                            ? "bg-gradient-to-t from-purple-400 to-purple-600"
+                            : "bg-zinc-600"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
                 <p className="text-xs text-zinc-400">Sessions</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-white">
-                  {stats?.interviews_taken || 0}
-                </p>
+                <div className="flex items-center justify-center mb-1">
+                  <div className="text-2xl font-bold text-white mr-2">
+                    {stats?.interviews_taken || 0}
+                  </div>
+                  {/* Progress bars for interviews */}
+                  <div className="flex space-x-1">
+                    {[...Array(3)].map((_, i) => (
+                      <div
+                        key={i}
+                        className={`w-1 h-3 rounded-sm transition-all duration-300 ${
+                          i <
+                          Math.min(
+                            Math.floor((stats?.interviews_taken || 0) / 2),
+                            3
+                          )
+                            ? "bg-gradient-to-t from-orange-400 to-orange-600"
+                            : "bg-zinc-600"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
                 <p className="text-xs text-zinc-400">Interviews</p>
               </div>
               <div className="text-center">
@@ -848,37 +921,151 @@ const ProfilePage = () => {
               <Card className="bg-gradient-to-br from-blue-900/30 to-blue-800/10 border-blue-800/30">
                 <CardContent className="p-6 text-center">
                   <Code className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-                  <p className="text-3xl font-bold text-white">
-                    {stats?.code_submissions || 0}
-                  </p>
+                  <div className="flex items-center justify-center mb-1">
+                    <p className="text-3xl font-bold text-white mr-2">
+                      {stats?.code_submissions || 0}
+                    </p>
+                    {/* Progress bars for problems solved */}
+                    <div className="flex space-x-1">
+                      {[...Array(5)].map((_, i) => (
+                        <div
+                          key={i}
+                          className={`w-1 h-4 rounded-sm transition-all duration-300 ${
+                            i <
+                            Math.min(
+                              Math.floor((stats?.code_submissions || 0) / 20),
+                              5
+                            )
+                              ? "bg-gradient-to-t from-blue-400 to-blue-600"
+                              : "bg-zinc-600"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
                   <p className="text-sm text-zinc-400">Problems Solved</p>
+                  <div className="w-full bg-zinc-700 rounded-full h-1 mt-2">
+                    <div
+                      className="bg-gradient-to-r from-blue-400 to-blue-600 h-1 rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min(
+                          ((stats?.code_submissions || 0) / 100) * 100,
+                          100
+                        )}%`,
+                      }}
+                    ></div>
+                  </div>
                 </CardContent>
               </Card>
               <Card className="bg-gradient-to-br from-green-900/30 to-green-800/10 border-green-800/30">
                 <CardContent className="p-6 text-center">
                   <TrendingUp className="w-8 h-8 text-green-400 mx-auto mb-2" />
-                  <p className="text-3xl font-bold text-white">
-                    {stats?.avg_code_score || 0}%
-                  </p>
+                  <div className="flex items-center justify-center mb-1">
+                    <p className="text-3xl font-bold text-white mr-2">
+                      {stats?.avg_code_score || 0}%
+                    </p>
+                    {/* Horizontal meter for avg score */}
+                    <div className="flex space-x-1">
+                      {[...Array(5)].map((_, i) => (
+                        <div
+                          key={i}
+                          className={`w-1 h-4 rounded-sm transition-all duration-300 ${
+                            i <
+                            Math.floor(((stats?.avg_code_score || 0) / 100) * 5)
+                              ? "bg-gradient-to-t from-green-400 to-green-600"
+                              : "bg-zinc-600"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
                   <p className="text-sm text-zinc-400">Average Score</p>
+                  <div className="w-full bg-zinc-700 rounded-full h-1 mt-2">
+                    <div
+                      className="bg-gradient-to-r from-green-400 to-green-600 h-1 rounded-full transition-all duration-500"
+                      style={{
+                        width: `${stats?.avg_code_score || 0}%`,
+                      }}
+                    ></div>
+                  </div>
                 </CardContent>
               </Card>
               <Card className="bg-gradient-to-br from-purple-900/30 to-purple-800/10 border-purple-800/30">
                 <CardContent className="p-6 text-center">
                   <BookOpen className="w-8 h-8 text-purple-400 mx-auto mb-2" />
-                  <p className="text-3xl font-bold text-white">
-                    {stats?.learning_sessions || 0}
-                  </p>
+                  <div className="flex items-center justify-center mb-1">
+                    <p className="text-3xl font-bold text-white mr-2">
+                      {stats?.learning_sessions || 0}
+                    </p>
+                    {/* Progress bars for learning sessions */}
+                    <div className="flex space-x-1">
+                      {[...Array(5)].map((_, i) => (
+                        <div
+                          key={i}
+                          className={`w-1 h-4 rounded-sm transition-all duration-300 ${
+                            i <
+                            Math.min(
+                              Math.floor((stats?.learning_sessions || 0) / 10),
+                              5
+                            )
+                              ? "bg-gradient-to-t from-purple-400 to-purple-600"
+                              : "bg-zinc-600"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
                   <p className="text-sm text-zinc-400">Learning Sessions</p>
+                  <div className="w-full bg-zinc-700 rounded-full h-1 mt-2">
+                    <div
+                      className="bg-gradient-to-r from-purple-400 to-purple-600 h-1 rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min(
+                          ((stats?.learning_sessions || 0) / 50) * 100,
+                          100
+                        )}%`,
+                      }}
+                    ></div>
+                  </div>
                 </CardContent>
               </Card>
               <Card className="bg-gradient-to-br from-orange-900/30 to-orange-800/10 border-orange-800/30">
                 <CardContent className="p-6 text-center">
                   <MessageSquare className="w-8 h-8 text-orange-400 mx-auto mb-2" />
-                  <p className="text-3xl font-bold text-white">
-                    {stats?.interviews_taken || 0}
-                  </p>
+                  <div className="flex items-center justify-center mb-1">
+                    <p className="text-3xl font-bold text-white mr-2">
+                      {stats?.interviews_taken || 0}
+                    </p>
+                    {/* Progress bars for interviews */}
+                    <div className="flex space-x-1">
+                      {[...Array(5)].map((_, i) => (
+                        <div
+                          key={i}
+                          className={`w-1 h-4 rounded-sm transition-all duration-300 ${
+                            i <
+                            Math.min(
+                              Math.floor((stats?.interviews_taken || 0) / 2),
+                              5
+                            )
+                              ? "bg-gradient-to-t from-orange-400 to-orange-600"
+                              : "bg-zinc-600"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
                   <p className="text-sm text-zinc-400">Mock Interviews</p>
+                  <div className="w-full bg-zinc-700 rounded-full h-1 mt-2">
+                    <div
+                      className="bg-gradient-to-r from-orange-400 to-orange-600 h-1 rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min(
+                          ((stats?.interviews_taken || 0) / 10) * 100,
+                          100
+                        )}%`,
+                      }}
+                    ></div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
