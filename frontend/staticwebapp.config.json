@@ -1,0 +1,22 @@
+{
+  "name": "learnovatex-frontend",
+  "buildCommand": "npm run build",
+  "outputLocation": "build",
+  "routes": [
+    {
+      "route": "/api/*",
+      "allowedRoles": ["anonymous"]
+    }
+  ],
+  "responseOverrides": {
+    "404": {
+      "rewrite": "/index.html"
+    }
+  },
+  "globalHeaders": {
+    "Cache-Control": "no-cache"
+  },
+  "mimeTypes": {
+    ".json": "application/json"
+  }
+}

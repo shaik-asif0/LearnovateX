@@ -343,6 +343,95 @@ REACT_APP_BACKEND_URL=http://localhost:8001
 - Code execution is simulated (not actual execution)
 - Large file uploads may timeout
 
+## 🚀 Deployment to Azure
+
+### Prerequisites
+
+- Azure subscription
+- GitHub repository
+- Azure CLI (optional)
+
+### Step 1: Create Azure Resources
+
+#### Backend (Azure App Service)
+
+1. Go to [Azure Portal](https://portal.azure.com)
+2. Create a new "Web App" resource
+3. Choose:
+   - **Runtime stack**: Python 3.11
+   - **Operating System**: Linux
+   - **Region**: Your preferred region
+   - **App Service Plan**: Basic B1 or higher
+4. Name it `learnovatex-backend` (or your choice)
+5. Create the resource
+
+#### Frontend (Azure Static Web Apps)
+
+1. In Azure Portal, create "Static Web App"
+2. Connect to your GitHub repository
+3. Configure:
+   - **Build preset**: React
+   - **App location**: `/frontend`
+   - **Output location**: `build`
+   - **API location**: Leave empty (backend is separate)
+
+### Step 2: Configure Environment Variables
+
+#### Backend Environment Variables
+
+In Azure App Service > Configuration > Application settings, add:
+
+```
+AZURE_OPENAI_API_KEY=your_azure_openai_key
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+AZURE_OPENAI_DEPLOYMENT=gpt-4
+DATABASE_URL=sqlite:///./learnovatex.db
+ENVIRONMENT=production
+DEBUG=false
+```
+
+#### Frontend Environment Variables
+
+In Azure Static Web Apps > Configuration, add:
+
+```
+REACT_APP_BACKEND_URL=https://learnovatex-backend.azurewebsites.net
+```
+
+### Step 3: Deploy
+
+The deployment is automated via GitHub Actions:
+
+1. Push changes to the `main` branch
+2. GitHub Actions will automatically deploy:
+   - Frontend to Azure Static Web Apps
+   - Backend to Azure App Service
+
+### Step 4: Database Setup
+
+For production, consider using Azure Database for PostgreSQL instead of SQLite.
+
+### Manual Deployment (Alternative)
+
+If you prefer manual deployment:
+
+1. Build the frontend:
+
+   ```bash
+   cd frontend
+   npm install
+   npm run build
+   ```
+
+2. Deploy frontend build folder to Azure Static Web Apps
+
+3. Deploy backend:
+   ```bash
+   cd backend
+   pip install -r requirements.txt
+   # Use Azure CLI or portal to deploy
+   ```
+
 ## 🤝 Contributing
 
 This is a project template. Feel free to:
