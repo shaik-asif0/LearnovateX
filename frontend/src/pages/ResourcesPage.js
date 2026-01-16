@@ -4045,7 +4045,7 @@ const ResourcesPage = () => {
           <div className="aspect-video w-full bg-black">
             {videoModal.open && videoModal.url && (
               <iframe
-                src={`${videoModal.url}?autoplay=1`}
+                src={`${videoModal.url}?rel=0&modestbranding=1`}
                 title={videoModal.title}
                 className="w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
