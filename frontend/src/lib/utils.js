@@ -5,18 +5,42 @@ export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-export const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+export const API = `${process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000'}/api`;
+
+// Enhanced storage functions for mobile compatibility
+const isMobile = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
 
 export const setAuthToken = (token) => {
-  if (token) {
-    localStorage.setItem('token', token);
-  } else {
-    localStorage.removeItem('token');
+  try {
+    if (token) {
+      localStorage.setItem('token', token);
+      // Also store in sessionStorage as backup for mobile
+      if (isMobile()) {
+        sessionStorage.setItem('token', token);
+      }
+    } else {
+      localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
+    }
+  } catch (error) {
+    console.warn('Storage not available:', error);
   }
 };
 
 export const getAuthToken = () => {
-  return localStorage.getItem('token');
+  try {
+    // Try localStorage first, then sessionStorage for mobile
+    let token = localStorage.getItem('token');
+    if (!token && isMobile()) {
+      token = sessionStorage.getItem('token');
+    }
+    return token;
+  } catch (error) {
+    console.warn('Storage not available:', error);
+    return null;
+  }
 };
 
 export const isAuthenticated = () => {
@@ -24,15 +48,36 @@ export const isAuthenticated = () => {
 };
 
 export const clearAuth = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
+  try {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
+  } catch (error) {
+    console.warn('Storage not available:', error);
+  }
 };
 
 export const setUser = (user) => {
-  localStorage.setItem('user', JSON.stringify(user));
+  try {
+    localStorage.setItem('user', JSON.stringify(user));
+    if (isMobile()) {
+      sessionStorage.setItem('user', JSON.stringify(user));
+    }
+  } catch (error) {
+    console.warn('Storage not available:', error);
+  }
 };
 
 export const getUser = () => {
-  const user = localStorage.getItem('user');
-  return user ? JSON.parse(user) : null;
+  try {
+    let user = localStorage.getItem('user');
+    if (!user && isMobile()) {
+      user = sessionStorage.getItem('user');
+    }
+    return user ? JSON.parse(user) : null;
+  } catch (error) {
+    console.warn('Storage not available:', error);
+    return null;
+  }
 };
