@@ -6,7 +6,8 @@ export function cn(...inputs) {
 }
 
 export const API = `${
-  process.env.REACT_APP_BACKEND_URL || "http://localhost:8000"
+  process.env.REACT_APP_BACKEND_URL ||
+  "https://learnovatex-backend.azurewebsites.net"
 }/api`;
 
 // Enhanced storage functions for mobile compatibility
