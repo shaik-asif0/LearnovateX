@@ -5,10 +5,8 @@ export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-export const API = `${
-  process.env.REACT_APP_BACKEND_URL ||
-  "https://learnovatex-backend.azurewebsites.net"
-}/api`;
+export const API = `${import.meta.env.VITE_API_BASE_URL}/api`;
+
 
 // Enhanced storage functions for mobile compatibility
 const isMobile = () => {

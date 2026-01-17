@@ -41,6 +41,19 @@ class AchievementCategory(BaseModel):
 # Create the main app without a prefix
 app = FastAPI()
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://purple-river-029d38c00.2.azurestaticapps.net"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
