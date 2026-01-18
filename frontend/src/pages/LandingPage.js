@@ -240,7 +240,7 @@ const LandingPage = () => {
                 </h1>
               </div>
               <p className="text-lg md:text-xl text-zinc-400 leading-relaxed max-w-2xl animate-fade-in">
-                The only Asif  AI-powered platform you need to learn, practice, and
+                The only  AI-powered platform you need to learn, practice, and
                 land your dream job. Replace coaching institutes with
                 intelligent tutoring, automated assessments, and career
                 readiness tracking powered by Azure OpenAI.
