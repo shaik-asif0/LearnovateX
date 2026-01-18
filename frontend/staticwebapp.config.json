@@ -40,5 +40,8 @@
     ".json": "application/json",
     ".mp4": "video/mp4",
     ".webm": "video/webm"
+  },
+  "environmentVariables": {
+    "REACT_APP_API_BASE_URL": "https://learnovatex-backend-g9cpebe9c9cpfaah.eastasia-01.azurewebsites.net"
   }
 }

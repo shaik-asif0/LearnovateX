@@ -5,8 +5,9 @@ export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-export const API = `${import.meta.env.VITE_API_BASE_URL}/api`;
-
+export const API = `${
+  process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"
+}/api`;
 
 // Enhanced storage functions for mobile compatibility
 const isMobile = () => {
