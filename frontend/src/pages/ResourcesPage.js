@@ -3394,19 +3394,20 @@ const ResourcesPage = () => {
     try {
       const parsed = new URL(rawUrl);
 
-      // https://youtu.be/<id>
-      if (parsed.hostname === "youtu.be") {
-        const youtubeId = parsed.pathname.replace(/^\//, "");
-        const base = `https://www.youtube-nocookie.com/embed/${youtubeId}`;
+      const buildYoutubeEmbed = (youtubeId) => {
+        const base = `https://www.youtube.com/embed/${youtubeId}`;
         const params = new URLSearchParams({
           rel: "0",
           modestbranding: "1",
           playsinline: "1",
         });
-        if (typeof window !== "undefined" && window.location?.origin) {
-          params.set("origin", window.location.origin);
-        }
         return `${base}?${params.toString()}`;
+      };
+
+      // https://youtu.be/<id>
+      if (parsed.hostname === "youtu.be") {
+        const youtubeId = parsed.pathname.replace(/^\//, "");
+        return buildYoutubeEmbed(youtubeId);
       }
 
       // https://www.youtube.com/watch?v=<id>
@@ -3416,32 +3417,19 @@ const ResourcesPage = () => {
       ) {
         const youtubeId = parsed.searchParams.get("v");
         if (youtubeId) {
-          const base = `https://www.youtube-nocookie.com/embed/${youtubeId}`;
-          const params = new URLSearchParams({
-            rel: "0",
-            modestbranding: "1",
-            playsinline: "1",
-          });
-          if (typeof window !== "undefined" && window.location?.origin) {
-            params.set("origin", window.location.origin);
-          }
-          return `${base}?${params.toString()}`;
+          return buildYoutubeEmbed(youtubeId);
         }
       }
 
       // Already embed (youtube or nocookie)
       if (parsed.pathname.startsWith("/embed/")) {
-        const base = parsed.href.replace(
-          "www.youtube.com",
-          "www.youtube-nocookie.com"
-        );
-        const url = new URL(base);
+        // Keep host as-is and avoid passing `origin` which can trigger
+        // YouTube "Video player configuration error" on some deployments.
+        const url = new URL(parsed.href);
         url.searchParams.set("rel", "0");
         url.searchParams.set("modestbranding", "1");
         url.searchParams.set("playsinline", "1");
-        if (typeof window !== "undefined" && window.location?.origin) {
-          url.searchParams.set("origin", window.location.origin);
-        }
+        url.searchParams.delete("origin");
         return url.toString();
       }
 

@@ -25,8 +25,8 @@
       "/*.jpg",
       "/*.jpeg",
       "/*.svg",
-      "/*.mp4",
-      "/*.webm",
+      "/**/*.mp4",
+      "/**/*.webm",
       "/LearnovateX.mp4"
     ]
   },
