@@ -3387,6 +3387,61 @@ const ResourcesPage = () => {
     toast.success("Link copied to clipboard!");
   };
 
+  const buildVideoEmbedSrc = (rawUrl) => {
+    if (!rawUrl) return "";
+
+    // Convert common YouTube URL formats to an embed URL.
+    try {
+      const parsed = new URL(rawUrl);
+
+      // https://youtu.be/<id>
+      if (parsed.hostname === "youtu.be") {
+        const youtubeId = parsed.pathname.replace(/^\//, "");
+        const base = `https://www.youtube-nocookie.com/embed/${youtubeId}`;
+        const params = new URLSearchParams({ rel: "0", modestbranding: "1", playsinline: "1" });
+        if (typeof window !== "undefined" && window.location?.origin) {
+          params.set("origin", window.location.origin);
+        }
+        return `${base}?${params.toString()}`;
+      }
+
+      // https://www.youtube.com/watch?v=<id>
+      if (parsed.hostname.includes("youtube.com") && parsed.pathname === "/watch") {
+        const youtubeId = parsed.searchParams.get("v");
+        if (youtubeId) {
+          const base = `https://www.youtube-nocookie.com/embed/${youtubeId}`;
+          const params = new URLSearchParams({ rel: "0", modestbranding: "1", playsinline: "1" });
+          if (typeof window !== "undefined" && window.location?.origin) {
+            params.set("origin", window.location.origin);
+          }
+          return `${base}?${params.toString()}`;
+        }
+      }
+
+      // Already embed (youtube or nocookie)
+      if (parsed.pathname.startsWith("/embed/")) {
+        const base = parsed.href.replace("www.youtube.com", "www.youtube-nocookie.com");
+        const url = new URL(base);
+        url.searchParams.set("rel", "0");
+        url.searchParams.set("modestbranding", "1");
+        url.searchParams.set("playsinline", "1");
+        if (typeof window !== "undefined" && window.location?.origin) {
+          url.searchParams.set("origin", window.location.origin);
+        }
+        return url.toString();
+      }
+
+      // Non-YouTube video URLs: preserve and append params safely.
+      const url = new URL(rawUrl);
+      url.searchParams.set("rel", "0");
+      url.searchParams.set("modestbranding", "1");
+      return url.toString();
+    } catch (e) {
+      // If it's not a valid URL, fall back.
+      return rawUrl;
+    }
+  };
+
   const getIcon = (type) => {
     switch (type) {
       case "docs":
@@ -4030,10 +4085,10 @@ const ResourcesPage = () => {
           <div className="aspect-video w-full bg-black">
             {videoModal.open && videoModal.url && (
               <iframe
-                src={`${videoModal.url}?rel=0&modestbranding=1`}
+                src={buildVideoEmbedSrc(videoModal.url)}
                 title={videoModal.title}
                 className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
               />
             )}

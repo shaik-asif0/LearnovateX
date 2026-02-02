@@ -55,6 +55,20 @@ import { useNavigate } from "react-router-dom";
 import axiosInstance from "../lib/axios";
 import { getUser } from "../lib/utils";
 import { toast } from "sonner";
+
+const buildYouTubeEmbedUrl = (youtubeId) => {
+  const base = `https://www.youtube-nocookie.com/embed/${youtubeId}`;
+  const params = new URLSearchParams({
+    rel: "0",
+    modestbranding: "1",
+    playsinline: "1",
+  });
+  if (typeof window !== "undefined" && window.location?.origin) {
+    params.set("origin", window.location.origin);
+  }
+  return `${base}?${params.toString()}`;
+};
+
 const LearningPathPage = () => {
   const navigate = useNavigate();
   const user = getUser();
@@ -2139,10 +2153,10 @@ const LearningPathPage = () => {
                   <iframe
                     width="100%"
                     height="100%"
-                    src={`https://www.youtube.com/embed/${currentLesson.youtubeId}?rel=0&modestbranding=1`}
+                    src={buildYouTubeEmbedUrl(currentLesson.youtubeId)}
                     title={currentLesson.title}
                     frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
                     className="w-full h-full"
                   />

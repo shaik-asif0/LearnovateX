@@ -38,7 +38,7 @@ const getCourseData = (courseId) => {
               type: "video",
               duration: "5:00",
               videoUrl:
-                "d:\\vs\\vscode-main\\frontend\\public\\Courses\\Full Stack Web learn\\Day 1 WELCOME + HTML\\Day - 01 WELCOME + HTML\\04. Introduction\\01. Welcome to Delta!.mp4",
+                "/Courses/Full%20Stack%20Web%20learn/Day%201%20WELCOME%20%2B%20HTML/Day%20-%2001%20WELCOME%20%2B%20HTML/04.%20Introduction/01.%20Welcome%20to%20Delta!.mp4",
               description: "Introduction to HTML and course curriculum.",
               locked: false,
             },
