@@ -3398,7 +3398,11 @@ const ResourcesPage = () => {
       if (parsed.hostname === "youtu.be") {
         const youtubeId = parsed.pathname.replace(/^\//, "");
         const base = `https://www.youtube-nocookie.com/embed/${youtubeId}`;
-        const params = new URLSearchParams({ rel: "0", modestbranding: "1", playsinline: "1" });
+        const params = new URLSearchParams({
+          rel: "0",
+          modestbranding: "1",
+          playsinline: "1",
+        });
         if (typeof window !== "undefined" && window.location?.origin) {
           params.set("origin", window.location.origin);
         }
@@ -3406,11 +3410,18 @@ const ResourcesPage = () => {
       }
 
       // https://www.youtube.com/watch?v=<id>
-      if (parsed.hostname.includes("youtube.com") && parsed.pathname === "/watch") {
+      if (
+        parsed.hostname.includes("youtube.com") &&
+        parsed.pathname === "/watch"
+      ) {
         const youtubeId = parsed.searchParams.get("v");
         if (youtubeId) {
           const base = `https://www.youtube-nocookie.com/embed/${youtubeId}`;
-          const params = new URLSearchParams({ rel: "0", modestbranding: "1", playsinline: "1" });
+          const params = new URLSearchParams({
+            rel: "0",
+            modestbranding: "1",
+            playsinline: "1",
+          });
           if (typeof window !== "undefined" && window.location?.origin) {
             params.set("origin", window.location.origin);
           }
@@ -3420,7 +3431,10 @@ const ResourcesPage = () => {
 
       // Already embed (youtube or nocookie)
       if (parsed.pathname.startsWith("/embed/")) {
-        const base = parsed.href.replace("www.youtube.com", "www.youtube-nocookie.com");
+        const base = parsed.href.replace(
+          "www.youtube.com",
+          "www.youtube-nocookie.com"
+        );
         const url = new URL(base);
         url.searchParams.set("rel", "0");
         url.searchParams.set("modestbranding", "1");
