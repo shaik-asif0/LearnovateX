@@ -168,7 +168,7 @@ const ResumeAnalyzer = () => {
       icon: BarChart3,
       title: "AI Credibility Score",
       desc: "Advanced ML model analyzes resume quality, authenticity, and market competitiveness",
-      color: "text-blue-400 bg-blue-500/20",
+      color: "text-orange-400 bg-orange-500/20",
       premium: false,
     },
     {
@@ -182,42 +182,42 @@ const ResumeAnalyzer = () => {
       icon: Target,
       title: "ATS Optimization",
       desc: "Checks resume compatibility with applicant tracking systems",
-      color: "text-green-400 bg-green-500/20",
+      color: "text-orange-400 bg-orange-500/20",
       premium: false,
     },
     {
       icon: Search,
       title: "Keyword Analysis",
       desc: "Identifies optimal keywords for your target industry and role",
-      color: "text-purple-400 bg-purple-500/20",
+      color: "text-orange-400 bg-orange-500/20",
       premium: true,
     },
     {
       icon: Briefcase,
       title: "Industry Matching",
       desc: "Matches your profile with relevant industries and job markets",
-      color: "text-cyan-400 bg-cyan-500/20",
+      color: "text-orange-400 bg-orange-500/20",
       premium: true,
     },
     {
       icon: TrendingUp,
       title: "Career Path Prediction",
       desc: "AI suggests optimal career progression based on your experience",
-      color: "text-pink-400 bg-pink-500/20",
+      color: "text-orange-400 bg-orange-500/20",
       premium: true,
     },
     {
       icon: Users,
       title: "Competitor Analysis",
       desc: "Compares your resume against similar profiles in your field",
-      color: "text-yellow-400 bg-yellow-500/20",
+      color: "text-orange-400 bg-orange-500/20",
       premium: true,
     },
     {
       icon: Sparkles,
       title: "Smart Recommendations",
       desc: "Personalized suggestions to improve your resume's impact",
-      color: "text-indigo-400 bg-indigo-500/20",
+      color: "text-orange-400 bg-orange-500/20",
       premium: false,
     },
   ];
@@ -369,20 +369,20 @@ const ResumeAnalyzer = () => {
   };
 
   const getScoreColor = (score) => {
-    if (score >= 80) return "text-green-400";
-    if (score >= 60) return "text-yellow-400";
+    if (score >= 80) return "text-orange-400";
+    if (score >= 60) return "text-orange-400";
     if (score >= 40) return "text-orange-400";
-    return "text-red-400";
+    return "text-orange-400";
   };
 
   const getScoreBg = (score) => {
     if (score >= 80)
-      return "from-green-500/20 to-green-600/10 border-green-500/30";
+      return "from-orange-500/20 to-orange-600/10 border-orange-500/30";
     if (score >= 60)
-      return "from-yellow-500/20 to-yellow-600/10 border-yellow-500/30";
+      return "from-orange-500/20 to-orange-600/10 border-orange-500/30";
     if (score >= 40)
       return "from-orange-500/20 to-orange-600/10 border-orange-500/30";
-    return "from-red-500/20 to-red-600/10 border-red-500/30";
+    return "from-orange-500/20 to-orange-600/10 border-orange-500/30";
   };
 
   const getScoreLabel = (score) => {
@@ -395,10 +395,10 @@ const ResumeAnalyzer = () => {
   };
 
   const getScoreIcon = (score) => {
-    if (score >= 80) return <Trophy className="w-6 h-6 text-green-400" />;
-    if (score >= 60) return <Award className="w-6 h-6 text-yellow-400" />;
+    if (score >= 80) return <Trophy className="w-6 h-6 text-orange-400" />;
+    if (score >= 60) return <Award className="w-6 h-6 text-orange-400" />;
     if (score >= 40) return <Target className="w-6 h-6 text-orange-400" />;
-    return <AlertTriangle className="w-6 h-6 text-red-400" />;
+    return <AlertTriangle className="w-6 h-6 text-orange-400" />;
   };
 
   const clearFile = () => {
@@ -488,25 +488,25 @@ const ResumeAnalyzer = () => {
       <main className="max-w-7xl mx-auto px-4 md:px-6 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div className="flex items-start sm:items-center gap-4">
               <div className="relative">
-                <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl shadow-lg shadow-purple-500/20">
+                <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl shadow-lg shadow-orange-500/20">
                   <FileText className="w-8 h-8 text-white" />
                 </div>
                 {isAnalyzing && (
-                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full animate-pulse"></div>
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full animate-pulse"></div>
                 )}
               </div>
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-2">
+                <h1 className="text-2xl md:text-3xl font-bold text-white flex flex-wrap items-center gap-2">
                   AI Resume Analyzer
-                  <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+                  <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
                     <Sparkles className="w-3 h-3 mr-1" />
                     Real-time AI
                   </Badge>
                   {isAnalyzing && (
-                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30 animate-pulse">
+                    <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 animate-pulse">
                       <Activity className="w-3 h-3 mr-1" />
                       Analyzing
                     </Badge>
@@ -517,7 +517,7 @@ const ResumeAnalyzer = () => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button
                 variant="outline"
                 size="sm"
@@ -526,7 +526,7 @@ const ResumeAnalyzer = () => {
               >
                 <MessageSquare className="w-4 h-4" />
                 {chatMessages.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full text-xs flex items-center justify-center">
                     {chatMessages.length}
                   </span>
                 )}
@@ -557,7 +557,7 @@ const ResumeAnalyzer = () => {
               >
                 <Bell className="w-4 h-4" />
                 {notifications.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full text-xs flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full text-xs flex items-center justify-center">
                     {notifications.length}
                   </span>
                 )}
@@ -566,10 +566,10 @@ const ResumeAnalyzer = () => {
                 <div
                   className={`w-2 h-2 rounded-full ${
                     connectionStatus === "connected"
-                      ? "bg-green-400"
+                      ? "bg-orange-400"
                       : connectionStatus === "connecting"
-                      ? "bg-yellow-400 animate-pulse"
-                      : "bg-red-400"
+                      ? "bg-orange-400 animate-pulse"
+                      : "bg-orange-400"
                   }`}
                 ></div>
                 <span className="text-xs text-zinc-400 capitalize">
@@ -591,16 +591,16 @@ const ResumeAnalyzer = () => {
 
           {/* Live Analysis Preview */}
           {isAnalyzing && (
-            <Card className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border-blue-500/30 mb-6">
+            <Card className="bg-gradient-to-r from-orange-900/20 to-orange-900/20 border-orange-500/30 mb-6">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-blue-400" />
+                    <Activity className="w-4 h-4 text-orange-400" />
                     <span className="text-sm font-medium text-white">
                       Live Analysis
                     </span>
                   </div>
-                  <Badge className="bg-blue-500/20 text-blue-400">
+                  <Badge className="bg-orange-500/20 text-orange-400">
                     {Math.round(realTimeScore)}/100
                   </Badge>
                 </div>
@@ -616,7 +616,7 @@ const ResumeAnalyzer = () => {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
             <Card className="bg-gradient-to-br from-zinc-900 to-zinc-800 border-zinc-700 hover:border-zinc-600 transition-colors">
               <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <div className="p-2.5 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
                   <FileCheck className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -629,7 +629,7 @@ const ResumeAnalyzer = () => {
             </Card>
             <Card className="bg-gradient-to-br from-zinc-900 to-zinc-800 border-zinc-700 hover:border-zinc-600 transition-colors">
               <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center">
+                <div className="p-2.5 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
                   <TrendingUp className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -649,7 +649,7 @@ const ResumeAnalyzer = () => {
             </Card>
             <Card className="bg-gradient-to-br from-zinc-900 to-zinc-800 border-zinc-700 hover:border-zinc-600 transition-colors">
               <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center">
+                <div className="p-2.5 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
                   <Lightbulb className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -665,7 +665,7 @@ const ResumeAnalyzer = () => {
             </Card>
             <Card className="bg-gradient-to-br from-zinc-900 to-zinc-800 border-zinc-700 hover:border-zinc-600 transition-colors">
               <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                <div className="p-2.5 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
                   <Brain className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -676,7 +676,7 @@ const ResumeAnalyzer = () => {
             </Card>
             <Card className="bg-gradient-to-br from-zinc-900 to-zinc-800 border-zinc-700 hover:border-zinc-600 transition-colors">
               <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-r from-pink-500 to-pink-600 rounded-xl flex items-center justify-center">
+                <div className="p-2.5 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
                   <Award className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -731,11 +731,11 @@ const ResumeAnalyzer = () => {
           <TabsContent value="upload" className="space-y-6">
             {/* Comparison Mode Banner */}
             {comparisonMode && (
-              <Card className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border-blue-500/30">
+              <Card className="bg-gradient-to-r from-orange-900/20 to-orange-900/20 border-orange-500/30">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <GitCompare className="w-5 h-5 text-blue-400" />
+                      <GitCompare className="w-5 h-5 text-orange-400" />
                       <div>
                         <p className="text-white font-medium">
                           Comparison Mode Active
@@ -769,7 +769,7 @@ const ResumeAnalyzer = () => {
               <Card className="bg-zinc-900 border-zinc-800">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
-                    <Upload className="w-5 h-5 text-purple-400" />
+                    <Upload className="w-5 h-5 text-orange-400" />
                     Upload Resume
                   </CardTitle>
                   <CardDescription className="text-zinc-400">
@@ -782,17 +782,17 @@ const ResumeAnalyzer = () => {
                     data-testid="dropzone"
                     className={`relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300 ${
                       isDragActive
-                        ? "border-purple-500 bg-purple-500/10 scale-[1.02]"
+                        ? "border-orange-500 bg-orange-500/10 scale-[1.02]"
                         : file
-                        ? "border-green-500/50 bg-green-500/5"
+                        ? "border-orange-500/50 bg-orange-500/5"
                         : "border-zinc-700 hover:border-zinc-500 hover:bg-zinc-800/50"
                     }`}
                   >
                     <input {...getInputProps()} />
                     {file ? (
                       <div className="space-y-3">
-                        <div className="w-16 h-16 mx-auto bg-green-500/20 rounded-full flex items-center justify-center">
-                          <FileCheck className="w-8 h-8 text-green-400" />
+                        <div className="w-16 h-16 mx-auto bg-orange-500/20 rounded-full flex items-center justify-center">
+                          <FileCheck className="w-8 h-8 text-orange-400" />
                         </div>
                         <div>
                           <p className="font-semibold text-white text-lg">
@@ -809,7 +809,7 @@ const ResumeAnalyzer = () => {
                             e.stopPropagation();
                             clearFile();
                           }}
-                          className="text-zinc-400 hover:text-red-400"
+                          className="text-zinc-400 hover:text-orange-400"
                         >
                           <Trash2 className="w-4 h-4 mr-1" />
                           Remove
@@ -866,9 +866,9 @@ const ResumeAnalyzer = () => {
                               key={index}
                               className={`flex items-center gap-3 p-2 rounded-lg transition-all ${
                                 isActive
-                                  ? "bg-purple-500/20 text-purple-400"
+                                  ? "bg-orange-500/20 text-orange-400"
                                   : isComplete
-                                  ? "text-green-400"
+                                  ? "text-orange-400"
                                   : "text-zinc-500"
                               }`}
                             >
@@ -894,13 +894,13 @@ const ResumeAnalyzer = () => {
                           </p>
                           <div className="flex gap-2 flex-wrap">
                             {voiceAnalysis && (
-                              <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+                              <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
                                 <Mic className="w-3 h-3 mr-1" />
                                 Voice Analysis
                               </Badge>
                             )}
                             {videoAnalysis && (
-                              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                              <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
                                 <Video className="w-3 h-3 mr-1" />
                                 Video Analysis
                               </Badge>
@@ -915,7 +915,7 @@ const ResumeAnalyzer = () => {
                     data-testid="analyze-btn"
                     onClick={handleAnalyze}
                     disabled={!file || loading}
-                    className="w-full rounded-xl font-semibold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white h-12 text-base"
+                    className="w-full rounded-xl font-semibold bg-gradient-to-r from-orange-600 to-orange-600 hover:from-orange-700 hover:to-orange-700 text-white h-12 text-base"
                     size="lg"
                   >
                     {loading ? (
@@ -937,7 +937,7 @@ const ResumeAnalyzer = () => {
               <Card className="bg-zinc-900 border-zinc-800">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-yellow-400" />
+                    <Zap className="w-5 h-5 text-orange-400" />
                     What You'll Get
                   </CardTitle>
                 </CardHeader>
@@ -947,7 +947,7 @@ const ResumeAnalyzer = () => {
                       icon: BarChart3,
                       title: "Credibility Score",
                       desc: "AI-powered score from 0-100 based on resume quality",
-                      color: "text-blue-400 bg-blue-500/20",
+                      color: "text-orange-400 bg-orange-500/20",
                     },
                     {
                       icon: AlertTriangle,
@@ -959,25 +959,25 @@ const ResumeAnalyzer = () => {
                       icon: Lightbulb,
                       title: "Smart Suggestions",
                       desc: "Personalized tips to improve your resume",
-                      color: "text-yellow-400 bg-yellow-500/20",
+                      color: "text-orange-400 bg-orange-500/20",
                     },
                     {
                       icon: Brain,
                       title: "Detailed Analysis",
                       desc: "Comprehensive AI review of content and structure",
-                      color: "text-purple-400 bg-purple-500/20",
+                      color: "text-orange-400 bg-orange-500/20",
                     },
                     {
                       icon: Target,
                       title: "ATS Compatibility",
                       desc: "Check if your resume passes applicant tracking systems",
-                      color: "text-green-400 bg-green-500/20",
+                      color: "text-orange-400 bg-orange-500/20",
                     },
                     {
                       icon: TrendingUp,
                       title: "Improvement Tracking",
                       desc: "Track your resume score over time",
-                      color: "text-pink-400 bg-pink-500/20",
+                      color: "text-orange-400 bg-orange-500/20",
                     },
                   ].map((feature, index) => (
                     <div
@@ -1014,10 +1014,10 @@ const ResumeAnalyzer = () => {
                     <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                       <div className="flex items-center gap-6">
                         <div className="relative">
-                          <div className="w-32 h-32 rounded-full bg-zinc-900/50 flex items-center justify-center">
+                          <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-zinc-900/50 flex items-center justify-center">
                             <div className="text-center">
                               <p
-                                className={`text-5xl font-bold ${getScoreColor(
+                                className={`text-3xl sm:text-5xl font-bold ${getScoreColor(
                                   analysis.credibility_score
                                 )}`}
                               >
@@ -1110,9 +1110,9 @@ const ResumeAnalyzer = () => {
                           ))}
                         </div>
                       ) : (
-                        <div className="flex items-center gap-3 p-4 bg-green-500/10 rounded-lg border border-green-500/20">
-                          <CheckCircle2 className="w-5 h-5 text-green-400" />
-                          <span className="text-green-400">
+                        <div className="flex items-center gap-3 p-4 bg-orange-500/10 rounded-lg border border-orange-500/20">
+                          <CheckCircle2 className="w-5 h-5 text-orange-400" />
+                          <span className="text-orange-400">
                             No questionable skills detected! Great job.
                           </span>
                         </div>
@@ -1124,7 +1124,7 @@ const ResumeAnalyzer = () => {
                   <Card className="bg-zinc-900 border-zinc-800">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-white flex items-center gap-2 text-lg">
-                        <Lightbulb className="w-5 h-5 text-yellow-400" />
+                        <Lightbulb className="w-5 h-5 text-orange-400" />
                         Improvement Suggestions
                       </CardTitle>
                       <CardDescription className="text-zinc-400">
@@ -1140,8 +1140,8 @@ const ResumeAnalyzer = () => {
                               key={i}
                               className="flex items-start gap-3 p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors"
                             >
-                              <div className="p-1 bg-yellow-500/20 rounded">
-                                <ChevronRight className="w-3 h-3 text-yellow-400" />
+                              <div className="p-1 bg-orange-500/20 rounded">
+                                <ChevronRight className="w-3 h-3 text-orange-400" />
                               </div>
                               <span className="text-sm text-zinc-300">
                                 {suggestion.replace(/^[-•]\s*/, "")}
@@ -1165,7 +1165,7 @@ const ResumeAnalyzer = () => {
                     <Card className="bg-zinc-900 border-zinc-800">
                       <CardHeader className="pb-3">
                         <CardTitle className="text-white flex items-center gap-2 text-lg">
-                          <Shield className="w-5 h-5 text-blue-400" />
+                          <Shield className="w-5 h-5 text-orange-400" />
                           Skill Verification
                         </CardTitle>
                         <CardDescription className="text-zinc-400">
@@ -1185,7 +1185,7 @@ const ResumeAnalyzer = () => {
                                     {skill.confidence}%
                                   </span>
                                   {skill.verified ? (
-                                    <CheckCircle2 className="w-4 h-4 text-green-400" />
+                                    <CheckCircle2 className="w-4 h-4 text-orange-400" />
                                   ) : (
                                     <AlertTriangle className="w-4 h-4 text-orange-400" />
                                   )}
@@ -1207,7 +1207,7 @@ const ResumeAnalyzer = () => {
                     <Card className="bg-zinc-900 border-zinc-800">
                       <CardHeader className="pb-3">
                         <CardTitle className="text-white flex items-center gap-2 text-lg">
-                          <Search className="w-5 h-5 text-purple-400" />
+                          <Search className="w-5 h-5 text-orange-400" />
                           Keyword Analysis
                         </CardTitle>
                         <CardDescription className="text-zinc-400">
@@ -1228,9 +1228,9 @@ const ResumeAnalyzer = () => {
                                 <Badge
                                   className={`text-xs ${
                                     keyword.relevance >= 90
-                                      ? "bg-green-500/20 text-green-400"
+                                      ? "bg-orange-500/20 text-orange-400"
                                       : keyword.relevance >= 80
-                                      ? "bg-yellow-500/20 text-yellow-400"
+                                      ? "bg-orange-500/20 text-orange-400"
                                       : "bg-orange-500/20 text-orange-400"
                                   }`}
                                 >
@@ -1252,7 +1252,7 @@ const ResumeAnalyzer = () => {
                     <Card className="bg-zinc-900 border-zinc-800">
                       <CardHeader className="pb-3">
                         <CardTitle className="text-white flex items-center gap-2 text-lg">
-                          <Target className="w-5 h-5 text-green-400" />
+                          <Target className="w-5 h-5 text-orange-400" />
                           ATS Compatibility
                         </CardTitle>
                         <CardDescription className="text-zinc-400">
@@ -1272,7 +1272,7 @@ const ResumeAnalyzer = () => {
                                 stroke="currentColor"
                                 strokeWidth="2"
                                 strokeDasharray={`${atsScore}, 100`}
-                                className="text-green-400"
+                                className="text-orange-400"
                               />
                             </svg>
                             <div className="absolute inset-0 flex items-center justify-center">
@@ -1298,7 +1298,7 @@ const ResumeAnalyzer = () => {
                     <Card className="bg-zinc-900 border-zinc-800">
                       <CardHeader className="pb-3">
                         <CardTitle className="text-white flex items-center gap-2 text-lg">
-                          <Briefcase className="w-5 h-5 text-cyan-400" />
+                          <Briefcase className="w-5 h-5 text-orange-400" />
                           Industry Match
                         </CardTitle>
                         <CardDescription className="text-zinc-400">
@@ -1306,8 +1306,8 @@ const ResumeAnalyzer = () => {
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <div className="flex items-center gap-3 p-4 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
-                          <Briefcase className="w-8 h-8 text-cyan-400" />
+                        <div className="flex items-center gap-3 p-4 bg-orange-500/10 rounded-lg border border-orange-500/20">
+                          <Briefcase className="w-8 h-8 text-orange-400" />
                           <div>
                             <p className="font-medium text-white">
                               {industryMatch}
@@ -1326,7 +1326,7 @@ const ResumeAnalyzer = () => {
                     <Card className="bg-zinc-900 border-zinc-800">
                       <CardHeader className="pb-3">
                         <CardTitle className="text-white flex items-center gap-2 text-lg">
-                          <TrendingUp className="w-5 h-5 text-pink-400" />
+                          <TrendingUp className="w-5 h-5 text-orange-400" />
                           Career Path
                         </CardTitle>
                         <CardDescription className="text-zinc-400">
@@ -1338,10 +1338,10 @@ const ResumeAnalyzer = () => {
                           {careerSuggestions.map((career, i) => (
                             <div
                               key={i}
-                              className="flex items-center gap-3 p-3 bg-pink-500/10 rounded-lg border border-pink-500/20"
+                              className="flex items-center gap-3 p-3 bg-orange-500/10 rounded-lg border border-orange-500/20"
                             >
-                              <div className="p-1 bg-pink-500/20 rounded">
-                                <ChevronRight className="w-4 h-4 text-pink-400" />
+                              <div className="p-1 bg-orange-500/20 rounded">
+                                <ChevronRight className="w-4 h-4 text-orange-400" />
                               </div>
                               <span className="text-sm font-medium text-white">
                                 {career}
@@ -1358,7 +1358,7 @@ const ResumeAnalyzer = () => {
                     <Card className="bg-zinc-900 border-zinc-800">
                       <CardHeader className="pb-3">
                         <CardTitle className="text-white flex items-center gap-2 text-lg">
-                          <Users className="w-5 h-5 text-yellow-400" />
+                          <Users className="w-5 h-5 text-orange-400" />
                           Market Position
                         </CardTitle>
                         <CardDescription className="text-zinc-400">
@@ -1379,9 +1379,9 @@ const ResumeAnalyzer = () => {
                                 <Badge
                                   className={`text-xs ${
                                     competitor.score >= 80
-                                      ? "bg-green-500/20 text-green-400"
+                                      ? "bg-orange-500/20 text-orange-400"
                                       : competitor.score >= 70
-                                      ? "bg-yellow-500/20 text-yellow-400"
+                                      ? "bg-orange-500/20 text-orange-400"
                                       : "bg-orange-500/20 text-orange-400"
                                   }`}
                                 >
@@ -1404,7 +1404,7 @@ const ResumeAnalyzer = () => {
                   <Card className="bg-zinc-900 border-zinc-800">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-white flex items-center gap-2 text-lg">
-                        <Sparkles className="w-5 h-5 text-indigo-400" />
+                        <Sparkles className="w-5 h-5 text-orange-400" />
                         Recommended Templates
                       </CardTitle>
                       <CardDescription className="text-zinc-400">
@@ -1422,7 +1422,7 @@ const ResumeAnalyzer = () => {
                               <span className="text-sm font-medium text-white">
                                 {template.name}
                               </span>
-                              <Badge className="bg-indigo-500/20 text-indigo-400 text-xs">
+                              <Badge className="bg-orange-500/20 text-orange-400 text-xs">
                                 {template.suitability}%
                               </Badge>
                             </div>
@@ -1463,26 +1463,26 @@ const ResumeAnalyzer = () => {
                     onClick={() => setVoiceAnalysis(!voiceAnalysis)}
                     variant="outline"
                     className={`gap-2 border-zinc-700 text-white hover:bg-zinc-800 ${
-                      voiceAnalysis ? "bg-purple-500/20 border-purple-500" : ""
+                      voiceAnalysis ? "bg-orange-500/20 border-orange-500" : ""
                     }`}
                   >
                     <Mic className="w-4 h-4" />
                     Voice Analysis{" "}
                     {voiceAnalysis && (
-                      <CheckCircle2 className="w-3 h-3 text-green-400" />
+                      <CheckCircle2 className="w-3 h-3 text-orange-400" />
                     )}
                   </Button>
                   <Button
                     onClick={() => setVideoAnalysis(!videoAnalysis)}
                     variant="outline"
                     className={`gap-2 border-zinc-700 text-white hover:bg-zinc-800 ${
-                      videoAnalysis ? "bg-blue-500/20 border-blue-500" : ""
+                      videoAnalysis ? "bg-orange-500/20 border-orange-500" : ""
                     }`}
                   >
                     <Video className="w-4 h-4" />
                     Video Analysis{" "}
                     {videoAnalysis && (
-                      <CheckCircle2 className="w-3 h-3 text-green-400" />
+                      <CheckCircle2 className="w-3 h-3 text-orange-400" />
                     )}
                   </Button>
                 </div>
@@ -1493,7 +1493,7 @@ const ResumeAnalyzer = () => {
                     <div className="flex items-center justify-between">
                       <div>
                         <CardTitle className="text-white flex items-center gap-2 text-lg">
-                          <Brain className="w-5 h-5 text-purple-400" />
+                          <Brain className="w-5 h-5 text-orange-400" />
                           Detailed AI Analysis
                         </CardTitle>
                         <CardDescription className="text-zinc-400">
@@ -1524,12 +1524,12 @@ const ResumeAnalyzer = () => {
                 </Card>
 
                 {/* Quick Actions */}
-                <Card className="bg-gradient-to-r from-purple-900/20 via-zinc-900 to-pink-900/20 border-zinc-700">
+                <Card className="bg-gradient-to-r from-orange-900/20 via-zinc-900 to-orange-900/20 border-zinc-700">
                   <CardContent className="p-6">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
-                        <div className="p-3 bg-purple-500/20 rounded-xl">
-                          <Flame className="w-8 h-8 text-purple-400" />
+                        <div className="p-3 bg-orange-500/20 rounded-xl">
+                          <Flame className="w-8 h-8 text-orange-400" />
                         </div>
                         <div>
                           <h3 className="text-lg font-semibold text-white">
@@ -1543,7 +1543,7 @@ const ResumeAnalyzer = () => {
                       <div className="flex gap-3">
                         <Button
                           onClick={() => (window.location.href = "/tutor")}
-                          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                          className="bg-gradient-to-r from-orange-600 to-orange-600 hover:from-orange-700 hover:to-orange-700 text-white"
                         >
                           <Brain className="w-4 h-4 mr-2" />
                           Ask AI Tutor
@@ -1570,7 +1570,7 @@ const ResumeAnalyzer = () => {
             <Card className="bg-zinc-900 border-zinc-800">
               <CardHeader className="pb-3">
                 <CardTitle className="text-white flex items-center gap-2">
-                  <Filter className="w-5 h-5 text-blue-400" />
+                  <Filter className="w-5 h-5 text-orange-400" />
                   Advanced Filters
                 </CardTitle>
               </CardHeader>
@@ -1597,7 +1597,7 @@ const ResumeAnalyzer = () => {
                           sortBy: e.target.value,
                         }))
                       }
-                      className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-zinc-300 focus:outline-none focus:border-blue-500"
+                      className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-zinc-300 focus:outline-none focus:border-orange-500"
                     >
                       <option value="date">Date</option>
                       <option value="score">Score</option>
@@ -1618,7 +1618,7 @@ const ResumeAnalyzer = () => {
                           industry: e.target.value,
                         }))
                       }
-                      className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-zinc-300 placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+                      className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-zinc-300 placeholder-zinc-500 focus:outline-none focus:border-orange-500"
                     />
                   </div>
                   <div className="flex items-end">
@@ -1646,7 +1646,7 @@ const ResumeAnalyzer = () => {
             <Card className="bg-zinc-900 border-zinc-800">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <History className="w-5 h-5 text-purple-400" />
+                  <History className="w-5 h-5 text-orange-400" />
                   Analysis History ({analysisHistory.length})
                 </CardTitle>
                 <CardDescription className="text-zinc-400">
@@ -1753,9 +1753,9 @@ const ResumeAnalyzer = () => {
                                 e.stopPropagation();
                                 toggleBookmark(item.id);
                               }}
-                              className={`text-zinc-400 hover:text-yellow-400 ${
+                              className={`text-zinc-400 hover:text-orange-400 ${
                                 bookmarks.includes(item.id)
-                                  ? "text-yellow-400"
+                                  ? "text-orange-400"
                                   : ""
                               }`}
                             >
@@ -1768,9 +1768,9 @@ const ResumeAnalyzer = () => {
                                 e.stopPropagation();
                                 toggleFavorite(item.id);
                               }}
-                              className={`text-zinc-400 hover:text-red-400 ${
+                              className={`text-zinc-400 hover:text-orange-400 ${
                                 favorites.includes(item.id)
-                                  ? "text-red-400"
+                                  ? "text-orange-400"
                                   : ""
                               }`}
                             >
@@ -1788,7 +1788,7 @@ const ResumeAnalyzer = () => {
                                   "Resume selected for comparison!"
                                 );
                               }}
-                              className="text-zinc-400 hover:text-blue-400"
+                              className="text-zinc-400 hover:text-orange-400"
                             >
                               <GitCompare className="w-4 h-4" />
                             </Button>
@@ -1816,7 +1816,7 @@ const ResumeAnalyzer = () => {
         <div className="fixed bottom-4 right-4 w-80 h-96 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-zinc-700">
             <h3 className="text-white font-semibold flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-blue-400" />
+              <MessageSquare className="w-5 h-5 text-orange-400" />
               AI Assistant
             </h3>
             <Button
@@ -1831,7 +1831,7 @@ const ResumeAnalyzer = () => {
           <div className="flex-1 p-4 overflow-y-auto space-y-3">
             {chatMessages.length === 0 ? (
               <div className="text-center text-zinc-400">
-                <Bot className="w-8 h-8 mx-auto mb-2 text-blue-400" />
+                <Bot className="w-8 h-8 mx-auto mb-2 text-orange-400" />
                 <p>
                   Hi! I'm your AI assistant. How can I help you with your resume
                   analysis?
@@ -1848,7 +1848,7 @@ const ResumeAnalyzer = () => {
                   <div
                     className={`max-w-xs p-3 rounded-lg ${
                       msg.sender === "user"
-                        ? "bg-blue-600 text-white"
+                        ? "bg-orange-600 text-white"
                         : "bg-zinc-800 text-zinc-300"
                     }`}
                   >
@@ -1863,7 +1863,7 @@ const ResumeAnalyzer = () => {
               <input
                 type="text"
                 placeholder="Ask me anything..."
-                className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:border-blue-500"
+                className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:border-orange-500"
                 onKeyPress={(e) => {
                   if (e.key === "Enter" && e.target.value.trim()) {
                     const newMessage = {
@@ -1894,7 +1894,7 @@ const ResumeAnalyzer = () => {
                   }
                 }}
               />
-              <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+              <Button size="sm" className="bg-orange-600 hover:bg-orange-700">
                 <Send className="w-4 h-4" />
               </Button>
             </div>
@@ -1907,7 +1907,7 @@ const ResumeAnalyzer = () => {
         <div className="fixed top-4 right-4 w-80 max-h-96 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 overflow-hidden">
           <div className="flex items-center justify-between p-4 border-b border-zinc-700">
             <h3 className="text-white font-semibold flex items-center gap-2">
-              <Bell className="w-5 h-5 text-yellow-400" />
+              <Bell className="w-5 h-5 text-orange-400" />
               Notifications ({notifications.length})
             </h3>
             <Button
@@ -1929,22 +1929,22 @@ const ResumeAnalyzer = () => {
                   <div
                     className={`p-1 rounded-full ${
                       notification.type === "success"
-                        ? "bg-green-500/20"
+                        ? "bg-orange-500/20"
                         : notification.type === "error"
-                        ? "bg-red-500/20"
+                        ? "bg-orange-500/20"
                         : notification.type === "warning"
-                        ? "bg-yellow-500/20"
-                        : "bg-blue-500/20"
+                        ? "bg-orange-500/20"
+                        : "bg-orange-500/20"
                     }`}
                   >
                     {notification.type === "success" ? (
-                      <CheckCircle2 className="w-4 h-4 text-green-400" />
+                      <CheckCircle2 className="w-4 h-4 text-orange-400" />
                     ) : notification.type === "error" ? (
-                      <AlertTriangle className="w-4 h-4 text-red-400" />
+                      <AlertTriangle className="w-4 h-4 text-orange-400" />
                     ) : notification.type === "warning" ? (
-                      <AlertCircle className="w-4 h-4 text-yellow-400" />
+                      <AlertCircle className="w-4 h-4 text-orange-400" />
                     ) : (
-                      <Info className="w-4 h-4 text-blue-400" />
+                      <Info className="w-4 h-4 text-orange-400" />
                     )}
                   </div>
                   <div className="flex-1">

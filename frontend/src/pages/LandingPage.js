@@ -39,7 +39,7 @@ const LandingPage = () => {
       title: "AI Personal Tutor",
       description:
         "Get personalized explanations for Python, Java, DSA, SQL, and more with adaptive learning powered by Azure OpenAI.",
-      gradient: "from-purple-500 to-purple-600",
+      gradient: "from-orange-500 to-orange-600",
       details: [
         "24/7 AI assistance",
         "Adaptive difficulty",
@@ -51,7 +51,7 @@ const LandingPage = () => {
       title: "Code Evaluation",
       description:
         "Real-time code analysis with complexity checks, optimization suggestions, and plagiarism detection.",
-      gradient: "from-green-500 to-green-600",
+      gradient: "from-orange-500 to-orange-600",
       details: ["Syntax validation", "Performance metrics", "Best practices"],
     },
     {
@@ -59,7 +59,7 @@ const LandingPage = () => {
       title: "Coding Arena",
       description:
         "Challenge yourself with interactive coding problems, compete with peers, and improve your problem-solving skills.",
-      gradient: "from-red-500 to-red-600",
+      gradient: "from-orange-500 to-orange-600",
       details: ["Daily challenges", "Competitive coding", "Skill assessment"],
     },
     {
@@ -75,7 +75,7 @@ const LandingPage = () => {
       title: "Mock Interviews",
       description:
         "Practice with AI-powered interview simulations, get detailed feedback, and improve your communication skills.",
-      gradient: "from-pink-500 to-pink-600",
+      gradient: "from-orange-500 to-orange-600",
       details: [
         "Technical interviews",
         "Behavioral questions",
@@ -87,7 +87,7 @@ const LandingPage = () => {
       title: "Career Dashboard",
       description:
         "Track your progress, skill mastery, interview readiness, and career milestones in one comprehensive dashboard.",
-      gradient: "from-blue-500 to-blue-600",
+      gradient: "from-orange-500 to-orange-600",
       details: ["Progress tracking", "Skill analytics", "Career insights"],
     },
     {
@@ -95,7 +95,7 @@ const LandingPage = () => {
       title: "Leaderboard & Achievements",
       description:
         "Compete with fellow learners, earn badges, and showcase your achievements in our gamified learning environment.",
-      gradient: "from-yellow-500 to-yellow-600",
+      gradient: "from-orange-500 to-orange-600",
       details: ["Global rankings", "Achievement badges", "Progress rewards"],
     },
     {
@@ -103,7 +103,7 @@ const LandingPage = () => {
       title: "Learning Roadmaps",
       description:
         "Follow structured career paths for Backend, Mobile, DevOps, Data Science, UI/UX, Cybersecurity, and QA engineering.",
-      gradient: "from-cyan-500 to-cyan-600",
+      gradient: "from-orange-500 to-orange-600",
       details: ["Career paths", "Skill progression", "Industry standards"],
     },
     {
@@ -111,7 +111,7 @@ const LandingPage = () => {
       title: "Company Portal",
       description:
         "Create assessments, evaluate candidates, and streamline hiring with AI-powered recruitment tools.",
-      gradient: "from-indigo-500 to-indigo-600",
+      gradient: "from-orange-500 to-orange-600",
       details: [
         "Candidate screening",
         "Assessment creation",
@@ -123,7 +123,7 @@ const LandingPage = () => {
       title: "AI Tutor Sessions",
       description:
         "One-on-one AI tutoring sessions tailored to your learning pace and style with interactive problem-solving.",
-      gradient: "from-violet-500 to-violet-600",
+      gradient: "from-orange-500 to-orange-600",
       details: [
         "Personalized learning",
         "Interactive sessions",
@@ -135,7 +135,7 @@ const LandingPage = () => {
       title: "Resources Hub",
       description:
         "Access comprehensive learning resources, documentation, and tools to accelerate your development journey.",
-      gradient: "from-teal-500 to-teal-600",
+      gradient: "from-orange-500 to-orange-600",
       details: ["Documentation", "Code examples", "Learning materials"],
     },
     {
@@ -143,7 +143,7 @@ const LandingPage = () => {
       title: "Career Readiness",
       description:
         "Comprehensive career preparation with interview tips, salary negotiation, and job search strategies.",
-      gradient: "from-emerald-500 to-emerald-600",
+      gradient: "from-orange-500 to-orange-600",
       details: ["Interview prep", "Salary negotiation", "Job search tips"],
     },
   ];
@@ -151,83 +151,83 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Hero Section */}
-      <section className="relative overflow-hidden min-h-screen flex items-center">
+      <section className="relative overflow-hidden min-h-[100dvh] md:min-h-screen flex items-center">
         {/* Enhanced liquid background effects with animation */}
         <div className="absolute inset-0 opacity-40">
-          <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute top-20 left-20 w-56 h-56 sm:w-72 sm:h-72 bg-gradient-to-r from-orange-500/20 to-orange-600/20 rounded-full blur-3xl animate-pulse"></div>
           <div
-            className="absolute bottom-20 right-20 w-96 h-96 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-full blur-3xl animate-pulse"
+            className="absolute bottom-20 right-20 w-72 h-72 sm:w-96 sm:h-96 bg-gradient-to-r from-orange-500/20 to-orange-600/20 rounded-full blur-3xl animate-pulse"
             style={{ animationDelay: "2s" }}
           ></div>
           <div
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full blur-3xl animate-pulse"
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-56 h-56 sm:w-64 sm:h-64 bg-gradient-to-r from-orange-500/20 to-orange-600/20 rounded-full blur-3xl animate-pulse"
             style={{ animationDelay: "4s" }}
           ></div>
           {/* Animated gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/5 to-transparent animate-pulse opacity-50"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-orange-500/5 to-transparent animate-pulse opacity-50"></div>
           {/* Floating particles with enhanced animation */}
           <div
-            className="absolute top-1/4 left-1/4 w-2 h-2 bg-blue-400 rounded-full animate-bounce opacity-60"
+            className="absolute top-1/4 left-1/4 w-2 h-2 bg-orange-400 rounded-full animate-bounce opacity-60"
             style={{ animationDelay: "1s", animationDuration: "3s" }}
           ></div>
           <div
-            className="absolute top-3/4 right-1/4 w-1 h-1 bg-purple-400 rounded-full animate-bounce opacity-40"
+            className="absolute top-3/4 right-1/4 w-1 h-1 bg-orange-400 rounded-full animate-bounce opacity-40"
             style={{ animationDelay: "3s", animationDuration: "4s" }}
           ></div>
           <div
-            className="absolute bottom-1/4 left-1/3 w-1.5 h-1.5 bg-green-400 rounded-full animate-bounce opacity-50"
+            className="absolute bottom-1/4 left-1/3 w-1.5 h-1.5 bg-orange-400 rounded-full animate-bounce opacity-50"
             style={{ animationDelay: "5s", animationDuration: "2.5s" }}
           ></div>
           <div
-            className="absolute top-1/3 right-1/3 w-1 h-1 bg-pink-400 rounded-full animate-ping opacity-30"
+            className="absolute top-1/3 right-1/3 w-1 h-1 bg-orange-400 rounded-full animate-ping opacity-30"
             style={{ animationDelay: "2s" }}
           ></div>
           <div
-            className="absolute bottom-1/3 left-1/4 w-0.5 h-0.5 bg-cyan-400 rounded-full animate-pulse opacity-70"
+            className="absolute bottom-1/3 left-1/4 w-0.5 h-0.5 bg-orange-400 rounded-full animate-pulse opacity-70"
             style={{ animationDelay: "4s" }}
           ></div>
         </div>
 
         {/* Floating Icons */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none hidden sm:block">
           <BookOpen
-            className="absolute top-20 left-20 w-8 h-8 text-blue-300 opacity-20 animate-bounce"
+            className="absolute top-20 left-20 w-8 h-8 text-orange-300 opacity-20 animate-bounce"
             style={{ animationDelay: "0s", animationDuration: "3s" }}
           />
           <Code
-            className="absolute top-32 right-32 w-6 h-6 text-purple-300 opacity-25 animate-pulse"
+            className="absolute top-32 right-32 w-6 h-6 text-orange-300 opacity-25 animate-pulse"
             style={{ animationDelay: "1s" }}
           />
           <GraduationCap
-            className="absolute bottom-32 left-24 w-7 h-7 text-green-300 opacity-20 animate-bounce"
+            className="absolute bottom-32 left-24 w-7 h-7 text-orange-300 opacity-20 animate-bounce"
             style={{ animationDelay: "2s", animationDuration: "4s" }}
           />
           <Target
-            className="absolute bottom-20 right-20 w-5 h-5 text-pink-300 opacity-30 animate-pulse"
+            className="absolute bottom-20 right-20 w-5 h-5 text-orange-300 opacity-30 animate-pulse"
             style={{ animationDelay: "0.5s" }}
           />
           <TrendingUp
-            className="absolute top-1/2 left-10 w-6 h-6 text-indigo-300 opacity-25 animate-bounce"
+            className="absolute top-1/2 left-10 w-6 h-6 text-orange-300 opacity-25 animate-bounce"
             style={{ animationDelay: "1.5s", animationDuration: "3.5s" }}
           />
           <Users
-            className="absolute top-1/3 right-10 w-7 h-7 text-cyan-300 opacity-20 animate-pulse"
+            className="absolute top-1/3 right-10 w-7 h-7 text-orange-300 opacity-20 animate-pulse"
             style={{ animationDelay: "2.5s" }}
           />
         </div>
 
-        <div className="max-w-7xl mx-auto px-6 py-24 md:py-32 relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-24 md:py-32 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 sm:gap-12 items-center">
             <div className="col-span-full md:col-span-7 space-y-8">
               <div className="space-y-4">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 text-blue-300 text-sm font-medium animate-pulse">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-orange-500/10 to-orange-500/10 border border-orange-500/20 text-orange-300 text-sm font-medium animate-pulse">
                   <Sparkles className="w-4 h-4 animate-spin" />
                   AI-Powered Learning Platform
                 </div>
-                <h1 className="text-4xl md:text-7xl font-bold tracking-tight text-white leading-tight">
+                <h1 className="text-3xl sm:text-4xl md:text-7xl font-bold tracking-tight text-white leading-tight">
                   Master Skills.
                   <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 animate-pulse bg-[length:200%_200%] animate-gradient-x">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-orange-400 to-orange-400 animate-pulse bg-[length:200%_200%] animate-gradient-x">
                     Ace Interviews.
                   </span>
                   <br />
@@ -240,16 +240,16 @@ const LandingPage = () => {
                 </h1>
               </div>
               <p className="text-lg md:text-xl text-zinc-400 leading-relaxed max-w-2xl animate-fade-in">
-                The only  AI-powered platform you need to learn, practice, and
+                The only AI-powered platform you need to learn, practice, and
                 land your dream job. Replace coaching institutes with
                 intelligent tutoring, automated assessments, and career
                 readiness tracking powered by Azure OpenAI.
               </p>
-              <div className="flex flex-wrap gap-4">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-4">
                 <Button
                   data-testid="get-started-btn"
                   size="lg"
-                  className="rounded-full font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/40 transform hover:scale-105 transition-all duration-300 hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] relative overflow-hidden group"
+                  className="w-full sm:w-auto rounded-full font-semibold bg-gradient-to-r from-orange-600 to-orange-600 hover:from-orange-500 hover:to-orange-500 text-white shadow-lg shadow-orange-500/25 md:hover:shadow-xl md:hover:shadow-orange-500/40 md:transform md:hover:scale-105 transition-all duration-300 md:hover:shadow-[0_0_30px_rgba(249,115,22,0.5)] relative overflow-hidden group"
                   onClick={() => navigate("/auth")}
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
@@ -260,17 +260,17 @@ const LandingPage = () => {
                   data-testid="learn-more-btn"
                   size="lg"
                   variant="outline"
-                  className="rounded-full font-semibold border-zinc-700 text-white hover:bg-zinc-800 hover:border-blue-500/50 transform hover:scale-105 transition-all duration-300 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] relative overflow-hidden group"
+                  className="w-full sm:w-auto rounded-full font-semibold border-zinc-700 text-white hover:bg-zinc-800 md:hover:border-orange-500/50 md:transform md:hover:scale-105 transition-all duration-300 md:hover:shadow-[0_0_20px_rgba(249,115,22,0.3)] relative overflow-hidden group"
                   onClick={() => navigate("/auth")}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-orange-500/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                   <BookOpen className="w-5 h-5 mr-2 group-hover:animate-pulse" />
                   Explore Features
                 </Button>
               </div>
 
               {/* Stats */}
-              <div className="flex flex-wrap gap-8 pt-8">
+              <div className="flex flex-wrap gap-6 sm:gap-8 pt-8 justify-center md:justify-start">
                 <div className="text-center">
                   <div className="text-2xl md:text-3xl font-bold text-white">
                     10K+
@@ -291,21 +291,21 @@ const LandingPage = () => {
                 </div>
               </div>
             </div>
-            <div className="col-span-full md:col-span-5 relative">
+            <div className="col-span-full md:col-span-5 relative max-w-md mx-auto md:max-w-none">
               <div className="relative">
                 {/* Liquid border effect */}
-                <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl blur-xl animate-pulse"></div>
+                <div className="absolute -inset-3 sm:-inset-4 bg-gradient-to-r from-orange-500/20 to-orange-500/20 rounded-2xl blur-xl animate-pulse"></div>
                 <img
                   src="https://images.pexels.com/photos/4050291/pexels-photo-4050291.jpeg"
                   alt="Student learning with AI"
-                  className="relative rounded-xl shadow-2xl border border-zinc-800/50 hover:border-blue-500/30 transition-all duration-500 hover:scale-105"
+                  className="relative w-full h-auto rounded-xl shadow-2xl border border-zinc-800/50 md:hover:border-orange-500/30 transition-all duration-500 md:hover:scale-105"
                 />
                 {/* Floating elements */}
-                <div className="absolute -top-4 -right-4 w-12 h-12 bg-gradient-to-r from-green-400 to-blue-400 rounded-full flex items-center justify-center shadow-lg animate-bounce">
+                <div className="hidden sm:flex absolute -top-4 -right-4 w-12 h-12 bg-gradient-to-r from-orange-400 to-orange-400 rounded-full items-center justify-center shadow-lg animate-bounce">
                   <Code className="w-6 h-6 text-white" />
                 </div>
                 <div
-                  className="absolute -bottom-4 -left-4 w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center shadow-lg animate-bounce"
+                  className="hidden sm:flex absolute -bottom-4 -left-4 w-12 h-12 bg-gradient-to-r from-orange-400 to-orange-400 rounded-full items-center justify-center shadow-lg animate-bounce"
                   style={{ animationDelay: "1s" }}
                 >
                   <Brain className="w-6 h-6 text-white" />
@@ -320,11 +320,11 @@ const LandingPage = () => {
       <section className="py-16 bg-gradient-to-r from-zinc-900 to-black relative overflow-hidden">
         {/* Background effects */}
         <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-full blur-3xl"></div>
+          <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-r from-orange-500/20 to-orange-500/20 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-r from-orange-500/20 to-orange-500/20 rounded-full blur-3xl"></div>
         </div>
 
-        <div className="max-w-6xl mx-auto px-6 relative">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
               How LearnovateX Works
@@ -338,10 +338,10 @@ const LandingPage = () => {
             {/* Step 1 */}
             <div className="text-center group">
               <div className="relative mb-6">
-                <div className="w-20 h-20 mx-auto bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <div className="w-20 h-20 mx-auto bg-gradient-to-r from-orange-500 to-orange-500 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg group-hover:scale-110 transition-transform duration-300">
                   1
                 </div>
-                <div className="absolute -inset-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full blur-lg group-hover:blur-xl transition-all duration-300"></div>
+                <div className="absolute -inset-2 bg-gradient-to-r from-orange-500/20 to-orange-500/20 rounded-full blur-lg group-hover:blur-xl transition-all duration-300"></div>
               </div>
               <h3 className="text-xl font-semibold text-white mb-3">
                 Learn with AI Tutor
@@ -355,10 +355,10 @@ const LandingPage = () => {
             {/* Step 2 */}
             <div className="text-center group">
               <div className="relative mb-6">
-                <div className="w-20 h-20 mx-auto bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <div className="w-20 h-20 mx-auto bg-gradient-to-r from-orange-500 to-orange-500 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg group-hover:scale-110 transition-transform duration-300">
                   2
                 </div>
-                <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-full blur-lg group-hover:blur-xl transition-all duration-300"></div>
+                <div className="absolute -inset-2 bg-gradient-to-r from-orange-500/20 to-orange-500/20 rounded-full blur-lg group-hover:blur-xl transition-all duration-300"></div>
               </div>
               <h3 className="text-xl font-semibold text-white mb-3">
                 Practice in Coding Arena
@@ -372,10 +372,10 @@ const LandingPage = () => {
             {/* Step 3 */}
             <div className="text-center group">
               <div className="relative mb-6">
-                <div className="w-20 h-20 mx-auto bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <div className="w-20 h-20 mx-auto bg-gradient-to-r from-orange-500 to-orange-500 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg group-hover:scale-110 transition-transform duration-300">
                   3
                 </div>
-                <div className="absolute -inset-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-full blur-lg group-hover:blur-xl transition-all duration-300"></div>
+                <div className="absolute -inset-2 bg-gradient-to-r from-orange-500/20 to-orange-500/20 rounded-full blur-lg group-hover:blur-xl transition-all duration-300"></div>
               </div>
               <h3 className="text-xl font-semibold text-white mb-3">
                 Get Interview-Ready & Hired
@@ -390,9 +390,9 @@ const LandingPage = () => {
           {/* Connecting arrows for desktop */}
           <div className="hidden md:block">
             <div className="flex justify-center items-center mt-8 space-x-4">
-              <div className="w-16 h-0.5 bg-gradient-to-r from-purple-500 to-blue-500"></div>
-              <ArrowRight className="w-6 h-6 text-blue-400" />
-              <div className="w-16 h-0.5 bg-gradient-to-r from-blue-500 to-green-500"></div>
+              <div className="w-16 h-0.5 bg-gradient-to-r from-orange-500 to-orange-500"></div>
+              <ArrowRight className="w-6 h-6 text-orange-400" />
+              <div className="w-16 h-0.5 bg-gradient-to-r from-orange-500 to-orange-500"></div>
             </div>
           </div>
         </div>
@@ -402,14 +402,14 @@ const LandingPage = () => {
       <section className="py-24 bg-zinc-900 relative overflow-hidden">
         {/* Liquid background effect */}
         <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute top-0 left-0 w-72 h-72 sm:w-96 sm:h-96 bg-gradient-to-r from-orange-500/20 to-orange-500/20 rounded-full blur-3xl animate-pulse"></div>
           <div
-            className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-full blur-3xl animate-pulse"
+            className="absolute bottom-0 right-0 w-72 h-72 sm:w-96 sm:h-96 bg-gradient-to-r from-orange-500/20 to-orange-500/20 rounded-full blur-3xl animate-pulse"
             style={{ animationDelay: "2s" }}
           ></div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-6 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
               Everything You Need to Succeed
@@ -423,22 +423,22 @@ const LandingPage = () => {
               <Card
                 key={index}
                 data-testid={`feature-card-${index}`}
-                className="group bg-zinc-800/50 backdrop-blur-sm border-zinc-700/50 hover:border-zinc-500/70 transition-all duration-500 hover:-translate-y-2 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/10 liquid-card"
+                className="group bg-zinc-800/50 backdrop-blur-sm border-zinc-700/50 md:hover:border-zinc-500/70 transition-all duration-500 md:hover:-translate-y-2 md:hover:scale-105 md:hover:shadow-2xl md:hover:shadow-orange-500/10 liquid-card"
                 style={{
                   animationDelay: `${index * 100}ms`,
                   background: `linear-gradient(135deg, rgba(39, 39, 42, 0.8), rgba(24, 24, 27, 0.6))`,
                 }}
               >
-                <CardContent className="p-6 space-y-4 relative overflow-hidden">
+                <CardContent className="p-5 sm:p-6 space-y-4 relative overflow-hidden">
                   {/* Liquid blob animation */}
                   <div className="absolute -top-4 -right-4 w-20 h-20 bg-gradient-to-br from-current to-transparent rounded-full opacity-20 group-hover:opacity-40 transition-opacity duration-500 liquid-blob"></div>
 
                   <div
-                    className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${feature.gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 relative z-10`}
+                    className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${feature.gradient} flex items-center justify-center shadow-lg md:group-hover:scale-110 transition-transform duration-300 relative z-10`}
                   >
                     {feature.icon}
                   </div>
-                  <h3 className="text-xl font-semibold text-white group-hover:text-blue-300 transition-colors duration-300">
+                  <h3 className="text-xl font-semibold text-white group-hover:text-orange-300 transition-colors duration-300">
                     {feature.title}
                   </h3>
                   <p className="text-zinc-400 group-hover:text-zinc-300 transition-colors duration-300 text-sm leading-relaxed">
@@ -452,7 +452,7 @@ const LandingPage = () => {
                         key={i}
                         className="flex items-center gap-2 text-xs text-zinc-500 group-hover:text-zinc-400 transition-colors duration-300"
                       >
-                        <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-blue-400 to-purple-400"></div>
+                        <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-orange-400 to-orange-400"></div>
                         <span>{detail}</span>
                       </div>
                     ))}
@@ -466,7 +466,7 @@ const LandingPage = () => {
 
       {/* Demo Video Section */}
       <section className="py-16 bg-black relative overflow-hidden">
-        <div className="max-w-6xl mx-auto px-6 relative">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
               See LearnovateX in Action
@@ -478,7 +478,7 @@ const LandingPage = () => {
           </div>
 
           <div className="relative max-w-4xl mx-auto">
-            <Card className="bg-zinc-900/50 backdrop-blur-sm border-zinc-700/50 hover:border-blue-500/30 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/10 overflow-hidden">
+            <Card className="bg-zinc-900/50 backdrop-blur-sm border-zinc-700/50 md:hover:border-orange-500/30 transition-all duration-500 md:hover:shadow-2xl md:hover:shadow-orange-500/10 overflow-hidden">
               <CardContent className="p-0">
                 <div className="relative aspect-video bg-gradient-to-br from-zinc-800 to-zinc-900">
                   {/* Local MP4 Video with Native Controls */}
@@ -499,11 +499,11 @@ const LandingPage = () => {
                   </video>
 
                   {/* Floating elements */}
-                  <div className="absolute top-4 right-4 w-8 h-8 bg-gradient-to-r from-green-400 to-blue-400 rounded-full flex items-center justify-center shadow-lg animate-bounce opacity-70">
+                  <div className="hidden sm:flex absolute top-4 right-4 w-8 h-8 bg-gradient-to-r from-orange-400 to-orange-400 rounded-full items-center justify-center shadow-lg animate-bounce opacity-70">
                     <Code className="w-4 h-4 text-white" />
                   </div>
                   <div
-                    className="absolute bottom-4 left-4 w-8 h-8 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center shadow-lg animate-bounce opacity-70"
+                    className="hidden sm:flex absolute bottom-4 left-4 w-8 h-8 bg-gradient-to-r from-orange-400 to-orange-400 rounded-full items-center justify-center shadow-lg animate-bounce opacity-70"
                     style={{ animationDelay: "1s" }}
                   >
                     <Brain className="w-4 h-4 text-white" />
@@ -526,14 +526,14 @@ const LandingPage = () => {
       <section className="py-24 bg-black relative overflow-hidden">
         {/* Liquid background effects */}
         <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-purple-500/30 to-pink-500/30 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-orange-500/30 to-orange-500/30 rounded-full blur-3xl animate-pulse"></div>
           <div
-            className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-gradient-to-r from-blue-500/30 to-cyan-500/30 rounded-full blur-3xl animate-pulse"
+            className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-gradient-to-r from-orange-500/30 to-orange-500/30 rounded-full blur-3xl animate-pulse"
             style={{ animationDelay: "3s" }}
           ></div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-6 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
               Built for Everyone
@@ -553,7 +553,7 @@ const LandingPage = () => {
                   "Personalized learning",
                   "Progress tracking",
                 ],
-                gradient: "from-blue-500 to-cyan-500",
+                gradient: "from-orange-500 to-orange-500",
               },
               {
                 icon: <Target className="w-6 h-6" />,
@@ -564,7 +564,7 @@ const LandingPage = () => {
                   "Resume optimization",
                   "Skill assessment",
                 ],
-                gradient: "from-green-500 to-emerald-500",
+                gradient: "from-orange-500 to-orange-500",
               },
               {
                 icon: <Building2 className="w-6 h-6" />,
@@ -575,7 +575,7 @@ const LandingPage = () => {
                   "Assessment tools",
                   "Analytics dashboard",
                 ],
-                gradient: "from-purple-500 to-indigo-500",
+                gradient: "from-orange-500 to-orange-500",
               },
               {
                 icon: <Users className="w-6 h-6" />,
@@ -586,23 +586,23 @@ const LandingPage = () => {
                   "Curriculum integration",
                   "Performance insights",
                 ],
-                gradient: "from-orange-500 to-red-500",
+                gradient: "from-orange-500 to-orange-500",
               },
             ].map((item, i) => (
               <Card
                 key={i}
-                className="group text-center p-6 bg-zinc-900/50 backdrop-blur-sm border-zinc-800/50 hover:border-zinc-600/70 transition-all duration-500 hover:-translate-y-2 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/10 liquid-card relative overflow-hidden"
+                className="group text-center p-5 sm:p-6 bg-zinc-900/50 backdrop-blur-sm border-zinc-800/50 md:hover:border-zinc-600/70 transition-all duration-500 md:hover:-translate-y-2 md:hover:scale-105 md:hover:shadow-2xl md:hover:shadow-orange-500/10 liquid-card relative overflow-hidden"
                 style={{ animationDelay: `${i * 150}ms` }}
               >
                 {/* Liquid blob animation */}
                 <div className="absolute -top-2 -right-2 w-16 h-16 bg-gradient-to-br from-current to-transparent rounded-full opacity-20 group-hover:opacity-40 transition-opacity duration-500 liquid-blob"></div>
 
                 <div
-                  className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-r ${item.gradient} flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300 relative z-10`}
+                  className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-r ${item.gradient} flex items-center justify-center text-white shadow-lg md:group-hover:scale-110 transition-transform duration-300 relative z-10`}
                 >
                   {item.icon}
                 </div>
-                <h3 className="font-semibold text-lg mb-2 text-white group-hover:text-blue-300 transition-colors duration-300">
+                <h3 className="font-semibold text-lg mb-2 text-white group-hover:text-orange-300 transition-colors duration-300">
                   {item.label}
                 </h3>
                 <p className="text-sm text-zinc-400 mb-3 group-hover:text-zinc-300 transition-colors duration-300">
@@ -630,16 +630,16 @@ const LandingPage = () => {
       <section className="py-24 bg-gradient-to-br from-white via-zinc-50 to-white text-black relative overflow-hidden">
         {/* Liquid background effects */}
         <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-r from-orange-500/10 to-orange-500/10 rounded-full blur-3xl animate-pulse"></div>
           <div
-            className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-full blur-3xl animate-pulse"
+            className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-r from-orange-500/10 to-orange-500/10 rounded-full blur-3xl animate-pulse"
             style={{ animationDelay: "2s" }}
           ></div>
         </div>
 
-        <div className="max-w-4xl mx-auto text-center px-6 relative z-10">
+        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 relative z-10">
           <div className="mb-6">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 text-blue-600 text-sm font-medium mb-4">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-orange-500/10 to-orange-500/10 border border-orange-500/20 text-orange-600 text-sm font-medium mb-4">
               <Award className="w-4 h-4" />
               Join the AI Learning Revolution
             </div>
@@ -656,17 +656,17 @@ const LandingPage = () => {
           {/* Feature highlights */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
             <div className="flex items-center justify-center gap-3 p-4 rounded-xl bg-white/50 backdrop-blur-sm border border-zinc-200/50 shadow-lg">
-              <Bot className="w-6 h-6 text-blue-600" />
+              <Bot className="w-6 h-6 text-orange-600" />
               <span className="font-semibold text-gray-800">AI-Powered</span>
             </div>
             <div className="flex items-center justify-center gap-3 p-4 rounded-xl bg-white/50 backdrop-blur-sm border border-zinc-200/50 shadow-lg">
-              <Trophy className="w-6 h-6 text-green-600" />
+              <Trophy className="w-6 h-6 text-orange-600" />
               <span className="font-semibold text-gray-800">
                 Gamified Learning
               </span>
             </div>
             <div className="flex items-center justify-center gap-3 p-4 rounded-xl bg-white/50 backdrop-blur-sm border border-zinc-200/50 shadow-lg">
-              <TrendingUp className="w-6 h-6 text-purple-600" />
+              <TrendingUp className="w-6 h-6 text-orange-600" />
               <span className="font-semibold text-gray-800">
                 Career Focused
               </span>
@@ -676,7 +676,7 @@ const LandingPage = () => {
           <Button
             data-testid="cta-start-btn"
             size="lg"
-            className="rounded-full font-semibold bg-gradient-to-r from-black to-gray-800 hover:from-gray-800 hover:to-black text-white shadow-lg shadow-black/25 hover:shadow-xl hover:shadow-black/40 transform hover:scale-105 transition-all duration-300 text-lg px-8 py-4"
+            className="w-full sm:w-auto rounded-full font-semibold bg-gradient-to-r from-black to-gray-800 hover:from-gray-800 hover:to-black text-white shadow-lg shadow-black/25 md:hover:shadow-xl md:hover:shadow-black/40 md:transform md:hover:scale-105 transition-all duration-300 text-base sm:text-lg px-6 sm:px-8 py-4"
             onClick={() => navigate("/auth")}
           >
             <Rocket className="w-6 h-6 mr-3" />
@@ -686,8 +686,8 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 bg-zinc-900">
-        <div className="max-w-7xl mx-auto px-6 text-center text-zinc-400">
+      <footer className="py-8 sm:py-12 bg-zinc-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center text-zinc-400">
           <p>&copy; 2026 AI Learning Platform. All rights reserved.</p>
         </div>
       </footer>

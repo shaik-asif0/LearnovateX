@@ -17,6 +17,13 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "../components/ui/sheet";
+import {
   Send,
   Bot,
   Loader2,
@@ -55,9 +62,20 @@ import {
   Crosshair,
 } from "lucide-react";
 import axiosInstance from "../lib/axios";
+import { getUser } from "../lib/utils";
 import { toast } from "sonner";
 
 const TutorPage = () => {
+  const user = getUser();
+  const tutorHistoryKey =
+    user?.id || user?._id || user?.email
+      ? `tutorChatHistory:${user.id || user._id || user.email}`
+      : "tutorChatHistory:anonymous";
+  const tutorStatsKey =
+    user?.id || user?._id || user?.email
+      ? `tutorStats:${user.id || user._id || user.email}`
+      : "tutorStats:anonymous";
+
   const [searchParams] = useSearchParams();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -74,7 +92,7 @@ const TutorPage = () => {
   });
   const [suggestions, setSuggestions] = useState([]);
   const [copied, setCopied] = useState(null);
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [mobileOptionsOpen, setMobileOptionsOpen] = useState(false);
   const [aiStatus, setAiStatus] = useState("online");
   const messagesEndRef = useRef(null);
   const timerRef = useRef(null);
@@ -120,20 +138,38 @@ const TutorPage = () => {
       setInput(`Teach me about ${urlTopic}`);
     }
 
-    const savedMessages = localStorage.getItem("tutorChatHistory");
-    if (savedMessages) {
-      setMessages(JSON.parse(savedMessages));
-    }
+    try {
+      const savedMessages = localStorage.getItem(tutorHistoryKey);
+      if (savedMessages) {
+        setMessages(JSON.parse(savedMessages));
+      } else {
+        const legacyMessages = localStorage.getItem("tutorChatHistory");
+        if (legacyMessages) {
+          localStorage.setItem(tutorHistoryKey, legacyMessages);
+          localStorage.removeItem("tutorChatHistory");
+          setMessages(JSON.parse(legacyMessages));
+        }
+      }
 
-    const savedStats = localStorage.getItem("tutorStats");
-    if (savedStats) {
-      setSessionStats(JSON.parse(savedStats));
+      const savedStats = localStorage.getItem(tutorStatsKey);
+      if (savedStats) {
+        setSessionStats(JSON.parse(savedStats));
+      } else {
+        const legacyStats = localStorage.getItem("tutorStats");
+        if (legacyStats) {
+          localStorage.setItem(tutorStatsKey, legacyStats);
+          localStorage.removeItem("tutorStats");
+          setSessionStats(JSON.parse(legacyStats));
+        }
+      }
+    } catch (e) {
+      // ignore malformed storage
     }
 
     timerRef.current = setInterval(() => {
       setSessionStats((prev) => {
         const newStats = { ...prev, sessionTime: prev.sessionTime + 1 };
-        localStorage.setItem("tutorStats", JSON.stringify(newStats));
+        localStorage.setItem(tutorStatsKey, JSON.stringify(newStats));
         return newStats;
       });
     }, 1000);
@@ -149,7 +185,7 @@ const TutorPage = () => {
     scrollToBottom();
     if (messages.length > 0) {
       localStorage.setItem(
-        "tutorChatHistory",
+        tutorHistoryKey,
         JSON.stringify(messages.slice(-50))
       );
     }
@@ -252,7 +288,7 @@ const TutorPage = () => {
           : [...prev.topicsExplored, topic],
         streak: prev.streak + 1,
       };
-      localStorage.setItem("tutorStats", JSON.stringify(newStats));
+      localStorage.setItem(tutorStatsKey, JSON.stringify(newStats));
       return newStats;
     });
 
@@ -319,7 +355,7 @@ const TutorPage = () => {
 
   const clearHistory = () => {
     setMessages([]);
-    localStorage.removeItem("tutorChatHistory");
+    localStorage.removeItem(tutorHistoryKey);
     toast.success("Chat history cleared");
   };
 
@@ -332,28 +368,173 @@ const TutorPage = () => {
   const getStatusColor = () => {
     switch (aiStatus) {
       case "online":
-        return "bg-green-500";
+        return "bg-[var(--accent-color)]";
       case "thinking":
-        return "bg-yellow-500 animate-pulse";
+        return "bg-[var(--accent-color)] animate-pulse";
       case "responding":
-        return "bg-blue-500 animate-pulse";
+        return "bg-[var(--accent-color)] animate-pulse";
       case "error":
-        return "bg-red-500";
+        return "bg-[var(--accent-color)]";
       default:
-        return "bg-gray-500";
+        return "bg-[var(--accent-color)]";
     }
   };
 
   const currentTopic = topics.find((t) => t.value === topic);
 
+  const OptionsPanel = ({ onClose }) => (
+    <div className="space-y-3">
+      {/* Topic Selection */}
+      <Card className="bg-zinc-900 border-zinc-800">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-xs text-zinc-400 flex items-center gap-2">
+            <Library className="w-3 h-3" />
+            Topic
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="grid grid-cols-2 gap-1">
+            {topics.slice(0, 4).map((t) => {
+              const Icon = t.icon;
+              return (
+                <button
+                  key={t.value}
+                  onClick={() => {
+                    setTopic(t.value);
+                    onClose?.();
+                  }}
+                  className={`p-2 rounded-lg border transition-all text-left ${
+                    topic === t.value
+                      ? "border-[rgba(var(--accent-rgb),0.5)] bg-[rgba(var(--accent-rgb),0.1)]"
+                      : "border-zinc-800 bg-zinc-800/50 hover:border-zinc-700"
+                  }`}
+                >
+                  <Icon
+                    className={`w-3 h-3 mb-1 ${
+                      topic === t.value
+                        ? "text-[var(--accent-color)]"
+                        : "text-zinc-500"
+                    }`}
+                  />
+                  <p
+                    className={`text-xs ${
+                      topic === t.value ? "text-white" : "text-zinc-400"
+                    }`}
+                  >
+                    {t.label}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+          <Select
+            value={topic}
+            onValueChange={(value) => {
+              setTopic(value);
+              onClose?.();
+            }}
+          >
+            <SelectTrigger className="mt-3 bg-zinc-800 border-zinc-700 text-white text-sm">
+              <SelectValue placeholder="More topics..." />
+            </SelectTrigger>
+            <SelectContent className="bg-zinc-900 border-zinc-800">
+              {topics.map((t) => {
+                const Icon = t.icon;
+                return (
+                  <SelectItem key={t.value} value={t.value}>
+                    <span className="flex items-center gap-2">
+                      <Icon className="w-4 h-4" />
+                      {t.label}
+                    </span>
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
+
+      {/* Difficulty */}
+      <Card className="bg-zinc-900 border-zinc-800">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-xs text-zinc-400 flex items-center gap-2">
+            <Crosshair className="w-3 h-3" />
+            Difficulty
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="flex gap-1">
+            {[
+              { value: "beginner", label: "Beginner" },
+              { value: "intermediate", label: "Medium" },
+              { value: "advanced", label: "Expert" },
+            ].map((d) => (
+              <button
+                key={d.value}
+                onClick={() => {
+                  setDifficulty(d.value);
+                  onClose?.();
+                }}
+                className={`flex-1 py-2 px-2 rounded-lg text-xs font-medium transition-all ${
+                  difficulty === d.value
+                    ? "bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] border border-[rgba(var(--accent-rgb),0.3)]"
+                    : "bg-zinc-800 text-zinc-400 border border-transparent hover:border-zinc-700"
+                }`}
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Actions */}
+      <Card className="bg-zinc-900 border-zinc-800">
+        <CardContent className="pt-4 space-y-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+            onClick={() => {
+              clearHistory();
+              onClose?.();
+            }}
+          >
+            <Trash2 className="w-4 h-4" />
+            Clear History
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+            onClick={() => {
+              setSessionStats({
+                questionsAsked: 0,
+                topicsExplored: [],
+                sessionTime: 0,
+                streak: 0,
+              });
+              localStorage.removeItem(tutorStatsKey);
+              toast.success("Session reset!");
+              onClose?.();
+            }}
+          >
+            <RefreshCw className="w-4 h-4" />
+            New Session
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-black">
-      <main className="max-w-7xl mx-auto px-4 md:px-6 py-6">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-3 md:py-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="hidden md:flex md:items-center md:justify-between gap-4 mb-6">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="p-3 bg-gradient-to-r from-purple-500 to-purple-600 rounded-2xl shadow-lg">
+              <div className="p-3 bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgba(var(--accent-rgb),0.85)] rounded-2xl shadow-lg">
                 <Bot className="w-8 h-8 text-white" />
               </div>
               <div
@@ -361,7 +542,7 @@ const TutorPage = () => {
               />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-white flex flex-wrap items-center gap-2">
                 AI Personal Tutor
                 <Badge className="bg-white text-black border-0 text-xs">
                   <Sparkles className="w-3 h-3 mr-1" />
@@ -369,11 +550,7 @@ const TutorPage = () => {
                 </Badge>
               </h1>
               <p className="text-zinc-400 text-sm flex items-center gap-2">
-                <CircleDot
-                  className={`w-3 h-3 ${
-                    aiStatus === "online" ? "text-green-400" : "text-yellow-400"
-                  }`}
-                />
+                <CircleDot className="w-3 h-3 text-[var(--accent-color)]" />
                 {aiStatus === "online"
                   ? "Ready to help"
                   : aiStatus === "thinking"
@@ -387,7 +564,7 @@ const TutorPage = () => {
 
           <div className="hidden md:flex items-center gap-3">
             <div className="flex items-center gap-2 px-3 py-2 bg-zinc-900 rounded-xl border border-zinc-800">
-              <div className="w-4 h-4 bg-gradient-to-r from-orange-500 to-orange-600 rounded flex items-center justify-center">
+              <div className="w-4 h-4 bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgba(var(--accent-rgb),0.85)] rounded flex items-center justify-center">
                 <Flame className="w-3 h-3 text-white" />
               </div>
               <span className="text-sm text-white font-medium">
@@ -396,7 +573,7 @@ const TutorPage = () => {
               <span className="text-xs text-zinc-500">streak</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-2 bg-zinc-900 rounded-xl border border-zinc-800">
-              <div className="w-4 h-4 bg-gradient-to-r from-blue-500 to-blue-600 rounded flex items-center justify-center">
+              <div className="w-4 h-4 bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgba(var(--accent-rgb),0.85)] rounded flex items-center justify-center">
                 <Clock className="w-3 h-3 text-white" />
               </div>
               <span className="text-sm text-white font-mono">
@@ -404,7 +581,7 @@ const TutorPage = () => {
               </span>
             </div>
             <div className="flex items-center gap-2 px-3 py-2 bg-zinc-900 rounded-xl border border-zinc-800">
-              <MessageCircle className="w-4 h-4 text-purple-400" />
+              <MessageCircle className="w-4 h-4 text-[var(--accent-color)]" />
               <span className="text-sm text-white">
                 {sessionStats.questionsAsked}
               </span>
@@ -413,141 +590,18 @@ const TutorPage = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          {/* Sidebar */}
-          <div className="lg:col-span-1 space-y-3">
-            {/* Topic Selection */}
-            <Card className="bg-zinc-900 border-zinc-800">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs text-zinc-400 flex items-center gap-2">
-                  <Library className="w-3 h-3" />
-                  Topic
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="grid grid-cols-2 gap-1">
-                  {topics.slice(0, 4).map((t) => {
-                    const Icon = t.icon;
-                    return (
-                      <button
-                        key={t.value}
-                        onClick={() => setTopic(t.value)}
-                        className={`p-2 rounded-lg border transition-all text-left ${
-                          topic === t.value
-                            ? "border-blue-500 bg-blue-500/10"
-                            : "border-zinc-800 bg-zinc-800/50 hover:border-zinc-700"
-                        }`}
-                      >
-                        <Icon
-                          className={`w-3 h-3 mb-1 ${
-                            topic === t.value
-                              ? "text-blue-400"
-                              : "text-zinc-500"
-                          }`}
-                        />
-                        <p
-                          className={`text-xs ${
-                            topic === t.value ? "text-white" : "text-zinc-400"
-                          }`}
-                        >
-                          {t.label}
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
-                <Select value={topic} onValueChange={setTopic}>
-                  <SelectTrigger className="mt-3 bg-zinc-800 border-zinc-700 text-white text-sm">
-                    <SelectValue placeholder="More topics..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-zinc-900 border-zinc-800">
-                    {topics.map((t) => {
-                      const Icon = t.icon;
-                      return (
-                        <SelectItem key={t.value} value={t.value}>
-                          <span className="flex items-center gap-2">
-                            <Icon className="w-4 h-4" />
-                            {t.label}
-                          </span>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
-
-            {/* Difficulty */}
-            <Card className="bg-zinc-900 border-zinc-800">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs text-zinc-400 flex items-center gap-2">
-                  <Crosshair className="w-3 h-3" />
-                  Difficulty
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="flex gap-1">
-                  {[
-                    { value: "beginner", label: "Beginner", color: "green" },
-                    { value: "intermediate", label: "Medium", color: "yellow" },
-                    { value: "advanced", label: "Expert", color: "red" },
-                  ].map((d) => (
-                    <button
-                      key={d.value}
-                      onClick={() => setDifficulty(d.value)}
-                      className={`flex-1 py-2 px-2 rounded-lg text-xs font-medium transition-all ${
-                        difficulty === d.value
-                          ? `bg-${d.color}-500/20 text-${d.color}-400 border border-${d.color}-500/30`
-                          : "bg-zinc-800 text-zinc-400 border border-transparent hover:border-zinc-700"
-                      }`}
-                    >
-                      {d.label}
-                    </button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Actions */}
-            <Card className="bg-zinc-900 border-zinc-800">
-              <CardContent className="pt-4 space-y-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
-                  onClick={clearHistory}
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Clear History
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start gap-2 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
-                  onClick={() => {
-                    setSessionStats({
-                      questionsAsked: 0,
-                      topicsExplored: [],
-                      sessionTime: 0,
-                      streak: 0,
-                    });
-                    localStorage.removeItem("tutorStats");
-                    toast.success("Session reset!");
-                  }}
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  New Session
-                </Button>
-              </CardContent>
-            </Card>
+          {/* Desktop Sidebar */}
+          <div className="hidden lg:block lg:col-span-1">
+            <OptionsPanel />
           </div>
 
           {/* Chat Area */}
           <div className="lg:col-span-3">
-            <Card className="h-[calc(100vh-200px)] flex flex-col bg-zinc-900 border-zinc-800">
+            <Card className="h-[calc(100dvh-120px)] md:h-[calc(100dvh-200px)] flex flex-col bg-zinc-900 border-zinc-800">
               {/* Chat Header */}
-              <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
+              <div className="p-3 sm:p-4 border-b border-zinc-800 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="relative hidden sm:block">
                     <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
                       <Bot className="w-5 h-5 text-black" />
                     </div>
@@ -555,20 +609,58 @@ const TutorPage = () => {
                       className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 ${getStatusColor()} rounded-full border-2 border-zinc-900`}
                     />
                   </div>
-                  <div>
-                    <p className="text-white font-medium text-sm">AI Tutor</p>
-                    <p className="text-xs text-zinc-500">
+                  <div className="min-w-0">
+                    <p className="text-white font-medium text-sm truncate">
+                      AI Tutor
+                    </p>
+                    <p className="hidden sm:block text-xs text-zinc-500 truncate">
                       {currentTopic?.label} • {difficulty}
                     </p>
                   </div>
                 </div>
-                <Badge
-                  variant="outline"
-                  className="border-zinc-700 text-zinc-400 text-xs"
-                >
-                  <History className="w-3 h-3 mr-1" />
-                  {messages.length} messages
-                </Badge>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* Mobile: full-screen options like ChatGPT */}
+                  <Sheet
+                    open={mobileOptionsOpen}
+                    onOpenChange={setMobileOptionsOpen}
+                  >
+                    <SheetTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="lg:hidden border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                        aria-label="Open options"
+                      >
+                        <MoreHorizontal className="w-4 h-4" />
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent
+                      side="left"
+                      className="w-[60vw] sm:max-w-sm bg-zinc-900 border-zinc-800 overflow-y-auto"
+                    >
+                      <SheetHeader className="pr-8">
+                        <SheetTitle className="text-white">Options</SheetTitle>
+                        <p className="text-sm text-zinc-400">
+                          {currentTopic?.label} • {difficulty}
+                        </p>
+                      </SheetHeader>
+                      <div className="mt-4">
+                        <OptionsPanel
+                          onClose={() => setMobileOptionsOpen(false)}
+                        />
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+
+                  <Badge
+                    variant="outline"
+                    className="hidden sm:inline-flex border-zinc-700 text-zinc-400 text-xs"
+                  >
+                    <History className="w-3 h-3 mr-1" />
+                    {messages.length} messages
+                  </Badge>
+                </div>
               </div>
 
               {/* Messages */}
@@ -620,8 +712,8 @@ const TutorPage = () => {
                       <div
                         className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                           msg.role === "user"
-                            ? "bg-gradient-to-br from-green-500 to-emerald-600"
-                            : "bg-gradient-to-br from-blue-500 to-purple-600"
+                            ? "bg-gradient-to-br from-[rgb(var(--accent-rgb))] to-[rgba(var(--accent-rgb),0.85)]"
+                            : "bg-gradient-to-br from-[rgb(var(--accent-rgb))] to-[rgba(var(--accent-rgb),0.85)]"
                         }`}
                       >
                         {msg.role === "user" ? (
@@ -636,13 +728,13 @@ const TutorPage = () => {
                         <div
                           className={`relative p-4 ${
                             msg.role === "user"
-                              ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-2xl rounded-tr-sm"
+                              ? "bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgba(var(--accent-rgb),0.85)] text-white rounded-2xl rounded-tr-sm"
                               : msg.error
-                              ? "bg-red-500/10 text-red-300 rounded-2xl rounded-tl-sm border border-red-500/30"
+                              ? "bg-[rgba(var(--accent-rgb),0.1)] text-[rgba(var(--accent-rgb),0.9)] rounded-2xl rounded-tl-sm border border-[rgba(var(--accent-rgb),0.3)]"
                               : "bg-zinc-800 text-white rounded-2xl rounded-tl-sm"
                           }`}
                         >
-                          <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
                             {msg.content}
                           </p>
                         </div>
@@ -657,7 +749,7 @@ const TutorPage = () => {
                               className="p-1.5 hover:bg-zinc-800 rounded-lg transition-colors"
                             >
                               {copied === index ? (
-                                <Check className="w-4 h-4 text-green-400" />
+                                <Check className="w-4 h-4 text-[var(--accent-color)]" />
                               ) : (
                                 <Copy className="w-4 h-4 text-zinc-500" />
                               )}
@@ -666,7 +758,7 @@ const TutorPage = () => {
                               onClick={() => handleFeedback(index, true)}
                               className={`p-1.5 hover:bg-zinc-800 rounded-lg transition-colors ${
                                 msg.helpful === true
-                                  ? "text-green-400"
+                                  ? "text-[var(--accent-color)]"
                                   : "text-zinc-500"
                               }`}
                             >
@@ -676,7 +768,7 @@ const TutorPage = () => {
                               onClick={() => handleFeedback(index, false)}
                               className={`p-1.5 hover:bg-zinc-800 rounded-lg transition-colors ${
                                 msg.helpful === false
-                                  ? "text-red-400"
+                                  ? "text-[var(--accent-color)]"
                                   : "text-zinc-500"
                               }`}
                             >
@@ -693,7 +785,7 @@ const TutorPage = () => {
                 {(loading || isTyping) && (
                   <div className="flex justify-start">
                     <div className="flex gap-3 max-w-[85%]">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-[rgb(var(--accent-rgb))] to-[rgba(var(--accent-rgb),0.85)] flex items-center justify-center">
                         <Bot className="w-4 h-4 text-white" />
                       </div>
                       <div className="bg-zinc-800 p-4 rounded-2xl rounded-tl-sm">
@@ -706,15 +798,15 @@ const TutorPage = () => {
                           <div className="flex items-center gap-2">
                             <div className="flex gap-1">
                               <span
-                                className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
+                                className="w-2 h-2 bg-[var(--accent-color)] rounded-full animate-bounce"
                                 style={{ animationDelay: "0ms" }}
                               />
                               <span
-                                className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
+                                className="w-2 h-2 bg-[var(--accent-color)] rounded-full animate-bounce"
                                 style={{ animationDelay: "150ms" }}
                               />
                               <span
-                                className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
+                                className="w-2 h-2 bg-[var(--accent-color)] rounded-full animate-bounce"
                                 style={{ animationDelay: "300ms" }}
                               />
                             </div>
@@ -732,7 +824,7 @@ const TutorPage = () => {
 
               {/* Input Area */}
               <div className="p-4 border-t border-zinc-800 bg-zinc-900/80 backdrop-blur">
-                <div className="flex gap-3">
+                <div className="flex flex-row gap-2 sm:gap-3 items-end">
                   <div className="flex-1 relative">
                     <Input
                       ref={inputRef}
@@ -744,7 +836,7 @@ const TutorPage = () => {
                       }
                       placeholder={`Ask about ${currentTopic?.label}...`}
                       disabled={loading}
-                      className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-blue-500 pr-12 h-12"
+                      className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-[var(--accent-color)] pr-10 sm:pr-12 h-10 sm:h-12"
                     />
                     <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500">
                       {input.length > 0 && `${input.length}`}
@@ -754,12 +846,12 @@ const TutorPage = () => {
                     data-testid="send-btn"
                     onClick={() => handleSend()}
                     disabled={loading || !input.trim()}
-                    className="h-12 px-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:opacity-90"
+                    className="h-10 w-10 sm:h-12 sm:w-auto sm:px-6 bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgba(var(--accent-rgb),0.85)] text-white hover:opacity-90 rounded-full sm:rounded-md"
                   >
                     {loading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
                     ) : (
-                      <Send className="w-5 h-5" />
+                      <Send className="w-4 h-4 sm:w-5 sm:h-5" />
                     )}
                   </Button>
                 </div>

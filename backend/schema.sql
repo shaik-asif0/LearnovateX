@@ -9,7 +9,10 @@ CREATE TABLE IF NOT EXISTS users (
     role TEXT NOT NULL,
     application_status TEXT DEFAULT 'applied',
     last_active TEXT,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    avatar_url TEXT,
+    profile_data TEXT,
+    updated_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS learning_history (
@@ -101,4 +104,39 @@ CREATE TABLE IF NOT EXISTS messages (
     message TEXT NOT NULL,
     created_at TEXT NOT NULL,
     type TEXT DEFAULT 'message'
+);
+
+CREATE TABLE IF NOT EXISTS course_enrollments (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    course_id INTEGER NOT NULL,
+    course_title TEXT NOT NULL,
+    enrollment_date TEXT NOT NULL,
+    status TEXT DEFAULT 'enrolled',
+    name TEXT,
+    email TEXT,
+    phone TEXT,
+    address TEXT,
+    qualification TEXT,
+    experience TEXT,
+    screenshot_url TEXT
+);
+
+CREATE TABLE IF NOT EXISTS internship_applications (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    internship_id INTEGER NOT NULL,
+    internship_title TEXT NOT NULL,
+    application_date TEXT NOT NULL,
+    status TEXT DEFAULT 'applied',
+    company TEXT,
+    location TEXT,
+    duration TEXT,
+    name TEXT,
+    email TEXT,
+    phone TEXT,
+    address TEXT,
+    qualification TEXT,
+    experience TEXT,
+    screenshot_url TEXT
 );

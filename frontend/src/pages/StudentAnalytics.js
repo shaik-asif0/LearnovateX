@@ -47,11 +47,11 @@ const StudentAnalytics = () => {
       <main className="max-w-4xl mx-auto px-4 py-8">
         <Card className="bg-zinc-900 border-zinc-800 mb-6">
           <CardHeader>
-            <CardTitle className="text-white flex items-center justify-between">
-              Student Analytics & Deep Reports
+            <CardTitle className="text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <span>Student Analytics & Deep Reports</span>
               <Button
                 size="sm"
-                className="bg-white text-black hover:bg-zinc-200"
+                className="bg-white text-black hover:bg-zinc-200 w-full sm:w-auto"
                 onClick={exportReport}
               >
                 Export CSV
@@ -62,7 +62,7 @@ const StudentAnalytics = () => {
             {loading ? (
               <p className="text-zinc-400">Loading analytics...</p>
             ) : !analytics ? (
-              <p className="text-red-400">Failed to load analytics.</p>
+              <p className="text-orange-400">Failed to load analytics.</p>
             ) : (
               <div className="space-y-4">
                 {Object.entries(analytics).map(([key, value]) => (

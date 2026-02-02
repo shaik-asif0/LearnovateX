@@ -20,7 +20,6 @@ import {
   Settings,
   LogOut,
   Menu,
-  X,
   ChevronDown,
   Sparkles,
   Trophy,
@@ -28,7 +27,15 @@ import {
   BookOpen,
   Building2,
   GraduationCap,
+  Palette,
 } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "./ui/sheet";
 import { getUser, clearAuth } from "../lib/utils";
 
 const NavigationBar = () => {
@@ -37,13 +44,73 @@ const NavigationBar = () => {
   const user = getUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isNavVisible, setIsNavVisible] = useState(true);
+  const [accentColor, setAccentColor] = useState("#ff7a00"); // default orange
+
+  const hexToRgb = (hex) => {
+    const h = (hex || "").replace("#", "").trim();
+    const expanded =
+      h.length === 3
+        ? h
+            .split("")
+            .map((c) => c + c)
+            .join("")
+        : h;
+    const bigint = parseInt(expanded, 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return { r, g, b };
+  };
+
+  const rgbToHslString = ({ r, g, b }) => {
+    const rn = r / 255;
+    const gn = g / 255;
+    const bn = b / 255;
+    const max = Math.max(rn, gn, bn);
+    const min = Math.min(rn, gn, bn);
+    const delta = max - min;
+
+    let h = 0;
+    if (delta !== 0) {
+      if (max === rn) h = ((gn - bn) / delta) % 6;
+      else if (max === gn) h = (bn - rn) / delta + 2;
+      else h = (rn - gn) / delta + 4;
+      h = Math.round(h * 60);
+      if (h < 0) h += 360;
+    }
+
+    const l = (max + min) / 2;
+    const s = delta === 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
+
+    const sPct = Math.round(s * 100);
+    const lPct = Math.round(l * 100);
+    return `${h} ${sPct}% ${lPct}%`;
+  };
+
+  const applyAccentTheme = (color) => {
+    document.documentElement.style.setProperty("--accent-color", color);
+
+    const { r, g, b } = hexToRgb(color);
+    document.documentElement.style.setProperty(
+      "--accent-rgb",
+      `${r}, ${g}, ${b}`
+    );
+
+    // Also update Tailwind/shadcn theme variables so bg-primary/text-primary follow the selected accent.
+    const hsl = rgbToHslString({ r, g, b });
+    document.documentElement.style.setProperty("--primary", hsl);
+    document.documentElement.style.setProperty("--accent", hsl);
+    document.documentElement.style.setProperty("--ring", hsl);
+    document.documentElement.style.setProperty("--warning", hsl);
+    document.documentElement.style.setProperty("--info", hsl);
+  };
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
 
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      
+
       if (currentScrollY > lastScrollY && currentScrollY > 100) {
         // Scrolling down and past 100px
         setIsNavVisible(false);
@@ -51,14 +118,14 @@ const NavigationBar = () => {
         // Scrolling up or at top
         setIsNavVisible(true);
       }
-      
+
       lastScrollY = currentScrollY;
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
@@ -69,6 +136,26 @@ const NavigationBar = () => {
       item.classList.add("bounce");
     });
   }, []);
+
+  // load saved accent color on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("accentColor");
+    const color = saved || accentColor;
+    setAccentColor(color);
+    applyAccentTheme(color);
+  }, []);
+
+  // On route changes, ensure nav is visible and close mobile menu
+  useEffect(() => {
+    setIsNavVisible(true);
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  const handleAccentColorChange = (color) => {
+    setAccentColor(color);
+    applyAccentTheme(color);
+    localStorage.setItem("accentColor", color);
+  };
 
   if (!user) {
     return null;
@@ -81,72 +168,68 @@ const NavigationBar = () => {
       label: "Dashboard",
       path: "/dashboard",
       roles: ["student", "job_seeker"],
-      gradient: "from-blue-500 to-blue-600",
-      hoverGradient: "from-blue-600 to-blue-700",
     },
     {
       icon: Bot,
       label: "AI Tutor",
       path: "/tutor",
       roles: ["student", "job_seeker"],
-      gradient: "from-blue-500 to-blue-600",
-      hoverGradient: "from-blue-600 to-blue-700",
     },
     {
       icon: Code,
       label: "Coding Arena",
       path: "/coding",
       roles: ["student", "job_seeker"],
-      gradient: "from-blue-500 to-blue-600",
-      hoverGradient: "from-blue-600 to-blue-700",
     },
     {
       icon: BookOpen,
       label: "Resources",
       path: "/resources",
       roles: ["student", "job_seeker"],
-      gradient: "from-blue-500 to-blue-600",
-      hoverGradient: "from-blue-600 to-blue-700",
     },
     {
       icon: Trophy,
       label: "Career Readiness",
       path: "/career-readiness",
       roles: ["student", "job_seeker"],
-      gradient: "from-blue-500 to-blue-600",
-      hoverGradient: "from-blue-600 to-blue-700",
+    },
+    {
+      icon: Sparkles,
+      label: "Premium",
+      path: "/premium",
+      roles: ["student", "job_seeker", "company", "college_admin"],
     },
     {
       icon: FileSearch,
       label: "Resume Analyzer",
       path: "/resume",
       roles: ["job_seeker"],
-      gradient: "from-blue-500 to-blue-600",
-      hoverGradient: "from-blue-600 to-blue-700",
+      gradient: "from-orange-500 to-orange-600",
+      hoverGradient: "from-orange-600 to-orange-700",
     },
     {
       icon: MessageSquare,
       label: "Mock Interview",
       path: "/interview",
       roles: ["job_seeker"],
-      gradient: "from-blue-500 to-blue-600",
-      hoverGradient: "from-blue-600 to-blue-700",
+      gradient: "from-orange-500 to-orange-600",
+      hoverGradient: "from-orange-600 to-orange-700",
     },
     {
       icon: Building2,
       label: "Company Portal",
       path: "/company",
       roles: ["company"],
-      gradient: "from-blue-500 to-blue-600",
-      hoverGradient: "from-blue-600 to-blue-700",
+      gradient: "from-orange-500 to-orange-600",
+      hoverGradient: "from-orange-600 to-orange-700",
     },
     {
       icon: GraduationCap,
       label: "College Admin",
       path: "/college",
       roles: ["college_admin"],
-      gradient: "from-blue-500 to-blue-600",
-      hoverGradient: "from-blue-600 to-blue-700",
+      gradient: "from-orange-500 to-orange-600",
+      hoverGradient: "from-orange-600 to-orange-700",
     },
   ];
 
@@ -163,9 +246,9 @@ const NavigationBar = () => {
   };
 
   return (
-    <nav 
+    <nav
       className={`fixed top-0 z-50 w-full bg-black border-b border-zinc-800 transition-transform duration-300 ${
-        isNavVisible ? 'translate-y-0' : '-translate-y-full'
+        isNavVisible ? "translate-y-0" : "-translate-y-full"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -176,7 +259,11 @@ const NavigationBar = () => {
             onClick={() => navigate("/dashboard")}
           >
             <div className="w-12 h-12 rounded-full bg-black flex items-center justify-center">
-              <img src="/logo.jpeg" alt="Logo" className="w-10 h-10 rounded-full" />
+              <img
+                src="/logo.jpeg"
+                alt="Logo"
+                className="w-10 h-10 rounded-full"
+              />
             </div>
             <div className="hidden sm:block">
               <p className="text-xs text-zinc-500 font-medium tracking-wider uppercase">
@@ -192,19 +279,33 @@ const NavigationBar = () => {
           <div className="hidden lg:flex items-center gap-1">
             {filteredMainNav.map((item) => {
               const active = isActive(item.path);
+              const isPremium = item.label === "Premium";
               return (
                 <button
                   key={item.path}
                   onClick={() => navigate(item.path)}
                   title={item.label}
-                  className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 hoverable ${
-                    active
-                      ? `text-white glow`
-                      : `text-zinc-400 hover:text-white`
-                  }`}
+                  className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 hover:scale-105 hoverable mx-1
+                    ${
+                      isPremium
+                        ? `text-black shadow-md border hover:opacity-95`
+                        : active
+                        ? `text-white glow`
+                        : `text-zinc-400 hover:text-white`
+                    }
+                    ${active && isPremium ? "ring-2" : ""}`}
+                  style={
+                    isPremium
+                      ? {
+                          minWidth: 110,
+                          backgroundColor: "var(--accent-color)",
+                          borderColor: "var(--accent-color)",
+                        }
+                      : {}
+                  }
                 >
                   <span>{item.label}</span>
-                  {active && (
+                  {active && !isPremium && (
                     <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-white rounded-full"></span>
                   )}
                 </button>
@@ -212,8 +313,55 @@ const NavigationBar = () => {
             })}
           </div>
 
-          {/* Right Side - Profile */}
+          {/* Right Side - Profile + Accent Toggle */}
           <div className="flex items-center gap-2">
+            {/* Accent Palette Toggle */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  aria-label="Accent color"
+                  className="p-2 rounded-lg"
+                  style={{
+                    background: "transparent",
+                    border: "1px solid rgba(255,255,255,0.04)",
+                  }}
+                >
+                  <Palette
+                    className="w-5 h-5"
+                    style={{ color: "var(--accent-color)" }}
+                  />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-40 bg-zinc-900 border-zinc-800 p-3"
+              >
+                <DropdownMenuLabel className="text-zinc-400 text-xs mb-2">
+                  Accent Color
+                </DropdownMenuLabel>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { name: "Orange", color: "#E66A00" },
+                    { name: "Hot Pink", color: "#C81E6E" }, // pink (bold, clear)
+                    { name: "Aqua Blue", color: "#007C91" }, // aqua (fresh, tech)
+                    { name: "Royal Purple", color: "#5B21B6" }, // purple (AI/innovation)
+                    { name: "Emerald Green", color: "#047857" }, // green (growth)
+                  ].map((opt) => (
+                    <button
+                      key={opt.color}
+                      onClick={() => handleAccentColorChange(opt.color)}
+                      title={opt.name}
+                      className={`w-8 h-8 rounded-full border-2 transition-transform ${
+                        accentColor === opt.color
+                          ? "scale-110 border-white"
+                          : "border-zinc-700 hover:border-zinc-500"
+                      }`}
+                      style={{ backgroundColor: opt.color }}
+                    />
+                  ))}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
             {/* Profile Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -260,14 +408,14 @@ const NavigationBar = () => {
                 <div className="p-1">
                   <DropdownMenuItem
                     onClick={() => navigate("/profile")}
-                    className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-gradient-to-r hover:from-blue-500 hover:to-blue-600 rounded-lg cursor-pointer"
+                    className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg cursor-pointer"
                   >
                     <User className="w-4 h-4" />
                     <span>My Profile</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => navigate("/settings")}
-                    className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-gradient-to-r hover:from-gray-500 hover:to-gray-600 rounded-lg cursor-pointer"
+                    className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg cursor-pointer"
                   >
                     <Settings className="w-4 h-4" />
                     <span>Settings</span>
@@ -277,21 +425,21 @@ const NavigationBar = () => {
                 <div className="p-1">
                   <DropdownMenuItem
                     onClick={() => navigate("/leaderboard")}
-                    className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-gradient-to-r hover:from-yellow-500 hover:to-yellow-600 rounded-lg cursor-pointer"
+                    className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg cursor-pointer"
                   >
                     <Trophy className="w-4 h-4" />
                     <span>Leaderboard</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => navigate("/achievements")}
-                    className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-gradient-to-r hover:from-orange-500 hover:to-orange-600 rounded-lg cursor-pointer"
+                    className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg cursor-pointer"
                   >
                     <Award className="w-4 h-4" />
                     <span>Achievements</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => navigate("/resources")}
-                    className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-gradient-to-r hover:from-teal-500 hover:to-teal-600 rounded-lg cursor-pointer"
+                    className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg cursor-pointer"
                   >
                     <BookOpen className="w-4 h-4" />
                     <span>Resources</span>
@@ -305,7 +453,7 @@ const NavigationBar = () => {
                       {user?.role === "company" && (
                         <DropdownMenuItem
                           onClick={() => navigate("/company")}
-                          className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-gradient-to-r hover:from-indigo-500 hover:to-indigo-600 rounded-lg cursor-pointer"
+                          className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg cursor-pointer"
                         >
                           <Building2 className="w-4 h-4" />
                           <span>Company Portal</span>
@@ -314,7 +462,7 @@ const NavigationBar = () => {
                       {user?.role === "college_admin" && (
                         <DropdownMenuItem
                           onClick={() => navigate("/college")}
-                          className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-gradient-to-r hover:from-cyan-500 hover:to-cyan-600 rounded-lg cursor-pointer"
+                          className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-orange-500 rounded-lg cursor-pointer"
                         >
                           <GraduationCap className="w-4 h-4" />
                           <span>College Admin</span>
@@ -327,7 +475,7 @@ const NavigationBar = () => {
                 <div className="p-1">
                   <DropdownMenuItem
                     onClick={handleLogout}
-                    className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-gradient-to-r hover:from-red-500 hover:to-red-600 rounded-lg cursor-pointer"
+                    className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg cursor-pointer"
                   >
                     <LogOut className="w-4 h-4" />
                     <span>Sign Out</span>
@@ -337,46 +485,101 @@ const NavigationBar = () => {
             </DropdownMenu>
 
             {/* Mobile Menu Button */}
-            <button
-              className="lg:hidden p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              {mobileMenuOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <Menu className="w-6 h-6" />
-              )}
-            </button>
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <button
+                  className="lg:hidden p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+                  aria-label="Open menu"
+                >
+                  <Menu className="w-6 h-6" />
+                </button>
+              </SheetTrigger>
+              <SheetContent
+                side="left"
+                className="bg-zinc-950 border-zinc-800 text-white p-4"
+              >
+                <SheetHeader className="text-left">
+                  <SheetTitle className="text-white">Menu</SheetTitle>
+                </SheetHeader>
+
+                <div className="mt-4 space-y-1 overflow-auto max-h-[calc(100vh-6rem)] pr-1">
+                  {filteredMainNav.map((item) => {
+                    const active = isActive(item.path);
+                    const Icon = item.icon;
+                    const isPremium = item.label === "Premium";
+                    return (
+                      <button
+                        key={item.path}
+                        onClick={() => {
+                          navigate(item.path);
+                          setMobileMenuOpen(false);
+                        }}
+                        className={
+                          "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm transition-colors " +
+                          (active
+                            ? "bg-white/10 text-white"
+                            : "text-zinc-300 hover:text-white hover:bg-white/5")
+                        }
+                        style={
+                          isPremium
+                            ? {
+                                backgroundColor:
+                                  "rgba(var(--accent-rgb), 0.14)",
+                                border:
+                                  "1px solid rgba(var(--accent-rgb), 0.28)",
+                              }
+                            : {}
+                        }
+                      >
+                        <Icon
+                          className="w-5 h-5"
+                          style={{
+                            color: active ? "var(--accent-color)" : undefined,
+                          }}
+                        />
+                        <span className="font-medium">{item.label}</span>
+                      </button>
+                    );
+                  })}
+
+                  <div className="pt-3 mt-3 border-t border-zinc-800">
+                    <button
+                      onClick={() => {
+                        navigate("/profile");
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm text-zinc-300 hover:text-white hover:bg-white/5 transition-colors"
+                    >
+                      <User className="w-5 h-5" />
+                      <span className="font-medium">My Profile</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate("/settings");
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm text-zinc-300 hover:text-white hover:bg-white/5 transition-colors"
+                    >
+                      <Settings className="w-5 h-5" />
+                      <span className="font-medium">Settings</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        handleLogout();
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm text-zinc-300 hover:text-white hover:bg-white/5 transition-colors"
+                    >
+                      <LogOut className="w-5 h-5" />
+                      <span className="font-medium">Sign Out</span>
+                    </button>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </div>
-
-      {/* Mobile Navigation */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden bg-zinc-900 border-t border-zinc-800">
-          <div className="max-w-7xl mx-auto px-4 py-3 space-y-1">
-            {filteredMainNav.map((item) => {
-              const active = isActive(item.path);
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => {
-                    navigate(item.path);
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-sm transition-all duration-200 hoverable ${
-                    active
-                      ? `text-white glow`
-                      : `text-zinc-400 hover:text-white`
-                  }`}
-                >
-                  <span className="font-medium">{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </nav>
   );
 };

@@ -60,12 +60,14 @@ const AchievementsPage = () => {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <main className="max-w-6xl mx-auto px-6 py-8">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
             <Award className="w-10 h-10 text-white" />
-            <h1 className="text-4xl font-bold text-white">Achievements</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold text-white">
+              Achievements
+            </h1>
           </div>
           <p className="text-zinc-400">
             Track your progress and unlock rewards
@@ -121,7 +123,7 @@ const AchievementsPage = () => {
             Loading achievements...
           </div>
         ) : error ? (
-          <div className="text-center text-red-400 py-8">{error}</div>
+          <div className="text-center text-orange-400 py-8">{error}</div>
         ) : (
           <div className="space-y-8">
             {achievements.map((category) => (

@@ -2,6 +2,10 @@
 
 ## College Project Presentation
 
+**Repository**: [shaik-asif0/finalyearProject](https://github.com/shaik-asif0/finalyearProject)  
+**Author**: Shaik Asif  
+**Project Type**: Final Year College Project
+
 ---
 
 ## 📋 Table of Contents
@@ -38,7 +42,14 @@ Education Technology (EdTech) & Career Development
 
 ### Brief Description
 
-A comprehensive platform that combines **AI tutoring**, **automated code evaluation**, **resume analysis**, **mock interviews**, and **career tracking** - all powered by AWS Bedrock Claude AI models.
+A full-stack EdTech platform for AI-powered learning and career readiness. Features include:
+
+- AI tutoring (Claude 3 via AWS Bedrock)
+- Automated code evaluation (multi-language, real-time feedback)
+- Resume analysis and credibility scoring
+- Mock interviews (technical, HR, behavioral)
+- Career dashboards and analytics
+- Role-based modules for students, job seekers, companies, and college admins
 
 ---
 
@@ -80,7 +91,7 @@ A comprehensive platform that combines **AI tutoring**, **automated code evaluat
 │   └─ Mock Interviews   └─ Rankings         └─ Management   │
 │                                                             │
 │              ╔═══════════════════════════╗                  │
-│              ║   AWS Bedrock Claude AI   ║                  │
+│              ║   Claude 3 via AWS Bedrock║                  │
 │              ╚═══════════════════════════╝                  │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -115,7 +126,7 @@ A comprehensive platform that combines **AI tutoring**, **automated code evaluat
 ├──────────────────────────────────────────────────────────────────┤
 │                         SERVER LAYER                              │
 │  ┌────────────────────────────────────────────────────────────┐  │
-│  │                   FastAPI Backend                           │  │
+│  │                   FastAPI Backend (Python)                  │  │
 │  │  • Authentication (JWT)    • API Routes                    │  │
 │  │  • Business Logic          • Data Validation               │  │
 │  └────────────────────────────────────────────────────────────┘  │
@@ -124,7 +135,7 @@ A comprehensive platform that combines **AI tutoring**, **automated code evaluat
 │                    ▼                   ▼                         │
 │             ┌──────────┐       ┌──────────────┐                  │
 │             │  SQLite  │       │ AWS Bedrock  │                  │
-│             │ Database │       │  Claude AI   │                  │
+│             │ Database │       │  Claude 3    │                  │
 │             └──────────┘       └──────────────┘                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -145,7 +156,7 @@ User Request → Frontend → API Gateway → FastAPI →
 
 | Technology        | Purpose               | Version |
 | ----------------- | --------------------- | ------- |
-| **React.js**      | UI Framework          | 19.x    |
+| **React.js**      | UI Framework          | 18.x    |
 | **React Router**  | Client-side Routing   | 6.x     |
 | **Tailwind CSS**  | Styling Framework     | 3.x     |
 | **Shadcn/UI**     | Component Library     | Latest  |
@@ -655,7 +666,7 @@ The **AI-Powered Learning & Career Readiness Platform** successfully addresses t
 
 ### Project Team
 
-- **Developer:** [Your Name]
+- **Developer:** Shaik Asif
 - **College:** [Your College Name]
 - **Department:** [Your Department]
 - **Batch:** [Your Batch Year]
@@ -663,7 +674,7 @@ The **AI-Powered Learning & Career Readiness Platform** successfully addresses t
 ### Contact
 
 - 📧 Email: [your.email@example.com]
-- 🔗 GitHub: [github.com/your-username]
+- 🔗 GitHub: [github.com/shaik-asif0](https://github.com/shaik-asif0)
 - 💼 LinkedIn: [linkedin.com/in/your-profile]
 
 ---

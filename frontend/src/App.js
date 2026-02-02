@@ -1,3 +1,4 @@
+import CourseLearnPage from "./pages/CourseLearnPage";
 import React, { useState, useEffect, useCallback } from "react";
 import {
   BrowserRouter,
@@ -10,7 +11,8 @@ import { Toaster, toast } from "sonner";
 import "./App.css";
 import { isAuthenticated, getUser } from "./lib/utils";
 import NavigationBar from "./components/NavigationBar";
-import SplashCursor from "./components/SplashCursor";
+import MobileBottomNav from "./components/MobileBottomNav";
+// import SplashCursor from "./components/SplashCursor";
 
 // Pages
 import LandingPage from "./pages/LandingPage";
@@ -30,6 +32,11 @@ import LearningPathPage from "./pages/LearningPathPage";
 import AchievementsPage from "./pages/AchievementsPage";
 import ResourcesPage from "./pages/ResourcesPage";
 import Roadmap from "./pages/Roadmap";
+import PremiumPage from "./pages/PremiumPage";
+import PremiumCoursesPage from "./pages/PremiumCoursesPage";
+import PremiumInternshipsPage from "./pages/PremiumInternshipsPage";
+import CourseEnrollmentPage from "./pages/CourseEnrollmentPage";
+import InternshipApplicationPage from "./pages/InternshipApplicationPage";
 
 const ProtectedRoute = ({ children }) => {
   return isAuthenticated() ? children : <Navigate to="/auth" />;
@@ -52,6 +59,7 @@ const AppContent = () => {
   const location = useLocation();
   const [isAuth, setIsAuth] = useState(isAuthenticated());
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const user = getUser();
 
   // Monitor online/offline status
   useEffect(() => {
@@ -78,6 +86,14 @@ const AppContent = () => {
     setIsAuth(isAuthenticated());
   }, [location.pathname]);
 
+  // Always reset scroll to top on route changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [location.pathname]);
+
+  const showMobileBottomNav =
+    isAuth && user && ["student", "job_seeker"].includes(user.role);
+
   // Listen for storage events (for auth changes)
   useEffect(() => {
     const handleStorageChange = () => {
@@ -97,8 +113,52 @@ const AppContent = () => {
   return (
     <>
       {isAuth && <NavigationBar />}
-      <div className={`app-content ${isAuth ? "app-content--with-nav" : ""}`}>
+      <div
+        className={`app-content ${isAuth ? "app-content--with-nav" : ""} ${
+          showMobileBottomNav ? "pb-20 md:pb-0" : ""
+        }`}
+      >
         <Routes>
+          <Route
+            path="/premium"
+            element={
+              <ProtectedRoute>
+                <PremiumPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/premium/courses"
+            element={
+              <ProtectedRoute>
+                <PremiumCoursesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/premium/internships"
+            element={
+              <ProtectedRoute>
+                <PremiumInternshipsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/premium/courses/enroll/:courseId"
+            element={
+              <ProtectedRoute>
+                <CourseEnrollmentPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/premium/internships/apply/:internshipId"
+            element={
+              <ProtectedRoute>
+                <InternshipApplicationPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/"
             element={isAuth ? <Navigate to="/dashboard" /> : <LandingPage />}
@@ -227,8 +287,17 @@ const AppContent = () => {
               </RoleProtectedRoute>
             }
           />
+          <Route
+            path="/course-learn"
+            element={
+              <ProtectedRoute>
+                <CourseLearnPage />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </div>
+      {showMobileBottomNav && <MobileBottomNav />}
     </>
   );
 };
@@ -236,7 +305,7 @@ const AppContent = () => {
 function App() {
   return (
     <div className="App">
-      <SplashCursor />
+      {/* <SplashCursor /> */}
       <BrowserRouter>
         <AppContent />
       </BrowserRouter>

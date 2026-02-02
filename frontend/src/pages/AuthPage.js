@@ -147,7 +147,7 @@ const AuthPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-black p-6">
       <Card className="w-full max-w-md bg-zinc-900 border-zinc-800">
         <CardHeader className="text-center pb-4">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center shadow-lg overflow-hidden">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-center shadow-lg overflow-hidden">
             <img
               src="/logo.jpeg"
               alt="LearnovateX Logo"

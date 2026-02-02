@@ -1,6 +1,6 @@
 # LearnovateX Azure OpenAI Setup Guide
 
-This guide explains how to configure Azure OpenAI for real-time AI features in LearnovateX.
+This guide explains how to configure Azure OpenAI for real-time AI features in LearnovateX - an AI-powered learning and career readiness platform.
 
 ## Azure OpenAI Configuration (REQUIRED FOR AI FEATURES)
 
@@ -49,6 +49,7 @@ AZURE_OPENAI_DEPLOYMENT=gpt-4
 ### Step 5: Test the Configuration
 
 1. Start the backend server:
+
 ```bash
 cd backend
 pip install -r requirements.txt
@@ -56,6 +57,7 @@ uvicorn server:app --reload --port 8001
 ```
 
 2. Check the server logs for:
+
 ```
 ℹ Azure OpenAI configured successfully
 ```
@@ -67,14 +69,17 @@ uvicorn server:app --reload --port 8001
 ### Common Issues:
 
 1. **"Azure OpenAI not configured" error**
+
    - Check that all three environment variables are set correctly
    - Ensure the API key is valid and not expired
 
 2. **"Region not supported" error**
+
    - Make sure your Azure region supports Azure OpenAI
    - Try different regions like East US, West Europe, or Australia East
 
 3. **"Deployment not found" error**
+
    - Verify the deployment name matches exactly what you created in Azure
    - Check that the model is deployed and active
 

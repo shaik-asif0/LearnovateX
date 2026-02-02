@@ -54,8 +54,18 @@ import {
   Brain,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getUser } from "../lib/utils";
 
 const ResourcesPage = () => {
+  const user = getUser();
+  const resourceBookmarksKey =
+    user?.id || user?._id || user?.email
+      ? `resourceBookmarks:${user.id || user._id || user.email}`
+      : "resourceBookmarks:anonymous";
+  const completedResourcesKey =
+    user?.id || user?._id || user?.email
+      ? `completedResources:${user.id || user._id || user.email}`
+      : "completedResources:anonymous";
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [viewMode, setViewMode] = useState("grid");
@@ -64,7 +74,6 @@ const ResourcesPage = () => {
   const [filterType, setFilterType] = useState("all");
   const [showBookmarkedOnly, setShowBookmarkedOnly] = useState(false);
   const [showCompletedOnly, setShowCompletedOnly] = useState(false);
-  const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
   const [videoModal, setVideoModal] = useState({
     open: false,
     url: "",
@@ -3129,14 +3138,12 @@ const ResourcesPage = () => {
       const matchesBookmark = !showBookmarkedOnly || bookmarks.includes(r.id);
       const matchesCompletion =
         !showCompletedOnly || completedResources.includes(r.id);
-      const matchesFeatured = !showFeaturedOnly || r.featured;
       return (
         matchesCategory &&
         matchesType &&
         matchesSearch &&
         matchesBookmark &&
-        matchesCompletion &&
-        matchesFeatured
+        matchesCompletion
       );
     }).length;
   };
@@ -3154,35 +3161,35 @@ const ResourcesPage = () => {
       name: "Python",
       icon: <Code2 className="w-4 h-4" />,
       count: getFilteredCount("python"),
-      color: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+      color: "bg-orange-500/10 text-orange-400 border-orange-500/20",
     },
     {
       id: "javascript",
       name: "JavaScript",
       icon: <Code className="w-4 h-4" />,
       count: getFilteredCount("javascript"),
-      color: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+      color: "bg-orange-500/10 text-orange-400 border-orange-500/20",
     },
     {
       id: "dsa",
       name: "DSA",
       icon: <Database className="w-4 h-4" />,
       count: getFilteredCount("dsa"),
-      color: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+      color: "bg-orange-500/10 text-orange-400 border-orange-500/20",
     },
     {
       id: "web",
       name: "Web Dev",
       icon: <Globe className="w-4 h-4" />,
       count: getFilteredCount("web"),
-      color: "bg-green-500/10 text-green-400 border-green-500/20",
+      color: "bg-orange-500/10 text-orange-400 border-orange-500/20",
     },
     {
       id: "backend",
       name: "Backend",
       icon: <Database className="w-4 h-4" />,
       count: getFilteredCount("backend"),
-      color: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20",
+      color: "bg-orange-500/10 text-orange-400 border-orange-500/20",
     },
     {
       id: "interview",
@@ -3196,35 +3203,35 @@ const ResourcesPage = () => {
       name: "Career",
       icon: <TrendingUp className="w-4 h-4" />,
       count: getFilteredCount("career"),
-      color: "bg-pink-500/10 text-pink-400 border-pink-500/20",
+      color: "bg-orange-500/10 text-orange-400 border-orange-500/20",
     },
     {
       id: "system-design",
       name: "System Design",
       icon: <Layers className="w-4 h-4" />,
       count: getFilteredCount("system-design"),
-      color: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
+      color: "bg-orange-500/10 text-orange-400 border-orange-500/20",
     },
     {
       id: "ai-ml",
       name: "AI & ML",
       icon: <Brain className="w-4 h-4" />,
       count: getFilteredCount("ai-ml"),
-      color: "bg-red-500/10 text-red-400 border-red-500/20",
+      color: "bg-orange-500/10 text-orange-400 border-orange-500/20",
     },
     {
       id: "devops",
       name: "DevOps",
       icon: <Zap className="w-4 h-4" />,
       count: getFilteredCount("devops"),
-      color: "bg-teal-500/10 text-teal-400 border-teal-500/20",
+      color: "bg-orange-500/10 text-orange-400 border-orange-500/20",
     },
     {
       id: "mobile",
       name: "Mobile Dev",
       icon: <Bot className="w-4 h-4" />,
       count: getFilteredCount("mobile"),
-      color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+      color: "bg-orange-500/10 text-orange-400 border-orange-500/20",
     },
   ];
 
@@ -3232,10 +3239,34 @@ const ResourcesPage = () => {
 
   useEffect(() => {
     // Load bookmarks and completed from localStorage
-    const savedBookmarks = localStorage.getItem("resourceBookmarks");
-    const savedCompleted = localStorage.getItem("completedResources");
-    if (savedBookmarks) setBookmarks(JSON.parse(savedBookmarks));
-    if (savedCompleted) setCompletedResources(JSON.parse(savedCompleted));
+    try {
+      const savedBookmarks = localStorage.getItem(resourceBookmarksKey);
+      const savedCompleted = localStorage.getItem(completedResourcesKey);
+
+      if (savedBookmarks) {
+        setBookmarks(JSON.parse(savedBookmarks));
+      } else {
+        const legacyBookmarks = localStorage.getItem("resourceBookmarks");
+        if (legacyBookmarks) {
+          localStorage.setItem(resourceBookmarksKey, legacyBookmarks);
+          localStorage.removeItem("resourceBookmarks");
+          setBookmarks(JSON.parse(legacyBookmarks));
+        }
+      }
+
+      if (savedCompleted) {
+        setCompletedResources(JSON.parse(savedCompleted));
+      } else {
+        const legacyCompleted = localStorage.getItem("completedResources");
+        if (legacyCompleted) {
+          localStorage.setItem(completedResourcesKey, legacyCompleted);
+          localStorage.removeItem("completedResources");
+          setCompletedResources(JSON.parse(legacyCompleted));
+        }
+      }
+    } catch (e) {
+      // ignore malformed storage
+    }
   }, []);
 
   const toggleBookmark = (id) => {
@@ -3243,7 +3274,7 @@ const ResourcesPage = () => {
       ? bookmarks.filter((b) => b !== id)
       : [...bookmarks, id];
     setBookmarks(newBookmarks);
-    localStorage.setItem("resourceBookmarks", JSON.stringify(newBookmarks));
+    localStorage.setItem(resourceBookmarksKey, JSON.stringify(newBookmarks));
     toast.success(
       bookmarks.includes(id) ? "Removed from bookmarks" : "Added to bookmarks"
     );
@@ -3254,7 +3285,7 @@ const ResourcesPage = () => {
       ? completedResources.filter((c) => c !== id)
       : [...completedResources, id];
     setCompletedResources(newCompleted);
-    localStorage.setItem("completedResources", JSON.stringify(newCompleted));
+    localStorage.setItem(completedResourcesKey, JSON.stringify(newCompleted));
     toast.success(
       completedResources.includes(id)
         ? "Marked as incomplete"
@@ -3374,13 +3405,13 @@ const ResourcesPage = () => {
   const getTypeColor = (type) => {
     switch (type) {
       case "docs":
-        return "bg-blue-500/20 text-blue-300 border border-blue-500/30";
+        return "bg-orange-500/20 text-orange-300 border border-orange-500/30";
       case "video":
-        return "bg-red-500/20 text-red-300 border border-red-500/30";
+        return "bg-orange-500/20 text-orange-300 border border-orange-500/30";
       case "pdf":
-        return "bg-green-500/20 text-green-300 border border-green-500/30";
+        return "bg-orange-500/20 text-orange-300 border border-orange-500/30";
       case "tool":
-        return "bg-purple-500/20 text-purple-300 border border-purple-500/30";
+        return "bg-orange-500/20 text-orange-300 border border-orange-500/30";
       default:
         return "bg-zinc-800/50 text-zinc-300 border border-zinc-700/50";
     }
@@ -3389,11 +3420,11 @@ const ResourcesPage = () => {
   const getLevelColor = (level) => {
     switch (level) {
       case "Beginner":
-        return "text-emerald-400 font-medium";
+        return "text-orange-400 font-medium";
       case "Intermediate":
-        return "text-amber-400 font-medium";
+        return "text-orange-400 font-medium";
       case "Advanced":
-        return "text-rose-400 font-medium";
+        return "text-orange-400 font-medium";
       default:
         return "text-slate-400";
     }
@@ -3403,15 +3434,18 @@ const ResourcesPage = () => {
     if (isActive) return "bg-white text-black font-medium";
 
     const colors = {
-      python: "hover:bg-blue-500/10 hover:text-blue-400 border-blue-500/20",
-      dsa: "hover:bg-purple-500/10 hover:text-purple-400 border-purple-500/20",
-      web: "hover:bg-green-500/10 hover:text-green-400 border-green-500/20",
+      python:
+        "hover:bg-orange-500/10 hover:text-orange-400 border-orange-500/20",
+      dsa: "hover:bg-orange-500/10 hover:text-orange-400 border-orange-500/20",
+      web: "hover:bg-orange-500/10 hover:text-orange-400 border-orange-500/20",
       interview:
         "hover:bg-orange-500/10 hover:text-orange-400 border-orange-500/20",
-      career: "hover:bg-pink-500/10 hover:text-pink-400 border-pink-500/20",
+      career:
+        "hover:bg-orange-500/10 hover:text-orange-400 border-orange-500/20",
       "system-design":
-        "hover:bg-indigo-500/10 hover:text-indigo-400 border-indigo-500/20",
-      "ai-ml": "hover:bg-cyan-500/10 hover:text-cyan-400 border-cyan-500/20",
+        "hover:bg-orange-500/10 hover:text-orange-400 border-orange-500/20",
+      "ai-ml":
+        "hover:bg-orange-500/10 hover:text-orange-400 border-orange-500/20",
       all: "hover:bg-zinc-500/10 hover:text-zinc-400 border-zinc-500/20",
     };
 
@@ -3423,13 +3457,13 @@ const ResourcesPage = () => {
 
     const colors = {
       all: "text-zinc-400 hover:bg-zinc-500/10 hover:text-zinc-300",
-      video: "text-zinc-400 hover:bg-red-500/10 hover:text-red-400",
-      docs: "text-zinc-400 hover:bg-blue-500/10 hover:text-blue-400",
-      pdf: "text-zinc-400 hover:bg-green-500/10 hover:text-green-400",
-      tool: "text-zinc-400 hover:bg-purple-500/10 hover:text-purple-400",
-      bookmarked: "text-zinc-400 hover:bg-yellow-500/10 hover:text-yellow-400",
-      completed: "text-zinc-400 hover:bg-emerald-500/10 hover:text-emerald-400",
-      featured: "text-zinc-400 hover:bg-purple-500/10 hover:text-purple-400",
+      video: "text-zinc-400 hover:bg-orange-500/10 hover:text-orange-400",
+      docs: "text-zinc-400 hover:bg-orange-500/10 hover:text-orange-400",
+      pdf: "text-zinc-400 hover:bg-orange-500/10 hover:text-orange-400",
+      tool: "text-zinc-400 hover:bg-orange-500/10 hover:text-orange-400",
+      bookmarked: "text-zinc-400 hover:bg-orange-500/10 hover:text-orange-400",
+      completed: "text-zinc-400 hover:bg-orange-500/10 hover:text-orange-400",
+      featured: "text-zinc-400 hover:bg-orange-500/10 hover:text-orange-400",
     };
 
     return colors[filterId] || colors.all;
@@ -3449,27 +3483,22 @@ const ResourcesPage = () => {
       filterType !== "bookmarked" || bookmarks.includes(resource.id);
     const matchesCompleted =
       filterType !== "completed" || completedResources.includes(resource.id);
-    const matchesFeatured = filterType !== "featured" || resource.featured;
 
     if (filterType === "bookmarked")
       return matchesSearch && matchesCategory && matchesBookmark;
     if (filterType === "completed")
       return matchesSearch && matchesCategory && matchesCompleted;
-    if (filterType === "featured")
-      return matchesSearch && matchesCategory && matchesFeatured;
     return matchesSearch && matchesCategory && matchesType;
   });
-
-  const featuredResources = resources.filter((r) => r.featured);
   const completionProgress = Math.round(
     (completedResources.length / resources.length) * 100
   );
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-white rounded-2xl">
               <BookOpen className="w-8 h-8 text-black" />
@@ -3503,121 +3532,75 @@ const ResourcesPage = () => {
           </Card>
         </div>
 
+        {/* Mobile Progress */}
+        <Card className="md:hidden bg-zinc-900 border-zinc-800 mb-6">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-zinc-400">Your Progress</span>
+              <span className="text-sm font-bold text-white">
+                {completedResources.length}/{resources.length}
+              </span>
+            </div>
+            <Progress value={completionProgress} className="h-2" />
+            <p className="text-xs text-zinc-500 mt-2">
+              {completionProgress}% completed
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Stats Bar */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
           <Card className="bg-zinc-900 border-zinc-800">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 bg-blue-500/20 rounded-lg border border-blue-500/30">
-                <BookOpen className="w-5 h-5 text-blue-400" />
+            <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 bg-orange-500/20 rounded-lg border border-orange-500/30">
+                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400" />
               </div>
               <div>
                 <p className="text-xs text-zinc-400">Total Resources</p>
-                <p className="text-xl font-bold text-white">
+                <p className="text-lg sm:text-xl font-bold text-white">
                   {resources.length}
                 </p>
               </div>
             </CardContent>
           </Card>
           <Card className="bg-zinc-900 border-zinc-800">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 bg-green-500/20 rounded-lg border border-green-500/30">
-                <CheckCircle2 className="w-5 h-5 text-green-400" />
+            <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 bg-orange-500/20 rounded-lg border border-orange-500/30">
+                <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400" />
               </div>
               <div>
                 <p className="text-xs text-zinc-400">Completed</p>
-                <p className="text-xl font-bold text-white">
+                <p className="text-lg sm:text-xl font-bold text-white">
                   {completedResources.length}
                 </p>
               </div>
             </CardContent>
           </Card>
           <Card className="bg-zinc-900 border-zinc-800">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 bg-yellow-500/20 rounded-lg border border-yellow-500/30">
-                <Bookmark className="w-5 h-5 text-yellow-400" />
+            <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 bg-orange-500/20 rounded-lg border border-orange-500/30">
+                <Bookmark className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400" />
               </div>
               <div>
                 <p className="text-xs text-zinc-400">Bookmarked</p>
-                <p className="text-xl font-bold text-white">
+                <p className="text-lg sm:text-xl font-bold text-white">
                   {bookmarks.length}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-zinc-900 border-zinc-800">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 bg-purple-500/20 rounded-lg border border-purple-500/30">
-                <Award className="w-5 h-5 text-purple-400" />
-              </div>
-              <div>
-                <p className="text-xs text-zinc-400">Featured</p>
-                <p className="text-xl font-bold text-white">
-                  {featuredResources.length}
                 </p>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Featured Section */}
-        <Card className="mb-8 bg-zinc-900 border-zinc-800">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg text-white flex items-center gap-2">
-              <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-              Featured Resources
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {featuredResources.slice(0, 3).map((resource) => (
-                <div
-                  key={resource.id}
-                  className="p-4 bg-zinc-800/50 rounded-xl border border-zinc-700 hover:border-zinc-600 transition-all cursor-pointer group"
-                  onClick={() => handleOpenResource(resource)}
-                >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={`p-2 rounded-lg ${getTypeColor(
-                        resource.type
-                      )}`}
-                    >
-                      {getIcon(resource.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-white text-sm truncate group-hover:text-zinc-300 transition-colors">
-                        {resource.title}
-                      </h4>
-                      <p className="text-xs text-zinc-500 mt-1 line-clamp-2">
-                        {resource.desc}
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                        <span className="text-xs text-yellow-300">
-                          {resource.rating}
-                        </span>
-                        <span className="text-xs text-zinc-600">
-                          ({resource.reviews.toLocaleString()})
-                        </span>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-white transition-colors" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar - Categories */}
-          <div className="lg:col-span-1 space-y-4">
+          <div className="hidden lg:block lg:col-span-1 space-y-4">
             <Card className="bg-zinc-900 border-zinc-800 sticky top-4">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-zinc-400">
                   Categories
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-1">
+              <CardContent className="space-y-1 max-h-[calc(100vh-140px)] overflow-y-auto pr-1">
                 {categories.map((cat) => (
                   <button
                     key={cat.id}
@@ -3626,7 +3609,6 @@ const ResourcesPage = () => {
                       setFilterType("all");
                       setShowBookmarkedOnly(false);
                       setShowCompletedOnly(false);
-                      setShowFeaturedOnly(false);
                       setSearchQuery("");
                     }}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all border ${
@@ -3656,8 +3638,34 @@ const ResourcesPage = () => {
 
           {/* Main Content */}
           <div className="lg:col-span-3 space-y-4">
+            {/* Mobile Categories */}
+            <div className="lg:hidden">
+              <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => {
+                      setActiveCategory(cat.id);
+                      setFilterType("all");
+                      setShowBookmarkedOnly(false);
+                      setShowCompletedOnly(false);
+                      setSearchQuery("");
+                    }}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all border whitespace-nowrap flex-shrink-0 ${
+                      activeCategory === cat.id
+                        ? "bg-white text-black font-medium"
+                        : getCategoryColor(cat.id, false)
+                    }`}
+                  >
+                    {cat.icon}
+                    <span>{cat.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Search & View Toggle */}
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-zinc-400" />
                 <Input
@@ -3667,13 +3675,13 @@ const ResourcesPage = () => {
                   className="pl-10 bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
                 />
               </div>
-              <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg">
+              <div className="flex gap-1 p-1 bg-zinc-900 rounded-lg self-start sm:self-auto flex-shrink-0">
                 <Button
                   size="icon"
                   variant="ghost"
                   className={
                     viewMode === "grid"
-                      ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                      ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
                       : "text-zinc-400 hover:bg-zinc-800/50"
                   }
                   onClick={() => setViewMode("grid")}
@@ -3685,7 +3693,7 @@ const ResourcesPage = () => {
                   variant="ghost"
                   className={
                     viewMode === "list"
-                      ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
+                      ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
                       : "text-zinc-400 hover:bg-zinc-800/50"
                   }
                   onClick={() => setViewMode("list")}
@@ -3696,7 +3704,7 @@ const ResourcesPage = () => {
             </div>
 
             {/* Quick Filter Buttons */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 sm:flex-wrap sm:overflow-visible sm:pb-0 sm:mx-0 sm:px-0">
               <Button
                 size="sm"
                 variant="ghost"
@@ -3704,15 +3712,13 @@ const ResourcesPage = () => {
                   setFilterType("all");
                   setShowBookmarkedOnly(false);
                   setShowCompletedOnly(false);
-                  setShowFeaturedOnly(false);
                   setActiveCategory("all");
                 }}
                 className={`${
                   filterType === "all" &&
                   !showBookmarkedOnly &&
-                  !showCompletedOnly &&
-                  !showFeaturedOnly
-                    ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                  !showCompletedOnly
+                    ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
                     : "text-zinc-400 hover:bg-zinc-800/50"
                 }`}
               >
@@ -3726,15 +3732,13 @@ const ResourcesPage = () => {
                   setFilterType("video");
                   setShowBookmarkedOnly(false);
                   setShowCompletedOnly(false);
-                  setShowFeaturedOnly(false);
                   setActiveCategory("all");
                 }}
                 className={`${
                   filterType === "video" &&
                   !showBookmarkedOnly &&
-                  !showCompletedOnly &&
-                  !showFeaturedOnly
-                    ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                  !showCompletedOnly
+                    ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
                     : "text-zinc-400 hover:bg-zinc-800/50"
                 }`}
               >
@@ -3748,15 +3752,13 @@ const ResourcesPage = () => {
                   setFilterType("docs");
                   setShowBookmarkedOnly(false);
                   setShowCompletedOnly(false);
-                  setShowFeaturedOnly(false);
                   setActiveCategory("all");
                 }}
                 className={`${
                   filterType === "docs" &&
                   !showBookmarkedOnly &&
-                  !showCompletedOnly &&
-                  !showFeaturedOnly
-                    ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                  !showCompletedOnly
+                    ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
                     : "text-zinc-400 hover:bg-zinc-800/50"
                 }`}
               >
@@ -3770,12 +3772,11 @@ const ResourcesPage = () => {
                   setFilterType("all");
                   setShowBookmarkedOnly(true);
                   setShowCompletedOnly(false);
-                  setShowFeaturedOnly(false);
                   setActiveCategory("all");
                 }}
                 className={`${
                   showBookmarkedOnly
-                    ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                    ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
                     : "text-zinc-400 hover:bg-zinc-800/50"
                 }`}
               >
@@ -3789,36 +3790,16 @@ const ResourcesPage = () => {
                   setFilterType("all");
                   setShowBookmarkedOnly(false);
                   setShowCompletedOnly(true);
-                  setShowFeaturedOnly(false);
                   setActiveCategory("all");
                 }}
                 className={`${
                   showCompletedOnly
-                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                    ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
                     : "text-zinc-400 hover:bg-zinc-800/50"
                 }`}
               >
                 <CheckCircle2 className="w-4 h-4 mr-2" />
                 Completed ({completedResources.length})
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setFilterType("all");
-                  setShowBookmarkedOnly(false);
-                  setShowCompletedOnly(false);
-                  setShowFeaturedOnly(true);
-                  setActiveCategory("all");
-                }}
-                className={`${
-                  showFeaturedOnly
-                    ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
-                    : "text-zinc-400 hover:bg-zinc-800/50"
-                }`}
-              >
-                <Star className="w-4 h-4 mr-2" />
-                Featured ({resources.filter((r) => r.featured).length})
               </Button>
             </div>
 
@@ -3842,15 +3823,15 @@ const ResourcesPage = () => {
                   key={resource.id}
                   className={`${
                     resource.type === "docs"
-                      ? "bg-blue-950/50 border-blue-500/30"
+                      ? "bg-orange-950/50 border-orange-500/30"
                       : resource.type === "video"
-                      ? "bg-red-950/50 border-red-500/30"
+                      ? "bg-orange-950/50 border-orange-500/30"
                       : resource.type === "pdf"
-                      ? "bg-green-950/50 border-green-500/30"
-                      : "bg-purple-950/50 border-purple-500/30"
+                      ? "bg-orange-950/50 border-orange-500/30"
+                      : "bg-orange-950/50 border-orange-500/30"
                   } hover:border-zinc-700 transition-all overflow-hidden ${
                     completedResources.includes(resource.id)
-                      ? "border-green-500/50"
+                      ? "border-orange-500/50"
                       : ""
                   }`}
                 >
@@ -3858,10 +3839,14 @@ const ResourcesPage = () => {
                     className={
                       viewMode === "grid"
                         ? "p-4"
-                        : "p-4 flex items-center gap-4"
+                        : "p-4 flex flex-col sm:flex-row sm:items-center gap-4"
                     }
                   >
-                    <div className={viewMode === "grid" ? "" : "flex-1"}>
+                    <div
+                      className={
+                        viewMode === "grid" ? "" : "flex-1 w-full min-w-0"
+                      }
+                    >
                       <div className="flex items-start justify-between mb-3">
                         <div
                           className={`p-2 rounded-lg ${getTypeColor(
@@ -3876,13 +3861,13 @@ const ResourcesPage = () => {
                             variant="ghost"
                             className={`h-8 w-8 ${
                               bookmarks.includes(resource.id)
-                                ? "text-yellow-400 hover:text-yellow-300 bg-yellow-500/10"
+                                ? "text-orange-400 hover:text-orange-300 bg-orange-500/10"
                                 : "text-zinc-400 hover:text-white"
                             }`}
                             onClick={() => toggleBookmark(resource.id)}
                           >
                             {bookmarks.includes(resource.id) ? (
-                              <BookmarkCheck className="w-4 h-4 text-yellow-400" />
+                              <BookmarkCheck className="w-4 h-4 text-orange-400" />
                             ) : (
                               <Bookmark className="w-4 h-4" />
                             )}
@@ -3892,13 +3877,13 @@ const ResourcesPage = () => {
                             variant="ghost"
                             className={`h-8 w-8 ${
                               completedResources.includes(resource.id)
-                                ? "text-green-400 hover:text-green-300 bg-green-500/10"
+                                ? "text-orange-400 hover:text-orange-300 bg-orange-500/10"
                                 : "text-zinc-400 hover:text-white"
                             }`}
                             onClick={() => toggleCompleted(resource.id)}
                           >
                             {completedResources.includes(resource.id) ? (
-                              <CheckCircle2 className="w-4 h-4 text-green-400" />
+                              <CheckCircle2 className="w-4 h-4 text-orange-400" />
                             ) : (
                               <Target className="w-4 h-4" />
                             )}
@@ -3919,11 +3904,11 @@ const ResourcesPage = () => {
                             key={idx}
                             className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                               idx % 4 === 0
-                                ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                                ? "bg-orange-500/20 text-orange-300 border border-orange-500/30"
                                 : idx % 4 === 1
-                                ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                                ? "bg-orange-500/20 text-orange-300 border border-orange-500/30"
                                 : idx % 4 === 2
-                                ? "bg-green-500/20 text-green-300 border border-green-500/30"
+                                ? "bg-orange-500/20 text-orange-300 border border-orange-500/30"
                                 : "bg-orange-500/20 text-orange-300 border border-orange-500/30"
                             }`}
                           >
@@ -3932,8 +3917,8 @@ const ResourcesPage = () => {
                         ))}
                       </div>
 
-                      <div className="flex items-center justify-between text-xs text-zinc-500 mb-3">
-                        <div className="flex items-center gap-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-zinc-500 mb-3">
+                        <div className="flex flex-wrap items-center gap-3">
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {resource.duration}
@@ -3943,11 +3928,11 @@ const ResourcesPage = () => {
                           </span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                          <span className="text-yellow-300 font-medium">
+                          <Star className="w-3 h-3 text-orange-400 fill-orange-400" />
+                          <span className="text-orange-300 font-medium">
                             {resource.rating}
                           </span>
-                          <span className="text-zinc-500">
+                          <span className="hidden sm:inline text-zinc-500">
                             ({resource.reviews.toLocaleString()})
                           </span>
                         </div>
@@ -4027,7 +4012,7 @@ const ResourcesPage = () => {
           <DialogHeader className="p-4 border-b border-zinc-800">
             <div className="flex items-center justify-between">
               <DialogTitle className="text-white flex items-center gap-2">
-                <Play className="w-5 h-5 text-red-500" />
+                <Play className="w-5 h-5 text-orange-500" />
                 {videoModal.title}
               </DialogTitle>
               <Button
@@ -4053,8 +4038,8 @@ const ResourcesPage = () => {
               />
             )}
           </div>
-          <div className="p-4 border-t border-zinc-800 flex justify-between items-center">
-            <div className="flex gap-2">
+          <div className="p-4 border-t border-zinc-800 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -4086,7 +4071,7 @@ const ResourcesPage = () => {
             </div>
             <Button
               size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-orange-600 hover:bg-orange-700 text-white w-full sm:w-auto"
               onClick={() => {
                 const resource = resources.find(
                   (r) => r.title === videoModal.title

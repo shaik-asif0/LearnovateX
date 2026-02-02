@@ -90,6 +90,184 @@ import {
 import { toast } from "sonner";
 import axiosInstance from "../lib/axios";
 
+const PremiumAdmin = () => {
+  const [enrollments, setEnrollments] = useState([]);
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [approvedItems, setApprovedItems] = useState(new Set());
+  const [rejectedItems, setRejectedItems] = useState(new Set());
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const [enrollRes, appRes] = await Promise.all([
+        axiosInstance.get("/admin/enrollments"),
+        axiosInstance.get("/admin/applications"),
+      ]);
+      setEnrollments(enrollRes.data);
+      setApplications(appRes.data);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateStatus = async (type, id, status) => {
+    try {
+      const endpoint =
+        type === "enrollment"
+          ? `/admin/enrollments/${id}/status`
+          : `/admin/applications/${id}/status`;
+      await axiosInstance.put(endpoint, null, { params: { status } });
+
+      // Add to the appropriate set for visual feedback
+      if (status === "approved") {
+        setApprovedItems((prev) => new Set([...prev, `${type}-${id}`]));
+      } else if (status === "rejected") {
+        setRejectedItems((prev) => new Set([...prev, `${type}-${id}`]));
+      }
+
+      fetchData(); // Refresh data
+    } catch (error) {
+      console.error("Error updating status:", error);
+    }
+  };
+
+  if (loading) return <div>Loading...</div>;
+
+  return (
+    <div className="space-y-6">
+      <Card className="bg-zinc-900 border-zinc-800">
+        <CardHeader>
+          <CardTitle className="text-white">Course Enrollments</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {enrollments.map((enrollment) => (
+              <div
+                key={enrollment.id}
+                className="flex justify-between items-center p-4 bg-zinc-800 rounded"
+              >
+                <div>
+                  <p className="text-white">
+                    {enrollment.name} - {enrollment.course_title}
+                  </p>
+                  <p className="text-zinc-400">{enrollment.email}</p>
+                  <Badge
+                    variant={
+                      enrollment.status === "approved" ? "default" : "secondary"
+                    }
+                  >
+                    {enrollment.status}
+                  </Badge>
+                </div>
+                <div className="flex gap-2">
+                  {approvedItems.has(`enrollment-${enrollment.id}`) ? (
+                    <CheckCircle2 className="w-6 h-6 text-orange-500" />
+                  ) : rejectedItems.has(`enrollment-${enrollment.id}`) ? (
+                    <XCircle className="w-6 h-6 text-orange-500" />
+                  ) : (
+                    <>
+                      <Button
+                        onClick={() =>
+                          updateStatus("enrollment", enrollment.id, "approved")
+                        }
+                        size="sm"
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        onClick={() =>
+                          updateStatus("enrollment", enrollment.id, "rejected")
+                        }
+                        variant="destructive"
+                        size="sm"
+                      >
+                        Reject
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-zinc-900 border-zinc-800">
+        <CardHeader>
+          <CardTitle className="text-white">Internship Applications</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {applications.map((application) => (
+              <div
+                key={application.id}
+                className="flex justify-between items-center p-4 bg-zinc-800 rounded"
+              >
+                <div>
+                  <p className="text-white">
+                    {application.name} - {application.internship_title}
+                  </p>
+                  <p className="text-zinc-400">{application.email}</p>
+                  <Badge
+                    variant={
+                      application.status === "approved"
+                        ? "default"
+                        : "secondary"
+                    }
+                  >
+                    {application.status}
+                  </Badge>
+                </div>
+                <div className="flex gap-2">
+                  {approvedItems.has(`application-${application.id}`) ? (
+                    <CheckCircle2 className="w-6 h-6 text-orange-500" />
+                  ) : rejectedItems.has(`application-${application.id}`) ? (
+                    <XCircle className="w-6 h-6 text-orange-500" />
+                  ) : (
+                    <>
+                      <Button
+                        onClick={() =>
+                          updateStatus(
+                            "application",
+                            application.id,
+                            "approved"
+                          )
+                        }
+                        size="sm"
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        onClick={() =>
+                          updateStatus(
+                            "application",
+                            application.id,
+                            "rejected"
+                          )
+                        }
+                        variant="destructive"
+                        size="sm"
+                      >
+                        Reject
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
 const CollegeAdmin = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -408,14 +586,12 @@ const CollegeAdmin = () => {
 
   const getStatusColor = (status) => {
     return status === "active"
-      ? "bg-green-500/20 text-green-400 border-green-500/30"
+      ? "bg-orange-500/20 text-orange-400 border-orange-500/30"
       : "bg-zinc-500/20 text-zinc-400 border-zinc-500/30";
   };
 
   const getScoreColor = (score) => {
-    if (score >= 90) return "text-green-400";
-    if (score >= 70) return "text-yellow-400";
-    return "text-red-400";
+    return "text-orange-400";
   };
 
   return (
@@ -454,7 +630,7 @@ const CollegeAdmin = () => {
                       variant="default"
                       size="sm"
                       onClick={() => exportData("csv")}
-                      className="bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                      className="bg-orange-600 hover:bg-orange-700 text-white transition-colors"
                     >
                       <Download className="w-4 h-4 mr-2" />
                       Export CSV
@@ -470,7 +646,7 @@ const CollegeAdmin = () => {
                       variant="default"
                       size="sm"
                       onClick={() => exportData("json")}
-                      className="bg-green-600 hover:bg-green-700 text-white transition-colors"
+                      className="bg-orange-600 hover:bg-orange-700 text-white transition-colors"
                     >
                       <Download className="w-4 h-4 mr-2" />
                       Export JSON
@@ -504,12 +680,12 @@ const CollegeAdmin = () => {
                     <p className="text-zinc-400 text-sm font-medium">
                       Online Now
                     </p>
-                    <p className="text-2xl font-bold text-green-400">
+                    <p className="text-2xl font-bold text-orange-400">
                       {realtimeStats.onlineNow}
                     </p>
                   </div>
-                  <div className="p-2 bg-green-500/20 rounded-lg">
-                    <Activity className="w-5 h-5 text-green-400" />
+                  <div className="p-2 bg-orange-500/20 rounded-lg">
+                    <Activity className="w-5 h-5 text-orange-400" />
                   </div>
                 </div>
               </CardContent>
@@ -522,12 +698,12 @@ const CollegeAdmin = () => {
                     <p className="text-zinc-400 text-sm font-medium">
                       Active Today
                     </p>
-                    <p className="text-2xl font-bold text-blue-400">
+                    <p className="text-2xl font-bold text-orange-400">
                       {realtimeStats.todayActive}
                     </p>
                   </div>
-                  <div className="p-2 bg-blue-500/20 rounded-lg">
-                    <Users className="w-5 h-5 text-blue-400" />
+                  <div className="p-2 bg-orange-500/20 rounded-lg">
+                    <Users className="w-5 h-5 text-orange-400" />
                   </div>
                 </div>
               </CardContent>
@@ -540,12 +716,12 @@ const CollegeAdmin = () => {
                     <p className="text-zinc-400 text-sm font-medium">
                       Weekly Growth
                     </p>
-                    <p className="text-2xl font-bold text-purple-400">
+                    <p className="text-2xl font-bold text-orange-400">
                       +{realtimeStats.weeklyGrowth}%
                     </p>
                   </div>
-                  <div className="p-2 bg-purple-500/20 rounded-lg">
-                    <TrendingUp className="w-5 h-5 text-purple-400" />
+                  <div className="p-2 bg-orange-500/20 rounded-lg">
+                    <TrendingUp className="w-5 h-5 text-orange-400" />
                   </div>
                 </div>
               </CardContent>
@@ -581,14 +757,14 @@ const CollegeAdmin = () => {
             </Card>
             <Card className="bg-zinc-900 border-zinc-800">
               <CardContent className="p-4 text-center">
-                <CheckCircle2 className="w-6 h-6 mx-auto text-green-400 mb-2" />
+                <CheckCircle2 className="w-6 h-6 mx-auto text-orange-400 mb-2" />
                 <p className="text-2xl font-bold text-white">{stats.active}</p>
                 <p className="text-xs text-zinc-400">Active</p>
               </CardContent>
             </Card>
             <Card className="bg-zinc-900 border-zinc-800">
               <CardContent className="p-4 text-center">
-                <XCircle className="w-6 h-6 mx-auto text-red-400 mb-2" />
+                <XCircle className="w-6 h-6 mx-auto text-orange-400 mb-2" />
                 <p className="text-2xl font-bold text-white">
                   {stats.inactive}
                 </p>
@@ -597,7 +773,7 @@ const CollegeAdmin = () => {
             </Card>
             <Card className="bg-zinc-900 border-zinc-800">
               <CardContent className="p-4 text-center">
-                <BookOpen className="w-6 h-6 mx-auto text-blue-400 mb-2" />
+                <BookOpen className="w-6 h-6 mx-auto text-orange-400 mb-2" />
                 <p className="text-2xl font-bold text-white">
                   {stats.totalSessions}
                 </p>
@@ -606,7 +782,7 @@ const CollegeAdmin = () => {
             </Card>
             <Card className="bg-zinc-900 border-zinc-800">
               <CardContent className="p-4 text-center">
-                <Code className="w-6 h-6 mx-auto text-purple-400 mb-2" />
+                <Code className="w-6 h-6 mx-auto text-orange-400 mb-2" />
                 <p className="text-2xl font-bold text-white">
                   {stats.totalSubmissions}
                 </p>
@@ -615,7 +791,7 @@ const CollegeAdmin = () => {
             </Card>
             <Card className="bg-zinc-900 border-zinc-800">
               <CardContent className="p-4 text-center">
-                <Trophy className="w-6 h-6 mx-auto text-yellow-400 mb-2" />
+                <Trophy className="w-6 h-6 mx-auto text-orange-400 mb-2" />
                 <p className="text-2xl font-bold text-white">
                   {students.filter((s) => s.avg_score >= 90).length}
                 </p>
@@ -669,6 +845,13 @@ const CollegeAdmin = () => {
                 <Users className="w-4 h-4 mr-2" />
                 Groups
               </TabsTrigger>
+              <TabsTrigger
+                value="premium"
+                className="data-[state=active]:bg-white data-[state=active]:text-black"
+              >
+                <Award className="w-4 h-4 mr-2" />
+                Premium
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="connect" className="mt-6">
               <Connect students={students} />
@@ -676,6 +859,10 @@ const CollegeAdmin = () => {
 
             <TabsContent value="groups" className="mt-6">
               <StudentGroups students={students} />
+            </TabsContent>
+
+            <TabsContent value="premium" className="mt-6">
+              <PremiumAdmin />
             </TabsContent>
 
             <TabsContent value="overview" className="mt-6">
@@ -695,14 +882,14 @@ const CollegeAdmin = () => {
                         action: "completed Python Advanced module",
                         time: "2 mins ago",
                         icon: CheckCircle2,
-                        color: "text-green-400",
+                        color: "text-orange-400",
                       },
                       {
                         user: "John Doe",
                         action: "submitted code for Algorithm Challenge",
                         time: "5 mins ago",
                         icon: Code,
-                        color: "text-blue-400",
+                        color: "text-orange-400",
                       },
                       {
                         user: "Jane Smith",
@@ -716,7 +903,7 @@ const CollegeAdmin = () => {
                         action: "started Data Structures course",
                         time: "15 mins ago",
                         icon: BookOpen,
-                        color: "text-purple-400",
+                        color: "text-orange-400",
                       },
                       {
                         user: "Mike Johnson",
@@ -755,7 +942,7 @@ const CollegeAdmin = () => {
                 <Card className="bg-zinc-900 border-zinc-800">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
-                      <Trophy className="w-5 h-5 text-yellow-400" />
+                      <Trophy className="w-5 h-5 text-orange-400" />
                       Top Performers
                     </CardTitle>
                   </CardHeader>
@@ -771,7 +958,7 @@ const CollegeAdmin = () => {
                           <div
                             className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
                               idx === 0
-                                ? "bg-yellow-500/20 text-yellow-400"
+                                ? "bg-orange-500/20 text-orange-400"
                                 : idx === 1
                                 ? "bg-zinc-400/20 text-zinc-300"
                                 : idx === 2
@@ -900,7 +1087,7 @@ const CollegeAdmin = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-red-700 text-red-400 hover:bg-red-900"
+                      className="border-orange-700 text-orange-400 hover:bg-orange-900"
                       onClick={handleBulkDelete}
                     >
                       <X className="w-4 h-4 mr-2" />
@@ -976,7 +1163,7 @@ const CollegeAdmin = () => {
                                   );
                                 }
                               }}
-                              className="w-4 h-4 text-blue-600 bg-zinc-800 border-zinc-600 rounded focus:ring-blue-500"
+                              className="w-4 h-4 text-orange-600 bg-zinc-800 border-zinc-600 rounded focus:ring-orange-500"
                             />
                             <div className="w-12 h-12 bg-gradient-to-br from-white to-zinc-300 rounded-xl flex items-center justify-center text-black font-bold text-lg">
                               {student.name.charAt(0)}
@@ -1042,7 +1229,7 @@ const CollegeAdmin = () => {
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="text-blue-400"
+                              className="text-orange-400"
                               title="Edit"
                               onClick={() => {
                                 setEditStudent(student);
@@ -1054,7 +1241,7 @@ const CollegeAdmin = () => {
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="text-red-400"
+                              className="text-orange-400"
                               title="Delete"
                               onClick={() => handleDeleteStudent(student.id)}
                             >
@@ -1170,25 +1357,25 @@ const CollegeAdmin = () => {
                         label: "Excellent (90-100)",
                         min: 90,
                         max: 100,
-                        color: "bg-green-500",
+                        color: "bg-orange-500",
                       },
                       {
                         label: "Good (70-89)",
                         min: 70,
                         max: 89,
-                        color: "bg-blue-500",
+                        color: "bg-orange-500",
                       },
                       {
                         label: "Average (50-69)",
                         min: 50,
                         max: 69,
-                        color: "bg-yellow-500",
+                        color: "bg-orange-500",
                       },
                       {
                         label: "Needs Improvement (<50)",
                         min: 0,
                         max: 49,
-                        color: "bg-red-500",
+                        color: "bg-orange-500",
                       },
                     ].map((range) => {
                       const count = students.filter(
@@ -1237,7 +1424,7 @@ const CollegeAdmin = () => {
                               className="flex-1 flex flex-col items-center gap-2"
                             >
                               <div
-                                className="w-full bg-gradient-to-t from-blue-500/20 to-blue-500/60 rounded-t"
+                                className="w-full bg-gradient-to-t from-orange-500/20 to-orange-500/60 rounded-t"
                                 style={{ height: `${height}%` }}
                               />
                               <span className="text-xs text-zinc-500">
@@ -1302,9 +1489,9 @@ const CollegeAdmin = () => {
                           <Badge
                             className={
                               announcement.priority === "high"
-                                ? "bg-red-500/20 text-red-400 border-red-500/30"
+                                ? "bg-orange-500/20 text-orange-400 border-orange-500/30"
                                 : announcement.priority === "medium"
-                                ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
+                                ? "bg-orange-500/20 text-orange-400 border-orange-500/30"
                                 : "bg-zinc-500/20 text-zinc-400 border-zinc-500/30"
                             }
                           >
@@ -1347,21 +1534,21 @@ const CollegeAdmin = () => {
                 <div className="space-y-6 mt-4">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="text-center p-3 bg-zinc-800 rounded-lg">
-                      <BookOpen className="w-5 h-5 mx-auto text-blue-400 mb-1" />
+                      <BookOpen className="w-5 h-5 mx-auto text-orange-400 mb-1" />
                       <p className="text-xl font-bold text-white">
                         {selectedStudent.learning_sessions}
                       </p>
                       <p className="text-xs text-zinc-500">Sessions</p>
                     </div>
                     <div className="text-center p-3 bg-zinc-800 rounded-lg">
-                      <Code className="w-5 h-5 mx-auto text-purple-400 mb-1" />
+                      <Code className="w-5 h-5 mx-auto text-orange-400 mb-1" />
                       <p className="text-xl font-bold text-white">
                         {selectedStudent.code_submissions}
                       </p>
                       <p className="text-xs text-zinc-500">Submissions</p>
                     </div>
                     <div className="text-center p-3 bg-zinc-800 rounded-lg">
-                      <Target className="w-5 h-5 mx-auto text-green-400 mb-1" />
+                      <Target className="w-5 h-5 mx-auto text-orange-400 mb-1" />
                       <p
                         className={`text-xl font-bold ${getScoreColor(
                           selectedStudent.avg_score
@@ -1413,7 +1600,7 @@ const CollegeAdmin = () => {
                         <p className="text-xs text-zinc-500">Sessions</p>
                         <div className="w-full bg-zinc-800 rounded-full h-2">
                           <div
-                            className="bg-blue-500 h-2 rounded-full"
+                            className="bg-orange-500 h-2 rounded-full"
                             style={{
                               width: `${Math.min(
                                 (selectedStudent.learning_sessions / 50) * 100,
@@ -1430,7 +1617,7 @@ const CollegeAdmin = () => {
                         <p className="text-xs text-zinc-500">Submissions</p>
                         <div className="w-full bg-zinc-800 rounded-full h-2">
                           <div
-                            className="bg-purple-500 h-2 rounded-full"
+                            className="bg-orange-500 h-2 rounded-full"
                             style={{
                               width: `${Math.min(
                                 (selectedStudent.code_submissions / 50) * 100,

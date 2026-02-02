@@ -84,6 +84,10 @@ import { getUser, clearAuth } from "../lib/utils";
 const SettingsPage = () => {
   const navigate = useNavigate();
   const user = getUser();
+  const userSettingsKey =
+    user?.id || user?._id || user?.email
+      ? `userSettings:${user.id || user._id || user.email}`
+      : "userSettings:anonymous";
   const [activeTab, setActiveTab] = useState("notifications");
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -96,6 +100,13 @@ const SettingsPage = () => {
     new: "",
     confirm: "",
   });
+
+  // Demo-friendly security state (so buttons "work" like a SaaS UI)
+  const securityKey =
+    user?.id || user?._id || user?.email
+      ? `userSecurity:${user.id || user._id || user.email}`
+      : "userSecurity:anonymous";
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
 
   const [settings, setSettings] = useState({
     notifications: {
@@ -143,40 +154,96 @@ const SettingsPage = () => {
 
   useEffect(() => {
     loadSettings();
+
+    // Apply redirect from ProfilePage (e.g., open Security tab)
+    try {
+      const redirectTab = localStorage.getItem("settings.redirectTab");
+      if (redirectTab) {
+        setActiveTab(redirectTab);
+        localStorage.removeItem("settings.redirectTab");
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    // Load security flags
+    try {
+      const saved = localStorage.getItem(securityKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setTwoFactorEnabled(!!parsed?.twoFactorEnabled);
+      }
+    } catch (e) {
+      // ignore malformed storage
+    }
   }, []);
 
+  const handleToggleTwoFactor = () => {
+    const next = !twoFactorEnabled;
+    setTwoFactorEnabled(next);
+    try {
+      localStorage.setItem(
+        securityKey,
+        JSON.stringify({ twoFactorEnabled: next, updatedAt: Date.now() })
+      );
+    } catch (e) {
+      // ignore
+    }
+    toast.success(
+      next
+        ? "Two-factor authentication enabled (demo)"
+        : "Two-factor authentication disabled (demo)"
+    );
+  };
+
   const loadSettings = () => {
-    const savedSettings = localStorage.getItem("userSettings");
-    if (savedSettings) {
-      setSettings((prev) => ({ ...prev, ...JSON.parse(savedSettings) }));
+    try {
+      const savedPerUser = localStorage.getItem(userSettingsKey);
+      if (savedPerUser) {
+        setSettings((prev) => ({ ...prev, ...JSON.parse(savedPerUser) }));
+        return;
+      }
+
+      // Legacy migration (previous versions used a shared key)
+      const legacy = localStorage.getItem("userSettings");
+      if (legacy) {
+        localStorage.setItem(userSettingsKey, legacy);
+        localStorage.removeItem("userSettings");
+        setSettings((prev) => ({ ...prev, ...JSON.parse(legacy) }));
+      }
+    } catch (e) {
+      // ignore malformed storage
     }
   };
 
   const updateSetting = (category, key, value) => {
-    setSettings((prev) => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [key]: value,
-      },
-    }));
     setHasChanges(true);
-    // Auto-save with visual feedback
-    autoSave(category, key, value);
-  };
 
-  const autoSave = (category, key, value) => {
-    const newSettings = {
-      ...settings,
-      [category]: {
-        ...settings[category],
-        [key]: value,
-      },
-    };
-    localStorage.setItem("userSettings", JSON.stringify(newSettings));
-    toast.success(`${formatSettingName(key)} updated`, {
-      duration: 1500,
-      position: "bottom-right",
+    // Important: use functional state update so persistence uses the latest state
+    // (prevents "buttons not working" feeling caused by stale closure saves).
+    setSettings((prev) => {
+      const next = {
+        ...prev,
+        [category]: {
+          ...prev[category],
+          [key]: value,
+        },
+      };
+
+      try {
+        localStorage.setItem(userSettingsKey, JSON.stringify(next));
+        // Same-tab "real-time" sync for other pages (e.g., ProfilePage)
+        window.dispatchEvent(new Event("userSettingsChange"));
+      } catch (e) {
+        // ignore storage errors
+      }
+
+      toast.success(`${formatSettingName(key)} updated`, {
+        duration: 1500,
+        position: "bottom-right",
+      });
+
+      return next;
     });
   };
 
@@ -189,7 +256,12 @@ const SettingsPage = () => {
   const handleSaveAll = async () => {
     setSaving(true);
     await new Promise((resolve) => setTimeout(resolve, 800));
-    localStorage.setItem("userSettings", JSON.stringify(settings));
+    try {
+      localStorage.setItem(userSettingsKey, JSON.stringify(settings));
+      window.dispatchEvent(new Event("userSettingsChange"));
+    } catch (e) {
+      // ignore
+    }
     setSaving(false);
     setHasChanges(false);
     toast.success("All settings saved successfully!");
@@ -260,10 +332,10 @@ const SettingsPage = () => {
   };
 
   const getStrengthColor = (strength) => {
-    if (strength <= 25) return "bg-red-500";
+    if (strength <= 25) return "bg-orange-500";
     if (strength <= 50) return "bg-orange-500";
-    if (strength <= 75) return "bg-yellow-500";
-    return "bg-green-500";
+    if (strength <= 75) return "bg-orange-500";
+    return "bg-orange-500";
   };
 
   const getStrengthText = (strength) => {
@@ -279,7 +351,7 @@ const SettingsPage = () => {
     icon: Icon,
     title,
     description,
-    color = "blue",
+    color = "orange",
   }) => (
     <div className="flex items-center justify-between p-4 bg-zinc-800/50 rounded-xl hover:bg-zinc-800 transition-all group">
       <div className="flex items-center gap-4">
@@ -309,7 +381,7 @@ const SettingsPage = () => {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl">
+            <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl">
               <Settings className="w-8 h-8 text-white" />
             </div>
             <div>
@@ -320,16 +392,16 @@ const SettingsPage = () => {
             </div>
           </div>
           {hasChanges && (
-            <div className="flex items-center gap-2 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-              <AlertTriangle className="w-4 h-4 text-yellow-400" />
-              <span className="text-yellow-400 text-sm">
+            <div className="flex items-center gap-2 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+              <AlertTriangle className="w-4 h-4 text-orange-400" />
+              <span className="text-orange-400 text-sm">
                 You have unsaved changes
               </span>
               <Button
                 size="sm"
                 onClick={handleSaveAll}
                 disabled={saving}
-                className="ml-auto bg-yellow-500 text-black hover:bg-yellow-400"
+                className="ml-auto bg-orange-500 text-black hover:bg-orange-400"
               >
                 {saving ? "Saving..." : "Save All"}
               </Button>
@@ -348,19 +420,19 @@ const SettingsPage = () => {
                       id: "notifications",
                       icon: Bell,
                       label: "Notifications",
-                      color: "blue",
+                      color: "orange",
                     },
                     {
                       id: "privacy",
                       icon: Shield,
                       label: "Privacy",
-                      color: "green",
+                      color: "orange",
                     },
                     {
                       id: "preferences",
                       icon: Palette,
                       label: "Preferences",
-                      color: "purple",
+                      color: "orange",
                     },
                     {
                       id: "learning",
@@ -372,19 +444,19 @@ const SettingsPage = () => {
                       id: "accessibility",
                       icon: Accessibility,
                       label: "Accessibility",
-                      color: "cyan",
+                      color: "orange",
                     },
                     {
                       id: "security",
                       icon: Lock,
                       label: "Security",
-                      color: "red",
+                      color: "orange",
                     },
                     {
                       id: "data",
                       icon: Database,
                       label: "Data & Storage",
-                      color: "pink",
+                      color: "orange",
                     },
                   ].map((item) => {
                     const Icon = item.icon;
@@ -420,8 +492,8 @@ const SettingsPage = () => {
               <Card className="bg-zinc-900 border-zinc-800">
                 <CardHeader>
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-500/20 rounded-lg">
-                      <Bell className="w-6 h-6 text-blue-400" />
+                    <div className="p-2 bg-orange-500/20 rounded-lg">
+                      <Bell className="w-6 h-6 text-orange-400" />
                     </div>
                     <div>
                       <CardTitle className="text-white">
@@ -441,7 +513,7 @@ const SettingsPage = () => {
                       icon={Mail}
                       title="Email Notifications"
                       description="Receive important updates via email"
-                      color="blue"
+                      color="orange"
                     />
                     <SettingToggle
                       category="notifications"
@@ -449,7 +521,7 @@ const SettingsPage = () => {
                       icon={Smartphone}
                       title="Push Notifications"
                       description="Get instant notifications on your device"
-                      color="purple"
+                      color="orange"
                     />
                     <SettingToggle
                       category="notifications"
@@ -457,7 +529,7 @@ const SettingsPage = () => {
                       icon={Trophy}
                       title="Achievement Alerts"
                       description="Celebrate when you unlock new achievements"
-                      color="yellow"
+                      color="orange"
                     />
                     <SettingToggle
                       category="notifications"
@@ -465,7 +537,7 @@ const SettingsPage = () => {
                       icon={Clock}
                       title="Learning Reminders"
                       description="Daily reminders to keep your streak going"
-                      color="green"
+                      color="orange"
                     />
                     <SettingToggle
                       category="notifications"
@@ -473,7 +545,7 @@ const SettingsPage = () => {
                       icon={FileText}
                       title="Weekly Progress Report"
                       description="Get a summary of your weekly progress"
-                      color="cyan"
+                      color="orange"
                     />
                     <SettingToggle
                       category="notifications"
@@ -493,8 +565,8 @@ const SettingsPage = () => {
               <Card className="bg-zinc-900 border-zinc-800">
                 <CardHeader>
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-green-500/20 rounded-lg">
-                      <Shield className="w-6 h-6 text-green-400" />
+                    <div className="p-2 bg-orange-500/20 rounded-lg">
+                      <Shield className="w-6 h-6 text-orange-400" />
                     </div>
                     <div>
                       <CardTitle className="text-white">
@@ -514,7 +586,7 @@ const SettingsPage = () => {
                       icon={Eye}
                       title="Public Profile"
                       description="Make your profile visible to other users"
-                      color="green"
+                      color="orange"
                     />
                     <SettingToggle
                       category="privacy"
@@ -522,7 +594,7 @@ const SettingsPage = () => {
                       icon={Target}
                       title="Show Progress"
                       description="Display your learning progress publicly"
-                      color="blue"
+                      color="orange"
                     />
                     <SettingToggle
                       category="privacy"
@@ -530,7 +602,7 @@ const SettingsPage = () => {
                       icon={Trophy}
                       title="Show Achievements"
                       description="Display earned achievements on your profile"
-                      color="yellow"
+                      color="orange"
                     />
                     <SettingToggle
                       category="privacy"
@@ -538,7 +610,7 @@ const SettingsPage = () => {
                       icon={History}
                       title="Show Activity"
                       description="Let others see your recent activity"
-                      color="purple"
+                      color="orange"
                     />
                     <SettingToggle
                       category="privacy"
@@ -546,7 +618,7 @@ const SettingsPage = () => {
                       icon={MessageSquare}
                       title="Allow Messages"
                       description="Let other users send you messages"
-                      color="cyan"
+                      color="orange"
                     />
                     <SettingToggle
                       category="privacy"
@@ -566,8 +638,8 @@ const SettingsPage = () => {
               <Card className="bg-zinc-900 border-zinc-800">
                 <CardHeader>
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-purple-500/20 rounded-lg">
-                      <Palette className="w-6 h-6 text-purple-400" />
+                    <div className="p-2 bg-orange-500/20 rounded-lg">
+                      <Palette className="w-6 h-6 text-orange-400" />
                     </div>
                     <div>
                       <CardTitle className="text-white">
@@ -586,7 +658,7 @@ const SettingsPage = () => {
                       <Moon className="w-4 h-4" />
                       Theme
                     </Label>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {[
                         { id: "dark", label: "Dark", icon: Moon },
                         { id: "light", label: "Light", icon: Sun },
@@ -601,14 +673,14 @@ const SettingsPage = () => {
                             }
                             className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
                               settings.preferences.theme === theme.id
-                                ? "border-purple-500 bg-purple-500/10"
+                                ? "border-orange-500 bg-orange-500/10"
                                 : "border-zinc-700 bg-zinc-800 hover:border-zinc-600"
                             }`}
                           >
                             <Icon
                               className={`w-6 h-6 ${
                                 settings.preferences.theme === theme.id
-                                  ? "text-purple-400"
+                                  ? "text-orange-400"
                                   : "text-zinc-400"
                               }`}
                             />
@@ -680,7 +752,7 @@ const SettingsPage = () => {
                   {/* Font Size */}
                   <div className="space-y-3">
                     <Label className="text-zinc-300">Font Size</Label>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {["small", "medium", "large", "xlarge"].map((size) => (
                         <button
                           key={size}
@@ -689,7 +761,7 @@ const SettingsPage = () => {
                           }
                           className={`p-3 rounded-lg border transition-all capitalize ${
                             settings.preferences.fontSize === size
-                              ? "border-purple-500 bg-purple-500/10 text-white"
+                              ? "border-orange-500 bg-orange-500/10 text-white"
                               : "border-zinc-700 bg-zinc-800 text-zinc-400 hover:border-zinc-600"
                           }`}
                         >
@@ -706,7 +778,7 @@ const SettingsPage = () => {
                       icon={Save}
                       title="Auto Save"
                       description="Automatically save your work"
-                      color="green"
+                      color="orange"
                     />
                     <SettingToggle
                       category="preferences"
@@ -714,7 +786,7 @@ const SettingsPage = () => {
                       icon={Monitor}
                       title="Compact Mode"
                       description="Use a more compact interface layout"
-                      color="blue"
+                      color="orange"
                     />
                   </div>
                 </CardContent>
@@ -746,7 +818,7 @@ const SettingsPage = () => {
                       <Target className="w-4 h-4" />
                       Daily Learning Goal
                     </Label>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {[15, 30, 45, 60].map((mins) => (
                         <button
                           key={mins}
@@ -771,11 +843,11 @@ const SettingsPage = () => {
                       <Zap className="w-4 h-4" />
                       Preferred Difficulty
                     </Label>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {[
-                        { id: "easy", label: "Easy", color: "green" },
-                        { id: "medium", label: "Medium", color: "yellow" },
-                        { id: "hard", label: "Hard", color: "red" },
+                        { id: "easy", label: "Easy", color: "orange" },
+                        { id: "medium", label: "Medium", color: "orange" },
+                        { id: "hard", label: "Hard", color: "orange" },
                       ].map((diff) => (
                         <button
                           key={diff.id}
@@ -829,7 +901,7 @@ const SettingsPage = () => {
                       icon={Calendar}
                       title="Weekend Reminders"
                       description="Receive learning reminders on weekends"
-                      color="blue"
+                      color="orange"
                     />
                     <SettingToggle
                       category="learning"
@@ -849,8 +921,8 @@ const SettingsPage = () => {
               <Card className="bg-zinc-900 border-zinc-800">
                 <CardHeader>
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-cyan-500/20 rounded-lg">
-                      <Accessibility className="w-6 h-6 text-cyan-400" />
+                    <div className="p-2 bg-orange-500/20 rounded-lg">
+                      <Accessibility className="w-6 h-6 text-orange-400" />
                     </div>
                     <div>
                       <CardTitle className="text-white">
@@ -870,7 +942,7 @@ const SettingsPage = () => {
                       icon={RefreshCw}
                       title="Reduce Motion"
                       description="Minimize animations and transitions"
-                      color="cyan"
+                      color="orange"
                     />
                     <SettingToggle
                       category="accessibility"
@@ -878,7 +950,7 @@ const SettingsPage = () => {
                       icon={Eye}
                       title="High Contrast"
                       description="Increase contrast for better visibility"
-                      color="yellow"
+                      color="orange"
                     />
                     <SettingToggle
                       category="accessibility"
@@ -886,7 +958,7 @@ const SettingsPage = () => {
                       icon={Volume2}
                       title="Screen Reader Support"
                       description="Optimize for screen readers"
-                      color="green"
+                      color="orange"
                     />
                     <SettingToggle
                       category="accessibility"
@@ -894,7 +966,7 @@ const SettingsPage = () => {
                       icon={Fingerprint}
                       title="Keyboard Navigation"
                       description="Enhanced keyboard navigation support"
-                      color="purple"
+                      color="orange"
                     />
                   </div>
                 </CardContent>
@@ -907,8 +979,8 @@ const SettingsPage = () => {
                 <Card className="bg-zinc-900 border-zinc-800">
                   <CardHeader>
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-red-500/20 rounded-lg">
-                        <Lock className="w-6 h-6 text-red-400" />
+                      <div className="p-2 bg-orange-500/20 rounded-lg">
+                        <Lock className="w-6 h-6 text-orange-400" />
                       </div>
                       <div>
                         <CardTitle className="text-white">
@@ -981,12 +1053,12 @@ const SettingsPage = () => {
                             <span
                               className={`font-medium ${
                                 passwordStrength <= 25
-                                  ? "text-red-400"
+                                  ? "text-orange-400"
                                   : passwordStrength <= 50
                                   ? "text-orange-400"
                                   : passwordStrength <= 75
-                                  ? "text-yellow-400"
-                                  : "text-green-400"
+                                  ? "text-orange-400"
+                                  : "text-orange-400"
                               }`}
                             >
                               {getStrengthText(passwordStrength)}
@@ -1033,7 +1105,7 @@ const SettingsPage = () => {
                       </div>
                       {passwords.confirm &&
                         passwords.new !== passwords.confirm && (
-                          <p className="text-sm text-red-400 flex items-center gap-1">
+                          <p className="text-sm text-orange-400 flex items-center gap-1">
                             <AlertTriangle className="w-3 h-3" />
                             Passwords do not match
                           </p>
@@ -1041,7 +1113,7 @@ const SettingsPage = () => {
                     </div>
                     <Button
                       onClick={handleChangePassword}
-                      className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white"
+                      className="w-full bg-gradient-to-r from-orange-600 to-orange-600 hover:from-orange-700 hover:to-orange-700 text-white"
                     >
                       <Key className="w-4 h-4 mr-2" />
                       Update Password
@@ -1052,15 +1124,15 @@ const SettingsPage = () => {
                 <Card className="bg-zinc-900 border-zinc-800">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
-                      <Shield className="w-5 h-5 text-green-400" />
+                      <Shield className="w-5 h-5 text-orange-400" />
                       Two-Factor Authentication
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-between p-4 bg-zinc-800/50 rounded-xl">
                       <div className="flex items-center gap-4">
-                        <div className="p-2 bg-green-500/20 rounded-lg">
-                          <Smartphone className="w-5 h-5 text-green-400" />
+                        <div className="p-2 bg-orange-500/20 rounded-lg">
+                          <Smartphone className="w-5 h-5 text-orange-400" />
                         </div>
                         <div>
                           <p className="text-white font-medium">
@@ -1073,9 +1145,10 @@ const SettingsPage = () => {
                       </div>
                       <Button
                         variant="outline"
-                        className="border-green-500/50 text-green-400 hover:bg-green-500/10"
+                        className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
+                        onClick={handleToggleTwoFactor}
                       >
-                        Enable
+                        {twoFactorEnabled ? "Disable" : "Enable"}
                       </Button>
                     </div>
                   </CardContent>
@@ -1084,7 +1157,7 @@ const SettingsPage = () => {
                 <Card className="bg-zinc-900 border-zinc-800">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
-                      <History className="w-5 h-5 text-blue-400" />
+                      <History className="w-5 h-5 text-orange-400" />
                       Active Sessions
                     </CardTitle>
                   </CardHeader>
@@ -1092,8 +1165,8 @@ const SettingsPage = () => {
                     <div className="space-y-3">
                       <div className="flex items-center justify-between p-4 bg-zinc-800/50 rounded-xl">
                         <div className="flex items-center gap-4">
-                          <div className="p-2 bg-blue-500/20 rounded-lg">
-                            <Monitor className="w-5 h-5 text-blue-400" />
+                          <div className="p-2 bg-orange-500/20 rounded-lg">
+                            <Monitor className="w-5 h-5 text-orange-400" />
                           </div>
                           <div>
                             <p className="text-white font-medium">
@@ -1104,7 +1177,7 @@ const SettingsPage = () => {
                             </p>
                           </div>
                         </div>
-                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                        <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
                           Active
                         </Badge>
                       </div>
@@ -1128,8 +1201,8 @@ const SettingsPage = () => {
                 <Card className="bg-zinc-900 border-zinc-800">
                   <CardHeader>
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-pink-500/20 rounded-lg">
-                        <Database className="w-6 h-6 text-pink-400" />
+                      <div className="p-2 bg-orange-500/20 rounded-lg">
+                        <Database className="w-6 h-6 text-orange-400" />
                       </div>
                       <div>
                         <CardTitle className="text-white">
@@ -1144,8 +1217,8 @@ const SettingsPage = () => {
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between p-4 bg-zinc-800/50 rounded-xl">
                       <div className="flex items-center gap-4">
-                        <div className="p-2 bg-blue-500/20 rounded-lg">
-                          <Download className="w-5 h-5 text-blue-400" />
+                        <div className="p-2 bg-orange-500/20 rounded-lg">
+                          <Download className="w-5 h-5 text-orange-400" />
                         </div>
                         <div>
                           <p className="text-white font-medium">Export Data</p>
@@ -1156,7 +1229,7 @@ const SettingsPage = () => {
                       </div>
                       <Button
                         variant="outline"
-                        className="border-blue-500/50 text-blue-400 hover:bg-blue-500/10"
+                        className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
                         onClick={handleExportData}
                       >
                         Export
@@ -1164,8 +1237,8 @@ const SettingsPage = () => {
                     </div>
                     <div className="flex items-center justify-between p-4 bg-zinc-800/50 rounded-xl">
                       <div className="flex items-center gap-4">
-                        <div className="p-2 bg-purple-500/20 rounded-lg">
-                          <Cloud className="w-5 h-5 text-purple-400" />
+                        <div className="p-2 bg-orange-500/20 rounded-lg">
+                          <Cloud className="w-5 h-5 text-orange-400" />
                         </div>
                         <div>
                           <p className="text-white font-medium">Cloud Sync</p>
@@ -1174,7 +1247,7 @@ const SettingsPage = () => {
                           </p>
                         </div>
                       </div>
-                      <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                      <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
                         <CheckCircle2 className="w-3 h-3 mr-1" />
                         Synced
                       </Badge>
@@ -1205,15 +1278,15 @@ const SettingsPage = () => {
                 </Card>
 
                 {/* Danger Zone */}
-                <Card className="bg-gradient-to-r from-red-900/20 via-zinc-900 to-red-900/20 border-red-800/30">
+                <Card className="bg-gradient-to-r from-orange-900/20 via-zinc-900 to-orange-900/20 border-orange-800/30">
                   <CardHeader>
-                    <CardTitle className="text-red-400 flex items-center gap-2">
+                    <CardTitle className="text-orange-400 flex items-center gap-2">
                       <AlertTriangle className="w-5 h-5" />
                       Danger Zone
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-red-500/10 rounded-xl border border-red-500/20">
+                    <div className="flex items-center justify-between p-4 bg-orange-500/10 rounded-xl border border-orange-500/20">
                       <div>
                         <p className="text-white font-medium">Delete Account</p>
                         <p className="text-sm text-zinc-400">
@@ -1222,7 +1295,7 @@ const SettingsPage = () => {
                       </div>
                       <Button
                         variant="outline"
-                        className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                        className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
                         onClick={handleDeleteAccount}
                       >
                         <Trash2 className="w-4 h-4 mr-2" />

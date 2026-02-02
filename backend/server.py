@@ -1,6 +1,7 @@
 # ==================== IMPORTS ====================
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Query
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Form, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 import os
@@ -47,6 +48,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://purple-river-029d38c00.2.azurestaticapps.net"
+        # "http://localhost:3000",
+        # "http://127.0.0.1:3000"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -91,6 +94,15 @@ RESUME_UPLOAD_DIR = os.environ.get('RESUME_UPLOAD_DIR', 'uploads/resumes')
 CODE_UPLOAD_DIR = os.environ.get('CODE_UPLOAD_DIR', 'uploads/code_submissions')
 MAX_FILE_SIZE_MB = int(os.environ.get('MAX_FILE_SIZE_MB', 5))
 ALLOWED_RESUME_FORMATS = os.environ.get('ALLOWED_RESUME_FORMATS', 'pdf').split(',')
+
+# Ensure upload directories exist and are served
+UPLOADS_ROOT = ROOT_DIR / UPLOAD_DIR
+UPLOADS_ROOT.mkdir(parents=True, exist_ok=True)
+(ROOT_DIR / RESUME_UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
+(ROOT_DIR / CODE_UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
+
+# Serve uploaded files (screenshots, avatars, resumes, etc.)
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS_ROOT)), name="uploads")
 
 # Application Limits
 MAX_DAILY_AI_REQUESTS = int(os.environ.get('MAX_DAILY_AI_REQUESTS', 20))
@@ -149,6 +161,27 @@ class UserResponse(BaseModel):
     role: str
     created_at: str
 
+
+class UserProfileResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    email: str
+    name: str
+    role: str
+    created_at: str
+    avatar_url: Optional[str] = None
+    profile_data: Optional[Dict[str, Any]] = None
+    updated_at: Optional[str] = None
+
+
+class UserProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    profile_data: Optional[Dict[str, Any]] = None
+
+
+class AvatarUploadResponse(BaseModel):
+    avatar_url: str
+
 class AuthResponse(BaseModel):
     token: str
     user: UserResponse
@@ -196,6 +229,31 @@ class ResumeAnalysis(BaseModel):
 class InterviewQuestion(BaseModel):
     question: str
     type: str  # technical, behavioral, etc.
+
+class CourseEnrollment(BaseModel):
+    course_id: int
+    course_title: str
+    name: str
+    email: str
+    phone: str
+    address: Optional[str] = None
+    qualification: Optional[str] = None
+    experience: Optional[str] = None
+    screenshot_url: Optional[str] = None
+
+class InternshipApplication(BaseModel):
+    internship_id: int
+    internship_title: str
+    company: str
+    location: str
+    duration: str
+    name: str
+    email: str
+    phone: str
+    address: Optional[str] = None
+    qualification: Optional[str] = None
+    experience: Optional[str] = None
+    screenshot_url: Optional[str] = None
 
 class InterviewResponse(BaseModel):
     question_id: str
@@ -296,10 +354,25 @@ def _init_sqlite_db():
                 password TEXT NOT NULL,
                 name TEXT NOT NULL,
                 role TEXT NOT NULL,
-                created_at TEXT NOT NULL
+                created_at TEXT NOT NULL,
+                avatar_url TEXT,
+                profile_data TEXT,
+                updated_at TEXT
             );
             """
         )
+
+        # Safe migrations for existing databases
+        for statement in [
+            "ALTER TABLE users ADD COLUMN avatar_url TEXT",
+            "ALTER TABLE users ADD COLUMN profile_data TEXT",
+            "ALTER TABLE users ADD COLUMN updated_at TEXT",
+        ]:
+            try:
+                conn.execute(statement)
+            except sqlite3.OperationalError:
+                # Column likely already exists
+                pass
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS learning_history (
@@ -463,6 +536,48 @@ def _init_sqlite_db():
             );
             """
         )
+        # Premium enrollment tables
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS course_enrollments (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                course_id INTEGER NOT NULL,
+                course_title TEXT NOT NULL,
+                enrollment_date TEXT NOT NULL,
+                status TEXT DEFAULT 'enrolled',
+                name TEXT,
+                email TEXT,
+                phone TEXT,
+                address TEXT,
+                qualification TEXT,
+                experience TEXT,
+                screenshot_url TEXT
+            );
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS internship_applications (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                internship_id INTEGER NOT NULL,
+                internship_title TEXT NOT NULL,
+                application_date TEXT NOT NULL,
+                status TEXT DEFAULT 'applied',
+                company TEXT,
+                location TEXT,
+                duration TEXT,
+                name TEXT,
+                email TEXT,
+                phone TEXT,
+                address TEXT,
+                qualification TEXT,
+                experience TEXT,
+                screenshot_url TEXT
+            );
+            """
+        )
 
 
 def _insert_sqlite_user(user_doc: dict) -> bool:
@@ -492,7 +607,8 @@ def _insert_sqlite_user(user_doc: dict) -> bool:
 def _get_sqlite_user(email: str) -> Optional[dict]:
     with _sqlite_connection() as conn:
         cursor = conn.execute(
-            "SELECT id, email, password, name, role, created_at FROM users WHERE email = ?", (email,)
+            "SELECT id, email, password, name, role, created_at, avatar_url, profile_data, updated_at FROM users WHERE email = ?",
+            (email,),
         )
         return _row_to_dict(cursor.fetchone())
 
@@ -503,6 +619,62 @@ async def store_sqlite_user(user_doc: dict):
 
 async def fetch_sqlite_user(email: str) -> Optional[dict]:
     return await asyncio.to_thread(_get_sqlite_user, email)
+
+
+def _get_sqlite_user_public_by_id(user_id: str) -> Optional[dict]:
+    with _sqlite_connection() as conn:
+        cursor = conn.execute(
+            "SELECT id, email, name, role, created_at, avatar_url, profile_data, updated_at FROM users WHERE id = ?",
+            (user_id,),
+        )
+        return _row_to_dict(cursor.fetchone())
+
+
+async def fetch_sqlite_user_public_by_id(user_id: str) -> Optional[dict]:
+    return await asyncio.to_thread(_get_sqlite_user_public_by_id, user_id)
+
+
+def _update_sqlite_user_profile(user_id: str, name: Optional[str], profile_data: Optional[dict]):
+    updated_at = datetime.now(timezone.utc).isoformat()
+    profile_json = json.dumps(profile_data) if profile_data is not None else None
+
+    with _sqlite_connection() as conn:
+        if name is not None and profile_data is not None:
+            conn.execute(
+                "UPDATE users SET name = ?, profile_data = ?, updated_at = ? WHERE id = ?",
+                (name, profile_json, updated_at, user_id),
+            )
+        elif name is not None:
+            conn.execute(
+                "UPDATE users SET name = ?, updated_at = ? WHERE id = ?",
+                (name, updated_at, user_id),
+            )
+        elif profile_data is not None:
+            conn.execute(
+                "UPDATE users SET profile_data = ?, updated_at = ? WHERE id = ?",
+                (profile_json, updated_at, user_id),
+            )
+        else:
+            return
+        conn.commit()
+
+
+async def update_sqlite_user_profile(user_id: str, name: Optional[str], profile_data: Optional[dict]):
+    await asyncio.to_thread(_update_sqlite_user_profile, user_id, name, profile_data)
+
+
+def _update_sqlite_user_avatar(user_id: str, avatar_url: str):
+    updated_at = datetime.now(timezone.utc).isoformat()
+    with _sqlite_connection() as conn:
+        conn.execute(
+            "UPDATE users SET avatar_url = ?, updated_at = ? WHERE id = ?",
+            (avatar_url, updated_at, user_id),
+        )
+        conn.commit()
+
+
+async def update_sqlite_user_avatar(user_id: str, avatar_url: str):
+    await asyncio.to_thread(_update_sqlite_user_avatar, user_id, avatar_url)
 
 
 def _insert_learning_history(history_doc: dict):
@@ -538,6 +710,107 @@ def _insert_code_evaluation(eval_doc: dict):
                 eval_doc['created_at'],
             ),
         )
+
+
+def _insert_course_enrollment(enrollment_doc: dict):
+    with _sqlite_connection() as conn:
+        conn.execute(
+            "INSERT INTO course_enrollments (id, user_id, course_id, course_title, enrollment_date, status, name, email, phone, address, qualification, experience, screenshot_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                enrollment_doc['id'],
+                enrollment_doc['user_id'],
+                enrollment_doc['course_id'],
+                enrollment_doc['course_title'],
+                enrollment_doc['enrollment_date'],
+                enrollment_doc.get('status', 'enrolled'),
+                enrollment_doc.get('name'),
+                enrollment_doc.get('email'),
+                enrollment_doc.get('phone'),
+                enrollment_doc.get('address'),
+                enrollment_doc.get('qualification'),
+                enrollment_doc.get('experience'),
+                enrollment_doc.get('screenshot_url'),
+            ),
+        )
+
+
+def _insert_internship_application(application_doc: dict):
+    with _sqlite_connection() as conn:
+        conn.execute(
+            "INSERT INTO internship_applications (id, user_id, internship_id, internship_title, application_date, status, company, location, duration, name, email, phone, address, qualification, experience, screenshot_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                application_doc['id'],
+                application_doc['user_id'],
+                application_doc['internship_id'],
+                application_doc['internship_title'],
+                application_doc['application_date'],
+                application_doc.get('status', 'applied'),
+                application_doc.get('company'),
+                application_doc.get('location'),
+                application_doc.get('duration'),
+                application_doc.get('name'),
+                application_doc.get('email'),
+                application_doc.get('phone'),
+                application_doc.get('address'),
+                application_doc.get('qualification'),
+                application_doc.get('experience'),
+                application_doc.get('screenshot_url'),
+            ),
+        )
+
+
+def _fetch_course_enrollments() -> List[dict]:
+    with _sqlite_connection() as conn:
+        cursor = conn.execute(
+            "SELECT id, user_id, course_id, course_title, enrollment_date, status, name, email, phone, address, qualification, experience, screenshot_url FROM course_enrollments ORDER BY enrollment_date DESC"
+        )
+        rows = cursor.fetchall()
+    return [dict(row) for row in rows]
+
+
+def _update_enrollment_status(enrollment_id: str, status: str):
+    with _sqlite_connection() as conn:
+        conn.execute(
+            "UPDATE course_enrollments SET status = ? WHERE id = ?",
+            (status, enrollment_id),
+        )
+
+
+def _fetch_internship_applications() -> List[dict]:
+    with _sqlite_connection() as conn:
+        cursor = conn.execute(
+            "SELECT id, user_id, internship_id, internship_title, application_date, status, company, location, duration, name, email, phone, address, qualification, experience, screenshot_url FROM internship_applications ORDER BY application_date DESC"
+        )
+        rows = cursor.fetchall()
+    return [dict(row) for row in rows]
+
+
+def _update_application_status(application_id: str, status: str):
+    with _sqlite_connection() as conn:
+        conn.execute(
+            "UPDATE internship_applications SET status = ? WHERE id = ?",
+            (status, application_id),
+        )
+
+
+def _fetch_user_enrollments(user_id: str) -> List[dict]:
+    with _sqlite_connection() as conn:
+        cursor = conn.execute(
+            "SELECT id, course_id, course_title, enrollment_date, status FROM course_enrollments WHERE user_id = ?",
+            (user_id,)
+        )
+        rows = cursor.fetchall()
+    return [dict(row) for row in rows]
+
+
+def _fetch_user_applications(user_id: str) -> List[dict]:
+    with _sqlite_connection() as conn:
+        cursor = conn.execute(
+            "SELECT id, internship_id, internship_title, application_date, status FROM internship_applications WHERE user_id = ?",
+            (user_id,)
+        )
+        rows = cursor.fetchall()
+    return [dict(row) for row in rows]
 
 
 def _fetch_code_submissions(user_id: str, limit: int = 100) -> List[dict]:
@@ -598,8 +871,82 @@ def _calculate_learning_consistency(user_id: str) -> float:
         return min(count * (100.0 / 30.0), 100.0)
 
 
+def _parse_iso_datetime(value: str) -> Optional[datetime]:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except Exception:
+        return None
+
+
+def _calculate_learning_streak_stats(user_id: str) -> dict:
+    with _sqlite_connection() as conn:
+        cursor = conn.execute(
+            "SELECT created_at FROM learning_history WHERE user_id = ? ORDER BY created_at DESC LIMIT 5000",
+            (user_id,),
+        )
+        rows = cursor.fetchall()
+
+    # sqlite3.Row supports dict-style indexing (row["col"]) but not .get()
+    timestamps = [r["created_at"] for r in rows if r and r["created_at"]]
+    datetimes = [dt for dt in (_parse_iso_datetime(ts) for ts in timestamps) if dt]
+    if not datetimes:
+        return {
+            "current_streak": 0,
+            "longest_streak": 0,
+            "active_days_30": 0,
+            "last_activity_at": None,
+        }
+
+    # Normalize to UTC date
+    dates = {dt.astimezone(timezone.utc).date() for dt in datetimes}
+    today = datetime.now(timezone.utc).date()
+
+    # Current streak
+    current = 0
+    d = today
+    while d in dates:
+        current += 1
+        d = d - timedelta(days=1)
+
+    # Longest streak
+    sorted_dates = sorted(dates)
+    longest = 1
+    run = 1
+    for i in range(1, len(sorted_dates)):
+        if (sorted_dates[i] - sorted_dates[i - 1]).days == 1:
+            run += 1
+            longest = max(longest, run)
+        else:
+            run = 1
+
+    thirty_days_ago = today - timedelta(days=29)
+    active_30 = sum(1 for day in dates if day >= thirty_days_ago)
+    last_activity_at = max(datetimes).astimezone(timezone.utc).isoformat()
+
+    return {
+        "current_streak": int(current),
+        "longest_streak": int(longest),
+        "active_days_30": int(active_30),
+        "last_activity_at": last_activity_at,
+    }
+
+
+async def get_learning_streak_stats(user_id: str) -> dict:
+    return await asyncio.to_thread(_calculate_learning_streak_stats, user_id)
+
+
 async def store_learning_history(history_doc: dict):
     await asyncio.to_thread(_insert_learning_history, history_doc)
+
+
+async def store_course_enrollment(enrollment_doc: dict):
+    await asyncio.to_thread(_insert_course_enrollment, enrollment_doc)
+
+
+async def store_internship_application(application_doc: dict):
+    await asyncio.to_thread(_insert_internship_application, application_doc)
 
 
 async def store_code_evaluation(eval_doc: dict):
@@ -715,6 +1062,29 @@ async def fetch_resume_history(user_id: str) -> List[dict]:
 
 async def fetch_latest_resume(user_id: str) -> Optional[dict]:
     return await asyncio.to_thread(_get_latest_resume, user_id)
+
+
+def _row_to_interview(doc: sqlite3.Row) -> dict:
+    row = dict(doc)
+    row["questions"] = json.loads(row["questions"]) if row.get("questions") else []
+    row["answers"] = json.loads(row["answers"]) if row.get("answers") else []
+    row["strengths"] = json.loads(row["strengths"]) if row.get("strengths") else []
+    row["weaknesses"] = json.loads(row["weaknesses"]) if row.get("weaknesses") else []
+    return row
+
+
+def _fetch_interview_history(user_id: str, limit: int = 50) -> List[dict]:
+    with _sqlite_connection() as conn:
+        cursor = conn.execute(
+            "SELECT id, user_id, interview_type, questions, answers, evaluation, readiness_score, strengths, weaknesses, created_at FROM interview_evaluations WHERE user_id = ? ORDER BY created_at DESC LIMIT ?",
+            (user_id, limit),
+        )
+        rows = cursor.fetchall()
+    return [_row_to_interview(row) for row in rows]
+
+
+async def fetch_interview_history(user_id: str, limit: int = 50) -> List[dict]:
+    return await asyncio.to_thread(_fetch_interview_history, user_id, limit)
 
 
 def _insert_interview_evaluation(eval_doc: dict):
@@ -1229,6 +1599,87 @@ async def login(credentials: UserLogin):
 async def get_me(current_user: dict = Depends(get_current_user)):
     return UserResponse(**current_user)
 
+
+@api_router.get("/profile", response_model=UserProfileResponse)
+async def get_profile(current_user: dict = Depends(get_current_user)):
+    user = await fetch_sqlite_user_public_by_id(current_user["id"])
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    profile_data = None
+    if user.get("profile_data"):
+        try:
+            profile_data = json.loads(user["profile_data"])
+        except Exception:
+            profile_data = None
+
+    return UserProfileResponse(
+        id=user["id"],
+        email=user["email"],
+        name=user["name"],
+        role=user["role"],
+        created_at=user["created_at"],
+        avatar_url=user.get("avatar_url"),
+        profile_data=profile_data,
+        updated_at=user.get("updated_at"),
+    )
+
+
+@api_router.put("/profile", response_model=UserProfileResponse)
+async def update_profile(update: UserProfileUpdate, current_user: dict = Depends(get_current_user)):
+    await update_sqlite_user_profile(current_user["id"], update.name, update.profile_data)
+
+    user = await fetch_sqlite_user_public_by_id(current_user["id"])
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    profile_data = None
+    if user.get("profile_data"):
+        try:
+            profile_data = json.loads(user["profile_data"])
+        except Exception:
+            profile_data = None
+
+    return UserProfileResponse(
+        id=user["id"],
+        email=user["email"],
+        name=user["name"],
+        role=user["role"],
+        created_at=user["created_at"],
+        avatar_url=user.get("avatar_url"),
+        profile_data=profile_data,
+        updated_at=user.get("updated_at"),
+    )
+
+
+@api_router.post("/profile/avatar", response_model=AvatarUploadResponse)
+async def upload_avatar(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+    content = await file.read()
+    if len(content) > MAX_FILE_SIZE_MB * 1024 * 1024:
+        raise HTTPException(status_code=413, detail=f"File too large. Max {MAX_FILE_SIZE_MB}MB")
+
+    # Basic content-type allowlist
+    if file.content_type and not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Only image uploads are allowed")
+
+    avatars_dir = UPLOADS_ROOT / "avatars"
+    avatars_dir.mkdir(parents=True, exist_ok=True)
+
+    original = file.filename or "avatar"
+    ext = os.path.splitext(original)[1].lower()
+    if ext not in [".png", ".jpg", ".jpeg", ".webp", ".gif"]:
+        # default to .png if unknown
+        ext = ".png"
+
+    stored_name = f"{uuid.uuid4()}{ext}"
+    stored_path = avatars_dir / stored_name
+    with open(stored_path, "wb") as f:
+        f.write(content)
+
+    avatar_url = f"/uploads/avatars/{stored_name}"
+    await update_sqlite_user_avatar(current_user["id"], avatar_url)
+    return AvatarUploadResponse(avatar_url=avatar_url)
+
 # AI Tutor Routes
 @api_router.post("/tutor/chat", response_model=TutorResponse)
 async def tutor_chat(message: TutorMessage, current_user: dict = Depends(get_current_user)):
@@ -1507,6 +1958,12 @@ FEEDBACK: [detailed feedback]
     
     return InterviewEvaluation(**eval_doc)
 
+
+@api_router.get("/interview/history")
+async def get_interview_history(limit: int = 50, current_user: dict = Depends(get_current_user)):
+    limit = max(1, min(int(limit), 200))
+    return await fetch_interview_history(current_user["id"], limit)
+
 # Dashboard Routes
 @api_router.get("/dashboard/stats")
 async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
@@ -1517,6 +1974,8 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
     interviews_taken = await count_interview_evaluations(current_user['id'])
     learning_sessions = await count_learning_sessions(current_user['id'])
     crs = await calculate_career_readiness_score(current_user['id'])
+    streak = await get_learning_streak_stats(current_user['id'])
+    learning_consistency = await calculate_learning_consistency(current_user['id'])
     
     return {
         "code_submissions": code_submissions,
@@ -1524,7 +1983,12 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
         "resume_analyses": resume_analyses,
         "interviews_taken": interviews_taken,
         "learning_sessions": learning_sessions,
-        "career_readiness_score": crs
+        "career_readiness_score": crs,
+        "learning_consistency_score": round(learning_consistency, 2),
+        "current_streak": streak.get("current_streak", 0),
+        "longest_streak": streak.get("longest_streak", 0),
+        "active_days_30": streak.get("active_days_30", 0),
+        "last_activity_at": streak.get("last_activity_at"),
     }
 
 @api_router.get("/achievements", response_model=List[AchievementCategory])
@@ -2542,6 +3006,189 @@ async def get_candidates_with_status(current_user: dict = Depends(get_current_us
     return candidates_with_status
 
 
+# ==================== PREMIUM ENROLLMENT ROUTES ====================
+@api_router.post("/premium/enroll-course")
+async def enroll_course(
+    course_id: int = Form(...),
+    course_title: str = Form(...),
+    name: str = Form(...),
+    email: str = Form(...),
+    phone: str = Form(...),
+    address: Optional[str] = Form(None),
+    qualification: Optional[str] = Form(None),
+    experience: Optional[str] = Form(None),
+    screenshot: UploadFile = File(None),
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        screenshot_url = None
+        if screenshot:
+            content = await screenshot.read()
+            if len(content) > MAX_FILE_SIZE_MB * 1024 * 1024:
+                raise HTTPException(status_code=413, detail=f"File too large. Max {MAX_FILE_SIZE_MB}MB")
+
+            premium_dir = UPLOADS_ROOT / "premium"
+            premium_dir.mkdir(parents=True, exist_ok=True)
+            safe_name = os.path.basename(screenshot.filename or "payment.png")
+            stored_name = f"{uuid.uuid4()}_{safe_name}"
+            stored_path = premium_dir / stored_name
+            with open(stored_path, "wb") as f:
+                f.write(content)
+            screenshot_url = f"/uploads/premium/{stored_name}"
+
+        enrollment_doc = {
+            "id": str(uuid.uuid4()),
+            "user_id": current_user['id'],
+            "course_id": course_id,
+            "course_title": course_title,
+            "enrollment_date": datetime.now(timezone.utc).isoformat(),
+            "status": "enrolled",
+            "name": name,
+            "email": email,
+            "phone": phone,
+            "address": address,
+            "qualification": qualification,
+            "experience": experience,
+            "screenshot_url": screenshot_url
+        }
+        await store_course_enrollment(enrollment_doc)
+        return {"message": "Successfully enrolled in course", "enrollment_id": enrollment_doc['id']}
+    except Exception as e:
+        logger.error(f"Error enrolling in course: {e}")
+        raise HTTPException(status_code=500, detail="Failed to enroll in course")
+
+@api_router.post("/premium/apply-internship")
+async def apply_internship(
+    internship_id: int = Form(...),
+    internship_title: str = Form(...),
+    company: str = Form(...),
+    location: str = Form(...),
+    duration: str = Form(...),
+    name: str = Form(...),
+    email: str = Form(...),
+    phone: str = Form(...),
+    address: Optional[str] = Form(None),
+    qualification: Optional[str] = Form(None),
+    experience: Optional[str] = Form(None),
+    screenshot: UploadFile = File(None),
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        screenshot_url = None
+        if screenshot:
+            content = await screenshot.read()
+            if len(content) > MAX_FILE_SIZE_MB * 1024 * 1024:
+                raise HTTPException(status_code=413, detail=f"File too large. Max {MAX_FILE_SIZE_MB}MB")
+
+            premium_dir = UPLOADS_ROOT / "premium"
+            premium_dir.mkdir(parents=True, exist_ok=True)
+            safe_name = os.path.basename(screenshot.filename or "payment.png")
+            stored_name = f"{uuid.uuid4()}_{safe_name}"
+            stored_path = premium_dir / stored_name
+            with open(stored_path, "wb") as f:
+                f.write(content)
+            screenshot_url = f"/uploads/premium/{stored_name}"
+
+        application_doc = {
+            "id": str(uuid.uuid4()),
+            "user_id": current_user['id'],
+            "internship_id": internship_id,
+            "internship_title": internship_title,
+            "application_date": datetime.now(timezone.utc).isoformat(),
+            "status": "applied",
+            "company": company,
+            "location": location,
+            "duration": duration,
+            "name": name,
+            "email": email,
+            "phone": phone,
+            "address": address,
+            "qualification": qualification,
+            "experience": experience,
+            "screenshot_url": screenshot_url
+        }
+        await store_internship_application(application_doc)
+        return {"message": "Successfully applied for internship", "application_id": application_doc['id']}
+    except Exception as e:
+        logger.error(f"Error applying for internship: {e}")
+        raise HTTPException(status_code=500, detail="Failed to apply for internship")
+
+
+# ==================== ADMIN ROUTES ====================
+async def get_current_admin(current_user: dict = Depends(get_current_user)):
+    if current_user.get('role') not in ['admin', 'college_admin']:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return current_user
+
+@api_router.get("/admin/enrollments")
+async def get_course_enrollments(current_admin: dict = Depends(get_current_admin)):
+    try:
+        enrollments = await asyncio.to_thread(_fetch_course_enrollments)
+        return enrollments
+    except Exception as e:
+        logger.error(f"Error fetching enrollments: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch enrollments")
+
+@api_router.put("/admin/enrollments/{enrollment_id}/status")
+async def update_enrollment_status(
+    enrollment_id: str,
+    status: str = Query(..., description="New status: approved or rejected"),
+    current_admin: dict = Depends(get_current_admin)
+):
+    try:
+        if status not in ['approved', 'rejected']:
+            raise HTTPException(status_code=400, detail="Invalid status")
+        await asyncio.to_thread(_update_enrollment_status, enrollment_id, status)
+        return {"message": f"Enrollment {status}"}
+    except Exception as e:
+        logger.error(f"Error updating enrollment status: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update status")
+
+@api_router.get("/admin/applications")
+async def get_internship_applications(current_admin: dict = Depends(get_current_admin)):
+    try:
+        applications = await asyncio.to_thread(_fetch_internship_applications)
+        return applications
+    except Exception as e:
+        logger.error(f"Error fetching applications: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch applications")
+
+@api_router.put("/admin/applications/{application_id}/status")
+async def update_application_status(
+    application_id: str,
+    status: str = Query(..., description="New status: approved or rejected"),
+    current_admin: dict = Depends(get_current_admin)
+):
+    try:
+        if status not in ['approved', 'rejected']:
+            raise HTTPException(status_code=400, detail="Invalid status")
+        await asyncio.to_thread(_update_application_status, application_id, status)
+        return {"message": f"Application {status}"}
+    except Exception as e:
+        logger.error(f"Error updating application status: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update status")
+
+
+# ==================== USER PREMIUM ROUTES ====================
+@api_router.get("/premium/my-enrollments")
+async def get_my_enrollments(current_user: dict = Depends(get_current_user)):
+    try:
+        enrollments = await asyncio.to_thread(_fetch_user_enrollments, current_user['id'])
+        return enrollments
+    except Exception as e:
+        logger.error(f"Error fetching user enrollments: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch enrollments")
+
+@api_router.get("/premium/my-applications")
+async def get_my_applications(current_user: dict = Depends(get_current_user)):
+    try:
+        applications = await asyncio.to_thread(_fetch_user_applications, current_user['id'])
+        return applications
+    except Exception as e:
+        logger.error(f"Error fetching user applications: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch applications")
+
+
 # ==================== LEADERBOARD ROUTE ====================
 from fastapi import Query
 
@@ -2600,3 +3247,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
+
+# if __name__ == "__main__":
+#     import uvicorn
+#     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

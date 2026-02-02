@@ -61,15 +61,15 @@ const Footer = () => {
   };
 
   return (
-    <footer className="w-full bg-zinc-900 border-t border-zinc-800 text-zinc-300 py-12 mt-12">
-      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
+    <footer className="w-full bg-zinc-900 border-t border-zinc-800 text-zinc-300 py-8 sm:py-12 mt-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
         <div className="col-span-1">
           <h4 className="text-white text-xl font-semibold">LearnovateX</h4>
           <p className="text-sm text-zinc-400 mt-2 max-w-md">
             Built for learners — tools, roadmaps and AI to help you grow. Join
             our community and stay updated.
           </p>
-          <div className="flex mt-4 space-x-3">
+          <div className="flex flex-wrap mt-4 gap-2">
             {socials.map((s) => (
               <a
                 key={s.label}
@@ -147,7 +147,10 @@ const Footer = () => {
 
         <div>
           <h5 className="text-white font-medium mb-3">Get updates</h5>
-          <form onSubmit={subscribe} className="flex gap-2">
+          <form
+            onSubmit={subscribe}
+            className="flex flex-col sm:flex-row gap-2"
+          >
             <input
               type="email"
               value={email}
@@ -158,7 +161,7 @@ const Footer = () => {
             <button
               type="submit"
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-md font-medium disabled:opacity-60"
+              className="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-md font-medium disabled:opacity-60 w-full sm:w-auto"
             >
               {loading ? "..." : "Subscribe"}
             </button>
@@ -175,8 +178,10 @@ const Footer = () => {
               </a>
             </div>
             <div className="mt-3">
-              <label className="text-zinc-400 text-sm mr-2">Language</label>
-              <select className="bg-zinc-800 text-white px-2 py-1 rounded-md">
+              <label className="text-zinc-400 text-sm block mb-2 sm:mb-0 sm:inline sm:mr-2">
+                Language
+              </label>
+              <select className="bg-zinc-800 text-white px-2 py-1 rounded-md w-full sm:w-auto">
                 <option>English</option>
                 <option>Español</option>
                 <option>中文</option>
@@ -186,12 +191,12 @@ const Footer = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 mt-8 text-xs text-zinc-600">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-8 text-xs text-zinc-600">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2">
           <span>
             © {new Date().getFullYear()} LearnovateX. All rights reserved.
           </span>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <a href="/terms" className="hover:underline">
               Terms
             </a>

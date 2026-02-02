@@ -33,19 +33,23 @@ All 13 features have been implemented and are working with **real Azure OpenAI r
 # 4. Test with: python test_azure_openai.py
 ```
 
+**Alternative**: Use AWS Bedrock (see AZURE_SETUP.md for setup instructions)
+
 ### 2. Start the Application
 
 ```bash
 # Backend
 cd backend
 pip install -r requirements.txt
-uvicorn server:app --reload --port 8001
+uvicorn server:app --reload --port 8000
 
 # Frontend (new terminal)
 cd frontend
 npm install
 npm start
 ```
+
+Note: if you pull new backend changes (new routes like `/api/profile/avatar`), restart the backend process so the updated routes are loaded.
 
 ### Test Credentials
 
@@ -148,10 +152,26 @@ sudo supervisorctl status
 
 ## 🔑 API Key Information
 
-**Gemini API Key**: Already configured in `/app/backend/.env`
+**Azure OpenAI**: Already configured in `backend/.env` (update with your credentials)
+**AWS Bedrock**: Alternative AI provider (see AZURE_SETUP.md)
 
 ```
-GEMINI_API_KEY=AIzaSyAnZyY8TXTprbmtQBWduoZErZ9nHXoVwBE
+# AI Configuration (choose one)
+AI_MODE=azure  # or 'bedrock' for AWS Bedrock
+
+# Azure OpenAI (if using AI_MODE=azure)
+AZURE_OPENAI_API_KEY=your_azure_api_key
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+AZURE_OPENAI_DEPLOYMENT=gpt-4
+
+# AWS Bedrock (if using AI_MODE=bedrock)
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
+AWS_BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
+
+# Security
+JWT_SECRET=your-secret-key-change-in-production
 ```
 
 This key is provided and working. For production, get your own from:
@@ -251,7 +271,7 @@ sudo supervisorctl status
 
 3. **Deploy to Production**
 
-   - Get your own Gemini API key
+   - Get your own Azure OpenAI or AWS Bedrock credentials
    - Update environment variables
    - Deploy backend to cloud (AWS, GCP, Azure)
    - Deploy frontend to Vercel/Netlify
@@ -287,7 +307,7 @@ You now have a fully functional AI-powered learning and career platform with:
 
 - 13+ major features
 - 4 user roles
-- Gemini AI integration
+- Azure OpenAI integration (GPT-4)
 - Beautiful UI
 - Complete backend API
 - MongoDB database

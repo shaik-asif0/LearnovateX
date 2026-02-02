@@ -11,8 +11,8 @@ import { Badge } from "../components/ui/badge";
 
 const StudentGroups = ({ students }) => {
   const [groups, setGroups] = useState([
-    { id: 1, name: "Web Development", students: [1, 2], color: "blue" },
-    { id: 2, name: "Data Science", students: [3, 4], color: "green" },
+    { id: 1, name: "Web Development", students: [1, 2], color: "orange" },
+    { id: 2, name: "Data Science", students: [3, 4], color: "orange" },
   ]);
   const [newGroup, setNewGroup] = useState("");
 
@@ -20,7 +20,7 @@ const StudentGroups = ({ students }) => {
     if (newGroup.trim()) {
       setGroups([
         ...groups,
-        { id: Date.now(), name: newGroup, students: [], color: "gray" },
+        { id: Date.now(), name: newGroup, students: [], color: "orange" },
       ]);
       setNewGroup("");
     }
@@ -51,7 +51,7 @@ const StudentGroups = ({ students }) => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
               <Input
                 placeholder="New group name"
                 value={newGroup}
@@ -60,7 +60,7 @@ const StudentGroups = ({ students }) => {
               />
               <Button
                 onClick={addGroup}
-                className="bg-white text-black hover:bg-zinc-200"
+                className="bg-white text-black hover:bg-zinc-200 w-full sm:w-auto"
               >
                 Add Group
               </Button>
@@ -69,8 +69,8 @@ const StudentGroups = ({ students }) => {
               {groups.map((group) => (
                 <Card key={group.id} className="bg-zinc-800 border-zinc-700">
                   <CardHeader>
-                    <CardTitle className="text-white flex items-center justify-between">
-                      {group.name}
+                    <CardTitle className="text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <span className="min-w-0 truncate">{group.name}</span>
                       <Badge
                         className={`bg-${group.color}-500/20 text-${group.color}-400`}
                       >

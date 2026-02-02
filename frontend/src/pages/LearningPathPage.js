@@ -53,9 +53,27 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../lib/axios";
+import { getUser } from "../lib/utils";
 import { toast } from "sonner";
 const LearningPathPage = () => {
   const navigate = useNavigate();
+  const user = getUser();
+  const lessonNotesKey =
+    user?.id || user?._id || user?.email
+      ? `lessonNotes:${user.id || user._id || user.email}`
+      : "lessonNotes:anonymous";
+  const bookmarkedLessonsKey =
+    user?.id || user?._id || user?.email
+      ? `bookmarkedLessons:${user.id || user._id || user.email}`
+      : "bookmarkedLessons:anonymous";
+  const watchHistoryKey =
+    user?.id || user?._id || user?.email
+      ? `watchHistory:${user.id || user._id || user.email}`
+      : "watchHistory:anonymous";
+  const likedLessonsKey =
+    user?.id || user?._id || user?.email
+      ? `likedLessons:${user.id || user._id || user.email}`
+      : "likedLessons:anonymous";
   const [learningPaths, setLearningPaths] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
@@ -1792,14 +1810,58 @@ const LearningPathPage = () => {
   ];
   useEffect(() => {
     loadProgress();
-    const savedNotesData = localStorage.getItem("lessonNotes");
-    const savedBookmarks = localStorage.getItem("bookmarkedLessons");
-    const savedHistory = localStorage.getItem("watchHistory");
-    const savedLikes = localStorage.getItem("likedLessons");
-    if (savedNotesData) setSavedNotes(JSON.parse(savedNotesData));
-    if (savedBookmarks) setBookmarkedLessons(JSON.parse(savedBookmarks));
-    if (savedHistory) setWatchHistory(JSON.parse(savedHistory));
-    if (savedLikes) setLikedLessons(JSON.parse(savedLikes));
+    try {
+      const savedNotesData = localStorage.getItem(lessonNotesKey);
+      const savedBookmarks = localStorage.getItem(bookmarkedLessonsKey);
+      const savedHistory = localStorage.getItem(watchHistoryKey);
+      const savedLikes = localStorage.getItem(likedLessonsKey);
+
+      if (savedNotesData) {
+        setSavedNotes(JSON.parse(savedNotesData));
+      } else {
+        const legacy = localStorage.getItem("lessonNotes");
+        if (legacy) {
+          localStorage.setItem(lessonNotesKey, legacy);
+          localStorage.removeItem("lessonNotes");
+          setSavedNotes(JSON.parse(legacy));
+        }
+      }
+
+      if (savedBookmarks) {
+        setBookmarkedLessons(JSON.parse(savedBookmarks));
+      } else {
+        const legacy = localStorage.getItem("bookmarkedLessons");
+        if (legacy) {
+          localStorage.setItem(bookmarkedLessonsKey, legacy);
+          localStorage.removeItem("bookmarkedLessons");
+          setBookmarkedLessons(JSON.parse(legacy));
+        }
+      }
+
+      if (savedHistory) {
+        setWatchHistory(JSON.parse(savedHistory));
+      } else {
+        const legacy = localStorage.getItem("watchHistory");
+        if (legacy) {
+          localStorage.setItem(watchHistoryKey, legacy);
+          localStorage.removeItem("watchHistory");
+          setWatchHistory(JSON.parse(legacy));
+        }
+      }
+
+      if (savedLikes) {
+        setLikedLessons(JSON.parse(savedLikes));
+      } else {
+        const legacy = localStorage.getItem("likedLessons");
+        if (legacy) {
+          localStorage.setItem(likedLessonsKey, legacy);
+          localStorage.removeItem("likedLessons");
+          setLikedLessons(JSON.parse(legacy));
+        }
+      }
+    } catch (e) {
+      // ignore malformed storage
+    }
   }, []);
   const loadProgress = async () => {
     setLoading(true);
@@ -1852,7 +1914,7 @@ const LearningPathPage = () => {
       ),
     ].slice(0, 20);
     setWatchHistory(newHistory);
-    localStorage.setItem("watchHistory", JSON.stringify(newHistory));
+    localStorage.setItem(watchHistoryKey, JSON.stringify(newHistory));
   };
   const closePlayer = () => {
     setIsPlayerOpen(false);
@@ -1896,7 +1958,7 @@ const LearningPathPage = () => {
       ? bookmarkedLessons.filter((b) => b !== key)
       : [...bookmarkedLessons, key];
     setBookmarkedLessons(newBookmarks);
-    localStorage.setItem("bookmarkedLessons", JSON.stringify(newBookmarks));
+    localStorage.setItem(bookmarkedLessonsKey, JSON.stringify(newBookmarks));
     toast.success(
       bookmarkedLessons.includes(key)
         ? "Removed from bookmarks"
@@ -1909,14 +1971,14 @@ const LearningPathPage = () => {
       ? likedLessons.filter((l) => l !== key)
       : [...likedLessons, key];
     setLikedLessons(newLikes);
-    localStorage.setItem("likedLessons", JSON.stringify(newLikes));
+    localStorage.setItem(likedLessonsKey, JSON.stringify(newLikes));
   };
   const saveNotes = () => {
     if (!currentLesson || !currentPath) return;
     const key = `${currentPath.id}-${currentLesson.moduleId}-${currentLesson.id}`;
     const newNotes = { ...savedNotes, [key]: notes };
     setSavedNotes(newNotes);
-    localStorage.setItem("lessonNotes", JSON.stringify(newNotes));
+    localStorage.setItem(lessonNotesKey, JSON.stringify(newNotes));
     toast.success("Notes saved!");
   };
   const playNextLesson = () => {
@@ -1952,9 +2014,12 @@ const LearningPathPage = () => {
     }
   };
   const getDifficultyColor = (d) => {
-    if (d === "Beginner") return "text-green-400 bg-green-500/20";
-    if (d === "Intermediate") return "text-yellow-400 bg-yellow-500/20";
-    if (d === "Advanced") return "text-red-400 bg-red-500/20";
+    if (d === "Beginner")
+      return "text-[var(--accent-color)] bg-[rgba(var(--accent-rgb),0.2)]";
+    if (d === "Intermediate")
+      return "text-[var(--accent-color)] bg-[rgba(var(--accent-rgb),0.2)]";
+    if (d === "Advanced")
+      return "text-[var(--accent-color)] bg-[rgba(var(--accent-rgb),0.2)]";
     return "text-zinc-400 bg-zinc-500/20";
   };
   const getFilteredPaths = () => {
@@ -2018,8 +2083,8 @@ const LearningPathPage = () => {
                 showSidebar ? "lg:mr-96" : ""
               }`}
             >
-              <div className="flex items-center justify-between p-4 bg-zinc-900/90 border-b border-zinc-800">
-                <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-zinc-900/90 border-b border-zinc-800">
+                <div className="flex items-center gap-3 min-w-0">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -2028,14 +2093,14 @@ const LearningPathPage = () => {
                   >
                     <X className="w-5 h-5" />
                   </Button>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs text-zinc-400">{currentPath.title}</p>
                     <h2 className="font-semibold text-white text-sm md:text-base line-clamp-1">
                       {currentLesson.title}
                     </h2>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -2051,7 +2116,7 @@ const LearningPathPage = () => {
                     {bookmarkedLessons.includes(
                       `${currentPath.id}-${currentLesson.moduleId}-${currentLesson.id}`
                     ) ? (
-                      <BookmarkCheck className="w-5 h-5 text-yellow-400" />
+                      <BookmarkCheck className="w-5 h-5 text-[var(--accent-color)]" />
                     ) : (
                       <Bookmark className="w-5 h-5" />
                     )}
@@ -2126,7 +2191,7 @@ const LearningPathPage = () => {
                           likedLessons.includes(
                             `${currentPath.id}-${currentLesson.moduleId}-${currentLesson.id}`
                           )
-                            ? "bg-blue-600 hover:bg-blue-700"
+                            ? "bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)]"
                             : "border-zinc-700 text-white hover:bg-zinc-800"
                         }`}
                       >
@@ -2156,7 +2221,7 @@ const LearningPathPage = () => {
                             currentLesson.id
                           )
                         }
-                        className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                        className="gap-2 bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)] text-white"
                       >
                         <CheckCircle2 className="w-4 h-4" />
                         Complete
@@ -2242,7 +2307,7 @@ const LearningPathPage = () => {
                       <Button
                         size="sm"
                         onClick={saveNotes}
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className="bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)]"
                       >
                         Save Notes
                       </Button>
@@ -2256,7 +2321,7 @@ const LearningPathPage = () => {
                         rel="noopener noreferrer"
                         className="flex items-center gap-3 p-3 bg-zinc-800 rounded-lg hover:bg-zinc-700"
                       >
-                        <Youtube className="w-5 h-5 text-red-500" />
+                        <Youtube className="w-5 h-5 text-[var(--accent-color)]" />
                         <div className="flex-1">
                           <p className="text-sm text-white">Watch on YouTube</p>
                         </div>
@@ -2266,7 +2331,7 @@ const LearningPathPage = () => {
                         className="flex items-center gap-3 p-3 bg-zinc-800 rounded-lg hover:bg-zinc-700 cursor-pointer"
                         onClick={() => navigate("/coding")}
                       >
-                        <Code className="w-5 h-5 text-green-400" />
+                        <Code className="w-5 h-5 text-[var(--accent-color)]" />
                         <div className="flex-1">
                           <p className="text-sm text-white">Practice Coding</p>
                         </div>
@@ -2299,7 +2364,7 @@ const LearningPathPage = () => {
                       >
                         <div className="flex items-center gap-3">
                           {module.completed ? (
-                            <CheckCircle2 className="w-5 h-5 text-green-400" />
+                            <CheckCircle2 className="w-5 h-5 text-[var(--accent-color)]" />
                           ) : module.locked ? (
                             <Lock className="w-5 h-5 text-zinc-600" />
                           ) : (
@@ -2338,7 +2403,7 @@ const LearningPathPage = () => {
                               className={`w-full p-3 pl-6 flex items-center gap-3 text-left hover:bg-zinc-800/50 ${
                                 currentLesson.id === lesson.id &&
                                 currentLesson.moduleId === module.id
-                                  ? "bg-zinc-800 border-l-2 border-red-500"
+                                  ? "bg-zinc-800 border-l-2 border-[var(--accent-color)]"
                                   : ""
                               } ${
                                 module.locked
@@ -2354,13 +2419,13 @@ const LearningPathPage = () => {
                                 />
                                 {lesson.completed && (
                                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                    <CheckCircle2 className="w-6 h-6 text-green-400" />
+                                    <CheckCircle2 className="w-6 h-6 text-[var(--accent-color)]" />
                                   </div>
                                 )}
                                 {currentLesson.id === lesson.id &&
                                   currentLesson.moduleId === module.id && (
                                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                                      <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+                                      <div className="w-8 h-8 bg-[rgb(var(--accent-rgb))] rounded-full flex items-center justify-center">
                                         <Play className="w-4 h-4 text-white" />
                                       </div>
                                     </div>
@@ -2400,13 +2465,13 @@ const LearningPathPage = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl shadow-lg shadow-red-500/20">
+              <div className="p-3 bg-gradient-to-br from-[rgb(var(--accent-rgb))] to-[rgba(var(--accent-rgb),0.85)] rounded-2xl shadow-lg">
                 <Youtube className="w-8 h-8 text-white" />
               </div>
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-2">
                   Learning Paths
-                  <span className="px-2 py-0.5 bg-red-500/20 text-red-400 text-xs font-medium rounded animate-pulse">
+                  <span className="px-2 py-0.5 bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] text-xs font-medium rounded animate-pulse">
                     LIVE
                   </span>
                 </h1>
@@ -2441,14 +2506,14 @@ const LearningPathPage = () => {
           <div className="mb-8 space-y-6">
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Search className="w-5 h-5 text-zinc-400 group-focus-within:text-red-400 transition-colors duration-200" />
+                <Search className="w-5 h-5 text-zinc-400 group-focus-within:text-[var(--accent-color)] transition-colors duration-200" />
               </div>
               <input
                 type="text"
                 placeholder="Search courses, instructors, or topics..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-12 py-4 bg-gradient-to-r from-zinc-900 to-zinc-800 border border-zinc-700 rounded-2xl text-white placeholder-zinc-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-300 hover:border-zinc-600 hover:shadow-lg hover:shadow-red-500/10 text-lg"
+                className="w-full pl-12 pr-12 py-4 bg-gradient-to-r from-zinc-900 to-zinc-800 border border-zinc-700 rounded-2xl text-white placeholder-zinc-400 focus:outline-none focus:border-[var(--accent-color)] focus:ring-2 focus:ring-[rgba(var(--accent-rgb),0.2)] transition-all duration-300 hover:border-zinc-600 hover:shadow-lg text-lg"
               />
               {searchQuery && (
                 <button
@@ -2467,7 +2532,7 @@ const LearningPathPage = () => {
                   variant="outline"
                   className={`gap-2 transition-all duration-200 ${
                     showFilters
-                      ? "bg-red-500/20 border-red-500 text-red-400 hover:bg-red-500/30"
+                      ? "bg-[rgba(var(--accent-rgb),0.2)] border-[var(--accent-color)] text-[var(--accent-color)] hover:bg-[rgba(var(--accent-rgb),0.3)]"
                       : "border-zinc-600 text-zinc-300 hover:bg-zinc-800 hover:border-zinc-500"
                   }`}
                 >
@@ -2514,7 +2579,7 @@ const LearningPathPage = () => {
                     <select
                       value={selectedCategory}
                       onChange={(e) => setSelectedCategory(e.target.value)}
-                      className="w-full px-4 py-3 bg-zinc-800 border border-zinc-600 rounded-lg text-white focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-200 hover:border-zinc-500"
+                      className="w-full px-4 py-3 bg-zinc-800 border border-zinc-600 rounded-lg text-white focus:outline-none focus:border-[var(--accent-color)] focus:ring-2 focus:ring-[rgba(var(--accent-rgb),0.2)] transition-all duration-200 hover:border-zinc-500"
                     >
                       {categories.map((cat) => (
                         <option key={cat} value={cat}>
@@ -2531,7 +2596,7 @@ const LearningPathPage = () => {
                     <select
                       value={selectedDifficulty}
                       onChange={(e) => setSelectedDifficulty(e.target.value)}
-                      className="w-full px-4 py-3 bg-zinc-800 border border-zinc-600 rounded-lg text-white focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-200 hover:border-zinc-500"
+                      className="w-full px-4 py-3 bg-zinc-800 border border-zinc-600 rounded-lg text-white focus:outline-none focus:border-[var(--accent-color)] focus:ring-2 focus:ring-[rgba(var(--accent-rgb),0.2)] transition-all duration-200 hover:border-zinc-500"
                     >
                       {difficulties.map((diff) => (
                         <option key={diff} value={diff}>
@@ -2548,7 +2613,7 @@ const LearningPathPage = () => {
                     <select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value)}
-                      className="w-full px-4 py-3 bg-zinc-800 border border-zinc-600 rounded-lg text-white focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-200 hover:border-zinc-500"
+                      className="w-full px-4 py-3 bg-zinc-800 border border-zinc-600 rounded-lg text-white focus:outline-none focus:border-[var(--accent-color)] focus:ring-2 focus:ring-[rgba(var(--accent-rgb),0.2)] transition-all duration-200 hover:border-zinc-500"
                     >
                       <option value="popular">Most Popular</option>
                       <option value="rating">Highest Rated</option>
@@ -2564,8 +2629,8 @@ const LearningPathPage = () => {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <Card className="bg-gradient-to-br from-zinc-900 to-zinc-800 border-zinc-700">
               <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2.5 bg-blue-500/20 rounded-xl">
-                  <BookOpen className="w-5 h-5 text-blue-400" />
+                <div className="p-2.5 bg-[rgba(var(--accent-rgb),0.2)] rounded-xl">
+                  <BookOpen className="w-5 h-5 text-[var(--accent-color)]" />
                 </div>
                 <div>
                   <p className="text-xs text-zinc-400">Courses</p>
@@ -2577,8 +2642,8 @@ const LearningPathPage = () => {
             </Card>
             <Card className="bg-gradient-to-br from-zinc-900 to-zinc-800 border-zinc-700">
               <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2.5 bg-green-500/20 rounded-xl">
-                  <CheckCircle2 className="w-5 h-5 text-green-400" />
+                <div className="p-2.5 bg-[rgba(var(--accent-rgb),0.2)] rounded-xl">
+                  <CheckCircle2 className="w-5 h-5 text-[var(--accent-color)]" />
                 </div>
                 <div>
                   <p className="text-xs text-zinc-400">Completed</p>
@@ -2590,8 +2655,8 @@ const LearningPathPage = () => {
             </Card>
             <Card className="bg-gradient-to-br from-zinc-900 to-zinc-800 border-zinc-700">
               <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2.5 bg-yellow-500/20 rounded-xl">
-                  <Bookmark className="w-5 h-5 text-yellow-400" />
+                <div className="p-2.5 bg-[rgba(var(--accent-rgb),0.2)] rounded-xl">
+                  <Bookmark className="w-5 h-5 text-[var(--accent-color)]" />
                 </div>
                 <div>
                   <p className="text-xs text-zinc-400">Bookmarks</p>
@@ -2603,8 +2668,8 @@ const LearningPathPage = () => {
             </Card>
             <Card className="bg-gradient-to-br from-zinc-900 to-zinc-800 border-zinc-700">
               <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2.5 bg-purple-500/20 rounded-xl">
-                  <Flame className="w-5 h-5 text-purple-400" />
+                <div className="p-2.5 bg-[rgba(var(--accent-rgb),0.2)] rounded-xl">
+                  <Flame className="w-5 h-5 text-[var(--accent-color)]" />
                 </div>
                 <div>
                   <p className="text-xs text-zinc-400">Watched</p>
@@ -2616,8 +2681,8 @@ const LearningPathPage = () => {
             </Card>
             <Card className="bg-gradient-to-br from-zinc-900 to-zinc-800 border-zinc-700">
               <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2.5 bg-orange-500/20 rounded-xl">
-                  <Award className="w-5 h-5 text-orange-400" />
+                <div className="p-2.5 bg-[rgba(var(--accent-rgb),0.2)] rounded-xl">
+                  <Award className="w-5 h-5 text-[var(--accent-color)]" />
                 </div>
                 <div>
                   <p className="text-xs text-zinc-400">Certificates</p>
@@ -2632,7 +2697,7 @@ const LearningPathPage = () => {
         {watchHistory.length > 0 && (
           <div className="mb-8">
             <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <Play className="w-5 h-5 text-red-500" />
+              <Play className="w-5 h-5 text-[var(--accent-color)]" />
               Continue Watching
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -2658,7 +2723,7 @@ const LearningPathPage = () => {
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                        <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                        <div className="w-12 h-12 bg-[rgb(var(--accent-rgb))] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
                           <Play className="w-5 h-5 text-white ml-0.5" />
                         </div>
                       </div>
@@ -2744,7 +2809,7 @@ const LearningPathPage = () => {
           ) && (
             <div className="mb-12">
               <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-                <Play className="w-6 h-6 text-red-500" />
+                <Play className="w-6 h-6 text-[var(--accent-color)]" />
                 Continue Learning
                 <span className="text-sm font-normal text-zinc-400 bg-zinc-800 px-2 py-1 rounded-full">
                   {
@@ -2762,7 +2827,7 @@ const LearningPathPage = () => {
                   .map((path) => (
                     <Card
                       key={`continue-${path.id}`}
-                      className="bg-gradient-to-br from-red-950/20 to-zinc-900 border-red-500/30 overflow-hidden hover:border-red-500/50 transition-all duration-300 group cursor-pointer"
+                      className="bg-gradient-to-br from-[rgba(var(--accent-rgb),0.12)] to-zinc-900 border-[rgba(var(--accent-rgb),0.3)] overflow-hidden hover:border-[rgba(var(--accent-rgb),0.5)] transition-all duration-300 group cursor-pointer"
                       onClick={() => {
                         const m =
                           path.modules.find((m) => m.current) ||
@@ -2778,24 +2843,24 @@ const LearningPathPage = () => {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                         <div className="absolute top-3 left-3">
-                          <span className="px-2 py-1 bg-red-500/90 text-white text-xs font-semibold rounded-full backdrop-blur-sm">
+                          <span className="px-2 py-1 bg-[rgba(var(--accent-rgb),0.9)] text-white text-xs font-semibold rounded-full backdrop-blur-sm">
                             In Progress
                           </span>
                         </div>
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                          <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center shadow-2xl transform group-hover:scale-110 transition-transform">
+                          <div className="w-16 h-16 bg-[rgb(var(--accent-rgb))] rounded-full flex items-center justify-center shadow-2xl transform group-hover:scale-110 transition-transform">
                             <Play className="w-6 h-6 text-white ml-1" />
                           </div>
                         </div>
                         <div className="absolute bottom-0 left-0 right-0 h-2 bg-zinc-700">
                           <div
-                            className="h-full bg-gradient-to-r from-red-500 to-red-400 transition-all duration-500"
+                            className="h-full bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgba(var(--accent-rgb),0.85)] transition-all duration-500"
                             style={{ width: `${path.progress}%` }}
                           />
                         </div>
                       </div>
                       <CardContent className="p-4">
-                        <h3 className="font-bold text-white text-lg mb-2 line-clamp-2 group-hover:text-red-400 transition-colors">
+                        <h3 className="font-bold text-white text-lg mb-2 line-clamp-2 group-hover:text-[var(--accent-color)] transition-colors">
                           {path.title}
                         </h3>
                         <div className="flex items-center justify-between text-sm text-zinc-400 mb-3">
@@ -2805,7 +2870,7 @@ const LearningPathPage = () => {
                             {path.modules.length} modules
                           </span>
                         </div>
-                        <Button className="w-full bg-red-600 hover:bg-red-700 text-white">
+                        <Button className="w-full bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)] text-white">
                           <Play className="w-4 h-4 mr-2" />
                           Continue Course
                         </Button>
@@ -2860,7 +2925,7 @@ const LearningPathPage = () => {
                   </Button>
                   <Button
                     onClick={() => navigate("/tutor")}
-                    className="bg-red-600 hover:bg-red-700 text-white"
+                    className="bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)] text-white"
                   >
                     Ask AI Tutor for help
                   </Button>
@@ -2870,7 +2935,7 @@ const LearningPathPage = () => {
               getFilteredPaths().map((path) => (
                 <Card
                   key={path.id}
-                  className="bg-gradient-to-br from-zinc-900 to-zinc-800 border-zinc-700 overflow-hidden hover:border-red-500/50 transition-all duration-300 group hover:shadow-2xl hover:shadow-red-500/10 hover:-translate-y-1"
+                  className="bg-gradient-to-br from-zinc-900 to-zinc-800 border-zinc-700 overflow-hidden hover:border-[rgba(var(--accent-rgb),0.5)] transition-all duration-300 group hover:shadow-2xl hover:-translate-y-1"
                 >
                   <div
                     className="relative aspect-video cursor-pointer group overflow-hidden"
@@ -2888,7 +2953,7 @@ const LearningPathPage = () => {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                      <div className="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center shadow-2xl transform group-hover:scale-110 transition-transform border-4 border-white/20">
+                      <div className="w-20 h-20 bg-[rgb(var(--accent-rgb))] rounded-full flex items-center justify-center shadow-2xl transform group-hover:scale-110 transition-transform border-4 border-white/20">
                         <Play className="w-8 h-8 text-white ml-1" />
                       </div>
                     </div>
@@ -2896,25 +2961,25 @@ const LearningPathPage = () => {
                       <span
                         className={`px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-sm border ${
                           path.difficulty === "Beginner"
-                            ? "bg-green-500/20 text-green-400 border-green-500/30"
+                            ? "bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] border-[rgba(var(--accent-rgb),0.3)]"
                             : path.difficulty === "Intermediate"
-                            ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
+                            ? "bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] border-[rgba(var(--accent-rgb),0.3)]"
                             : path.difficulty === "Advanced"
-                            ? "bg-red-500/20 text-red-400 border-red-500/30"
-                            : "bg-purple-500/20 text-purple-400 border-purple-500/30"
+                            ? "bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] border-[rgba(var(--accent-rgb),0.3)]"
+                            : "bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] border-[rgba(var(--accent-rgb),0.3)]"
                         }`}
                       >
                         {path.difficulty}
                       </span>
                       {path.progress > 0 && (
-                        <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs font-semibold rounded-full backdrop-blur-sm border border-blue-500/30">
+                        <span className="px-2 py-1 bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] text-xs font-semibold rounded-full backdrop-blur-sm border border-[rgba(var(--accent-rgb),0.3)]">
                           {path.progress}% done
                         </span>
                       )}
                     </div>
                     <div className="absolute top-4 right-4 flex items-center gap-2">
                       <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                        <Star className="w-4 h-4 text-[var(--accent-color)] fill-[var(--accent-color)]" />
                         <span className="text-sm text-white font-semibold">
                           {path.rating}
                         </span>
@@ -2971,7 +3036,7 @@ const LearningPathPage = () => {
                     </div>
                     <div className="absolute bottom-0 left-0 right-0 h-1 bg-zinc-700">
                       <div
-                        className="h-full bg-gradient-to-r from-red-500 to-red-400 transition-all duration-500"
+                        className="h-full bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgba(var(--accent-rgb),0.85)] transition-all duration-500"
                         style={{ width: `${path.progress}%` }}
                       />
                     </div>
@@ -2979,27 +3044,27 @@ const LearningPathPage = () => {
                   <CardContent className="p-6">
                     <div className="mb-4">
                       <div className="flex items-start justify-between mb-3">
-                        <h3 className="font-bold text-white text-xl mb-2 line-clamp-2 group-hover:text-red-400 transition-colors">
+                        <h3 className="font-bold text-white text-xl mb-2 line-clamp-2 group-hover:text-[var(--accent-color)] transition-colors">
                           {path.title}
                         </h3>
                         <span
                           className={`px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-sm border ${
                             path.category === "Web Development"
-                              ? "bg-blue-500/20 text-blue-400 border-blue-500/30"
+                              ? "bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] border-[rgba(var(--accent-rgb),0.3)]"
                               : path.category === "Data Science"
-                              ? "bg-green-500/20 text-green-400 border-green-500/30"
+                              ? "bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] border-[rgba(var(--accent-rgb),0.3)]"
                               : path.category === "Computer Science"
-                              ? "bg-purple-500/20 text-purple-400 border-purple-500/30"
+                              ? "bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] border-[rgba(var(--accent-rgb),0.3)]"
                               : path.category === "Mobile Development"
-                              ? "bg-orange-500/20 text-orange-400 border-orange-500/30"
+                              ? "bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] border-[rgba(var(--accent-rgb),0.3)]"
                               : path.category === "DevOps"
-                              ? "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
+                              ? "bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] border-[rgba(var(--accent-rgb),0.3)]"
                               : path.category === "Cybersecurity"
-                              ? "bg-red-500/20 text-red-400 border-red-500/30"
+                              ? "bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] border-[rgba(var(--accent-rgb),0.3)]"
                               : path.category === "Design"
-                              ? "bg-pink-500/20 text-pink-400 border-pink-500/30"
+                              ? "bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] border-[rgba(var(--accent-rgb),0.3)]"
                               : path.category === "Blockchain"
-                              ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
+                              ? "bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] border-[rgba(var(--accent-rgb),0.3)]"
                               : "bg-gray-500/20 text-gray-400 border-gray-500/30"
                           }`}
                         >
@@ -3013,7 +3078,7 @@ const LearningPathPage = () => {
                     <div className="grid grid-cols-2 gap-4 text-sm text-zinc-400 mb-6">
                       <div className="flex items-center gap-2">
                         <div className="p-1.5 bg-zinc-800 rounded-lg">
-                          <GraduationCap className="w-4 h-4 text-blue-400" />
+                          <GraduationCap className="w-4 h-4 text-[var(--accent-color)]" />
                         </div>
                         <div>
                           <p className="text-xs text-zinc-500">Instructor</p>
@@ -3024,7 +3089,7 @@ const LearningPathPage = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="p-1.5 bg-zinc-800 rounded-lg">
-                          <Users className="w-4 h-4 text-green-400" />
+                          <Users className="w-4 h-4 text-[var(--accent-color)]" />
                         </div>
                         <div>
                           <p className="text-xs text-zinc-500">Students</p>
@@ -3035,7 +3100,7 @@ const LearningPathPage = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="p-1.5 bg-zinc-800 rounded-lg">
-                          <BookOpen className="w-4 h-4 text-purple-400" />
+                          <BookOpen className="w-4 h-4 text-[var(--accent-color)]" />
                         </div>
                         <div>
                           <p className="text-xs text-zinc-500">Lessons</p>
@@ -3049,7 +3114,7 @@ const LearningPathPage = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="p-1.5 bg-zinc-800 rounded-lg">
-                          <Clock className="w-4 h-4 text-orange-400" />
+                          <Clock className="w-4 h-4 text-[var(--accent-color)]" />
                         </div>
                         <div>
                           <p className="text-xs text-zinc-500">Duration</p>
@@ -3091,7 +3156,7 @@ const LearningPathPage = () => {
                           size="sm"
                           variant="outline"
                           onClick={() => generateCertificate(path)}
-                          className="flex-1 gap-2 border-orange-500/50 text-orange-400 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-all duration-200"
+                          className="flex-1 gap-2 border-[rgba(var(--accent-rgb),0.5)] text-[var(--accent-color)] hover:bg-[rgb(var(--accent-rgb))] hover:text-white hover:border-[rgb(var(--accent-rgb))] transition-all duration-200"
                         >
                           <Award className="w-4 h-4" />
                           Certificate
@@ -3106,7 +3171,7 @@ const LearningPathPage = () => {
                           if (m?.lessons)
                             openLessonPlayer(path, m, m.lessons[0]);
                         }}
-                        className="flex-1 gap-2 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white shadow-lg hover:shadow-red-500/25 transition-all duration-200"
+                        className="flex-1 gap-2 bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgba(var(--accent-rgb),0.85)] hover:from-[rgba(var(--accent-rgb),0.9)] hover:to-[rgba(var(--accent-rgb),0.8)] text-white shadow-lg transition-all duration-200"
                       >
                         <Play className="w-4 h-4" />
                         {path.progress > 0 ? "Continue" : "Start Course"}
@@ -3118,20 +3183,20 @@ const LearningPathPage = () => {
             )}
           </div>
         </div>
-        <Card className="mt-12 bg-gradient-to-br from-zinc-900 via-red-950/30 to-purple-950/20 border-zinc-700/50 backdrop-blur-sm">
+        <Card className="mt-12 bg-gradient-to-br from-zinc-900 via-[rgba(var(--accent-rgb),0.12)] to-[rgba(var(--accent-rgb),0.08)] border-zinc-700/50 backdrop-blur-sm">
           <CardContent className="p-8">
             <div className="flex items-start gap-6">
-              <div className="p-4 bg-gradient-to-br from-red-500/20 to-purple-500/20 rounded-2xl border border-red-500/20">
-                <Lightbulb className="w-10 h-10 text-red-400" />
+              <div className="p-4 bg-[rgba(var(--accent-rgb),0.2)] rounded-2xl border border-[rgba(var(--accent-rgb),0.2)]">
+                <Lightbulb className="w-10 h-10 text-[var(--accent-color)]" />
               </div>
               <div className="flex-1">
                 <h3 className="text-2xl font-bold mb-3 text-white flex items-center gap-3">
                   Smart Recommendations
-                  <Zap className="w-5 h-5 text-yellow-400 animate-pulse" />
+                  <Zap className="w-5 h-5 text-[var(--accent-color)] animate-pulse" />
                 </h3>
                 <p className="text-zinc-300 mb-6 text-lg leading-relaxed">
                   Based on your learning history, we recommend exploring{" "}
-                  <strong className="text-white bg-gradient-to-r from-red-400 to-purple-400 bg-clip-text text-transparent">
+                  <strong className="text-white bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgba(var(--accent-rgb),0.9)] bg-clip-text text-transparent">
                     {learningPaths.find((p) => p.progress < 100)?.title ||
                       "a new course"}
                   </strong>
@@ -3149,7 +3214,7 @@ const LearningPathPage = () => {
                         if (m?.lessons) openLessonPlayer(path, m, m.lessons[0]);
                       }
                     }}
-                    className="gap-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white px-6 py-3 text-lg shadow-lg hover:shadow-red-500/25 transition-all duration-200 transform hover:scale-105"
+                    className="gap-3 bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgba(var(--accent-rgb),0.85)] hover:from-[rgba(var(--accent-rgb),0.9)] hover:to-[rgba(var(--accent-rgb),0.8)] text-white px-6 py-3 text-lg shadow-lg transition-all duration-200 transform hover:scale-105"
                   >
                     <Play className="w-5 h-5" />
                     Start Learning Now
@@ -3176,7 +3241,7 @@ const LearningPathPage = () => {
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                  <Eye className="w-6 h-6 text-blue-400" />
+                  <Eye className="w-6 h-6 text-[var(--accent-color)]" />
                   Course Preview
                 </h2>
                 <Button
@@ -3210,21 +3275,21 @@ const LearningPathPage = () => {
 
                   <div className="grid grid-cols-2 gap-4 mb-6">
                     <div className="bg-zinc-800/50 rounded-lg p-4 text-center">
-                      <GraduationCap className="w-6 h-6 text-blue-400 mx-auto mb-2" />
+                      <GraduationCap className="w-6 h-6 text-[var(--accent-color)] mx-auto mb-2" />
                       <p className="text-xs text-zinc-500">Instructor</p>
                       <p className="font-semibold text-white">
                         {previewCourse.instructor}
                       </p>
                     </div>
                     <div className="bg-zinc-800/50 rounded-lg p-4 text-center">
-                      <Users className="w-6 h-6 text-green-400 mx-auto mb-2" />
+                      <Users className="w-6 h-6 text-[var(--accent-color)] mx-auto mb-2" />
                       <p className="text-xs text-zinc-500">Students</p>
                       <p className="font-semibold text-white">
                         {(previewCourse.students / 1000000).toFixed(1)}M
                       </p>
                     </div>
                     <div className="bg-zinc-800/50 rounded-lg p-4 text-center">
-                      <BookOpen className="w-6 h-6 text-purple-400 mx-auto mb-2" />
+                      <BookOpen className="w-6 h-6 text-[var(--accent-color)] mx-auto mb-2" />
                       <p className="text-xs text-zinc-500">Lessons</p>
                       <p className="font-semibold text-white">
                         {previewCourse.modules.reduce(
@@ -3234,7 +3299,7 @@ const LearningPathPage = () => {
                       </p>
                     </div>
                     <div className="bg-zinc-800/50 rounded-lg p-4 text-center">
-                      <Clock className="w-6 h-6 text-orange-400 mx-auto mb-2" />
+                      <Clock className="w-6 h-6 text-[var(--accent-color)] mx-auto mb-2" />
                       <p className="text-xs text-zinc-500">Duration</p>
                       <p className="font-semibold text-white">
                         {previewCourse.duration}
@@ -3300,7 +3365,7 @@ const LearningPathPage = () => {
                         if (m?.lessons)
                           openLessonPlayer(previewCourse, m, m.lessons[0]);
                       }}
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                      className="flex-1 bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)] text-white"
                     >
                       <Play className="w-4 h-4 mr-2" />
                       Start Course
@@ -3327,7 +3392,7 @@ const LearningPathPage = () => {
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                  <Award className="w-6 h-6 text-orange-400" />
+                  <Award className="w-6 h-6 text-[var(--accent-color)]" />
                   Certificate of Completion
                 </h2>
                 <Button
@@ -3340,9 +3405,9 @@ const LearningPathPage = () => {
                 </Button>
               </div>
 
-              <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-xl p-8 text-center">
+              <div className="bg-[rgba(var(--accent-rgb),0.1)] border border-[rgba(var(--accent-rgb),0.2)] rounded-xl p-8 text-center">
                 <div className="mb-6">
-                  <Award className="w-16 h-16 text-orange-400 mx-auto mb-4" />
+                  <Award className="w-16 h-16 text-[var(--accent-color)] mx-auto mb-4" />
                   <h3 className="text-xl font-bold text-white mb-2">
                     Certificate Awarded
                   </h3>
@@ -3379,7 +3444,7 @@ const LearningPathPage = () => {
                       );
                       toast.success("Certificate details copied!");
                     }}
-                    className="gap-2 bg-orange-600 hover:bg-orange-700 text-white"
+                    className="gap-2 bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)] text-white"
                   >
                     <Share2 className="w-4 h-4" />
                     Share

@@ -64,7 +64,7 @@ const StudentDashboard = () => {
         "Interactive AI-powered tutoring sessions, instant doubt clearing, personalized learning paths, and progress tracking.",
       path: "/tutor",
       testId: "nav-tutor-btn",
-      color: "bg-gradient-to-br from-purple-500 to-pink-500",
+      color: "bg-gradient-to-br from-orange-500 to-orange-600",
       iconColor: "text-white",
       image:
         "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=250&fit=crop&crop=center",
@@ -79,7 +79,7 @@ const StudentDashboard = () => {
         "Hundreds of coding problems, real-time code analysis, performance metrics, and skill improvement tracking.",
       path: "/coding",
       testId: "nav-coding-btn",
-      color: "bg-gradient-to-br from-blue-500 to-cyan-500",
+      color: "bg-gradient-to-br from-orange-500 to-orange-600",
       iconColor: "text-white",
       image:
         "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=250&fit=crop&crop=center",
@@ -94,7 +94,7 @@ const StudentDashboard = () => {
         "ATS-friendly resume scoring, keyword optimization, industry-specific suggestions, and comparison with top resumes.",
       path: "/resume",
       testId: "nav-resume-btn",
-      color: "bg-gradient-to-br from-green-500 to-emerald-500",
+      color: "bg-gradient-to-br from-orange-500 to-orange-600",
       iconColor: "text-white",
       image:
         "https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=400&h=250&fit=crop&crop=center",
@@ -108,7 +108,7 @@ const StudentDashboard = () => {
         "Realistic interview scenarios, voice analysis, body language tips, and personalized improvement plans.",
       path: "/interview",
       testId: "nav-interview-btn",
-      color: "bg-gradient-to-br from-orange-500 to-red-500",
+      color: "bg-gradient-to-br from-orange-500 to-orange-600",
       iconColor: "text-white",
       image:
         "https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=250&fit=crop&crop=center",
@@ -122,7 +122,7 @@ const StudentDashboard = () => {
         "Customized learning journeys, milestone tracking, resource recommendations, and progress visualization.",
       path: "/learning-path",
       testId: "nav-learning-btn",
-      color: "bg-gradient-to-br from-indigo-500 to-purple-500",
+      color: "bg-gradient-to-br from-orange-500 to-orange-600",
       iconColor: "text-white",
       image:
         "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&h=250&fit=crop&crop=center",
@@ -136,7 +136,7 @@ const StudentDashboard = () => {
         "Direct company connections, internship matching, job application tracking, and career event notifications.",
       path: "/company",
       testId: "nav-company-btn",
-      color: "bg-gradient-to-br from-slate-500 to-gray-500",
+      color: "bg-gradient-to-br from-orange-500 to-orange-600",
       iconColor: "text-white",
       image:
         "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=250&fit=crop&crop=center",
@@ -150,7 +150,7 @@ const StudentDashboard = () => {
         "Academic performance tracking, event management, student services, and administrative tools.",
       path: "/college",
       testId: "nav-college-btn",
-      color: "bg-gradient-to-br from-emerald-500 to-teal-500",
+      color: "bg-gradient-to-br from-orange-500 to-orange-600",
       iconColor: "text-white",
       image:
         "https://images.unsplash.com/photo-1565688534245-05d6b5be184a?w=400&h=250&fit=crop&crop=center",
@@ -164,11 +164,26 @@ const StudentDashboard = () => {
         "Structured course sequences, prerequisite mapping, skill progression paths, and career-aligned learning tracks.",
       path: "/roadmap",
       testId: "nav-roadmap-btn",
-      color: "bg-gradient-to-br from-yellow-500 to-orange-500",
+      color: "bg-gradient-to-br from-orange-500 to-orange-600",
       iconColor: "text-white",
       image:
         "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=250&fit=crop&crop=center",
       badge: "New",
+    },
+    {
+      icon: <Sparkles className="w-8 h-8" />,
+      title: "Premium Access",
+      description:
+        "Unlock exclusive premium features, advanced AI tools, and personalized mentorship.",
+      detailedContent:
+        "Access to premium courses, internships, advanced analytics, priority support, and exclusive networking opportunities.",
+      path: "/premium",
+      testId: "nav-premium-btn",
+      color: "bg-gradient-to-br from-orange-500 to-orange-600",
+      iconColor: "text-white",
+      image:
+        "https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=250&fit=crop&crop=center",
+      badge: "Premium",
     },
   ];
 
@@ -176,8 +191,8 @@ const StudentDashboard = () => {
     "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1920&h=1080&fit=crop",
     "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1920&h=1080&fit=crop",
     "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=1920&h=1080&fit=crop",
-    "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1920&h=1080&fit=crop",
     "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1920&h=1080&fit=crop",
+    "https://www.gpstrategies.com/wp-content/webp-express/webp-images/doc-root/wp-content/uploads/2023/02/Blog-Viability-AR-VR-mod_02.04.21-web.jpg.webp",
   ];
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -197,7 +212,7 @@ const StudentDashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
       {/* Hero Section */}
-      <div className="relative overflow-hidden h-screen flex items-center">
+      <div className="relative overflow-hidden min-h-[100dvh] md:h-screen flex items-center">
         <img
           src={backgroundImages[currentImageIndex]}
           alt="Background"
@@ -211,19 +226,19 @@ const StudentDashboard = () => {
           className="absolute inset-0 bg-black/40"
           style={{ backdropFilter: "blur(5px)" }}
         ></div>
-        <div className="relative max-w-7xl mx-auto px-6 w-full">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 w-full">
           <div className="text-center">
-            <h1 className="text-5xl md:text-7xl font-bold text-white mb-6">
+            <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold text-white mb-6">
               Welcome to Your Learning Hub
             </h1>
-            <p className="text-2xl text-blue-100 mb-8 max-w-4xl mx-auto">
+            <p className="text-base sm:text-xl md:text-2xl text-orange-500 to-orange-600 mb-8 max-w-4xl mx-auto">
               Accelerate your career with AI-powered tools, personalized
               learning paths, and comprehensive skill development.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
                 onClick={() => navigate("/tutor")}
-                className="bg-white text-blue-600 hover:bg-blue-50 px-8 py-3 text-lg font-semibold"
+                className="bg-white text-orange-600 hover:bg-orange-50 px-6 sm:px-8 py-3 text-base sm:text-lg font-semibold"
               >
                 <Sparkles className="w-5 h-5 mr-2" />
                 Start Learning
@@ -231,7 +246,7 @@ const StudentDashboard = () => {
               <Button
                 onClick={() => navigate("/coding")}
                 variant="outline"
-                className="border-white text-white hover:bg-white hover:text-blue-600 px-8 py-3 text-lg font-semibold"
+                className="border-white text-white hover:bg-white hover:text-orange-600 px-6 sm:px-8 py-3 text-base sm:text-lg font-semibold"
               >
                 <Code className="w-5 h-5 mr-2" />
                 Practice Coding
@@ -242,10 +257,10 @@ const StudentDashboard = () => {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Welcome Section */}
         <div className="mb-12 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-2 text-white">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-white">
             Welcome back, {user?.name}!
           </h2>
           <p className="text-zinc-400 text-lg">
@@ -257,9 +272,9 @@ const StudentDashboard = () => {
         {!loading && stats && (
           <div
             data-testid="stats-grid"
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12"
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 mb-12"
           >
-            <Card className="bg-black border-gray-700 hover:border-gray-600 hover:ring-1 hover:ring-white transition-all duration-300 hover:scale-105">
+            <Card className="bg-black border-gray-700 md:hover:border-gray-600 md:hover:ring-1 md:hover:ring-white transition-all duration-300 md:hover:scale-105">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-white flex items-center">
                   <Code className="w-4 h-4 mr-2" />
@@ -267,13 +282,13 @@ const StudentDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-white">
+                <div className="text-2xl sm:text-3xl font-bold text-white">
                   {stats.code_submissions}
                 </div>
                 <p className="text-gray-300 text-sm mt-1">Keep coding!</p>
               </CardContent>
             </Card>
-            <Card className="bg-black border-gray-700 hover:border-gray-600 hover:ring-1 hover:ring-white transition-all duration-300 hover:scale-105">
+            <Card className="bg-black border-gray-700 md:hover:border-gray-600 md:hover:ring-1 md:hover:ring-white transition-all duration-300 md:hover:scale-105">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-white flex items-center">
                   <TrendingUp className="w-4 h-4 mr-2" />
@@ -281,18 +296,18 @@ const StudentDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="text-3xl font-bold text-white">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                  <div className="text-2xl sm:text-3xl font-bold text-white">
                     {stats.avg_code_score}%
                   </div>
                   {/* Horizontal meter with segments */}
-                  <div className="flex items-center space-x-1">
+                  <div className="flex items-center space-x-1 flex-shrink-0">
                     {[...Array(10)].map((_, i) => (
                       <div
                         key={i}
-                        className={`w-3 h-1 rounded-sm transition-all duration-300 ${
+                        className={`w-2 sm:w-3 h-1 rounded-sm transition-all duration-300 ${
                           i < Math.floor(stats.avg_code_score / 10)
-                            ? "bg-gradient-to-r from-green-400 to-green-600"
+                            ? "bg-gradient-to-r from-orange-400 to-orange-600"
                             : "bg-gray-600"
                         }`}
                       />
@@ -301,7 +316,7 @@ const StudentDashboard = () => {
                 </div>
                 <div className="w-full bg-gray-700 rounded-full h-3">
                   <div
-                    className="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full transition-all duration-500"
+                    className="bg-gradient-to-r from-orange-400 to-orange-600 h-3 rounded-full transition-all duration-500"
                     style={{
                       width: `${Math.min(stats.avg_code_score, 100)}%`,
                     }}
@@ -312,7 +327,7 @@ const StudentDashboard = () => {
                 </p>
               </CardContent>
             </Card>
-            <Card className="bg-black border-gray-700 hover:border-gray-600 hover:ring-1 hover:ring-white transition-all duration-300 hover:scale-105">
+            <Card className="bg-black border-gray-700 md:hover:border-gray-600 md:hover:ring-1 md:hover:ring-white transition-all duration-300 md:hover:scale-105">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-white flex items-center">
                   <MessageSquare className="w-4 h-4 mr-2" />
@@ -320,7 +335,7 @@ const StudentDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-white">
+                <div className="text-2xl sm:text-3xl font-bold text-white">
                   {stats.interviews_taken}
                 </div>
                 <p className="text-gray-300 text-sm mt-1">
@@ -328,7 +343,7 @@ const StudentDashboard = () => {
                 </p>
               </CardContent>
             </Card>
-            <Card className="bg-black border-gray-700 hover:border-gray-600 hover:ring-1 hover:ring-white transition-all duration-300 hover:scale-105">
+            <Card className="bg-black border-gray-700 md:hover:border-gray-600 md:hover:ring-1 md:hover:ring-white transition-all duration-300 md:hover:scale-105">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-white flex items-center">
                   <BookOpen className="w-4 h-4 mr-2" />
@@ -337,7 +352,7 @@ const StudentDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between mb-3">
-                  <div className="text-3xl font-bold text-white">
+                  <div className="text-2xl sm:text-3xl font-bold text-white">
                     {stats.learning_sessions}
                   </div>
                   {/* Progress indicator */}
@@ -348,7 +363,7 @@ const StudentDashboard = () => {
                         className={`w-2 h-6 rounded-sm transition-all duration-300 ${
                           i <
                           Math.min(Math.floor(stats.learning_sessions / 10), 5)
-                            ? "bg-gradient-to-t from-blue-400 to-blue-600"
+                            ? "bg-gradient-to-t from-orange-400 to-orange-600"
                             : "bg-gray-600"
                         }`}
                       />
@@ -357,7 +372,7 @@ const StudentDashboard = () => {
                 </div>
                 <div className="w-full bg-gray-700 rounded-full h-2">
                   <div
-                    className="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full transition-all duration-500"
+                    className="bg-gradient-to-r from-orange-400 to-orange-600 h-2 rounded-full transition-all duration-500"
                     style={{
                       width: `${Math.min(
                         (stats.learning_sessions / 50) * 100,
@@ -369,7 +384,7 @@ const StudentDashboard = () => {
                 <p className="text-gray-300 text-sm mt-1">Keep learning!</p>
               </CardContent>
             </Card>
-            <Card className="bg-black border-gray-700 hover:border-gray-600 hover:ring-1 hover:ring-white transition-all duration-300 hover:scale-105 overflow-hidden">
+            <Card className="bg-black border-gray-700 md:hover:border-gray-600 md:hover:ring-1 md:hover:ring-white transition-all duration-300 md:hover:scale-105 overflow-hidden">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-white flex items-center">
                   <Trophy className="w-4 h-4 mr-2" />
@@ -436,7 +451,7 @@ const StudentDashboard = () => {
                 </div>
                 <div className="w-full bg-gray-700 rounded-full h-3">
                   <div
-                    className="bg-gradient-to-r from-yellow-400 to-orange-400 h-3 rounded-full transition-all duration-500"
+                    className="bg-gradient-to-r from-orange-400 to-orange-600 h-3 rounded-full transition-all duration-500"
                     style={{
                       width: `${Math.min(stats.career_readiness_score, 100)}%`,
                     }}
@@ -450,7 +465,7 @@ const StudentDashboard = () => {
         {/* Features Grid */}
         <div>
           <h3 className="text-2xl font-bold mb-8 text-white flex items-center">
-            <Star className="w-6 h-6 mr-3 text-purple-400" />
+            <Star className="w-6 h-6 mr-3 text-orange-400" />
             Explore All Features
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -467,21 +482,21 @@ const StudentDashboard = () => {
                   <img
                     src={feature.image}
                     alt={feature.title}
-                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-40 sm:h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   {feature.badge && (
-                    <div className="absolute top-3 right-3 bg-gradient-to-r from-pink-500 to-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                    <div className="absolute top-3 right-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
                       {feature.badge}
                     </div>
                   )}
                 </div>
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   <div
-                    className={`w-14 h-14 rounded-xl ${feature.color} flex items-center justify-center mb-4 border border-zinc-700 shadow-lg`}
+                    className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl ${feature.color} flex items-center justify-center mb-4 border border-zinc-700 shadow-lg`}
                   >
                     <div className={feature.iconColor}>{feature.icon}</div>
                   </div>
-                  <h3 className="text-xl font-semibold mb-2 text-white group-hover:text-blue-400 transition-colors">
+                  <h3 className="text-lg sm:text-xl font-semibold mb-2 text-white group-hover:text-orange-400 transition-colors">
                     {feature.title}
                   </h3>
                   <p className="text-sm text-zinc-400 mb-3">
@@ -490,7 +505,7 @@ const StudentDashboard = () => {
                   <p className="text-xs text-zinc-500">
                     {feature.detailedContent}
                   </p>
-                  <div className="mt-4 flex items-center text-blue-400 group-hover:text-blue-300">
+                  <div className="mt-4 flex items-center text-orange-400 group-hover:text-orange-300">
                     <span className="text-sm font-medium">Explore Feature</span>
                     <svg
                       className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"

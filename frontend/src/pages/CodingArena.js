@@ -58,8 +58,19 @@ import {
 import Editor from "@monaco-editor/react";
 import axiosInstance from "../lib/axios";
 import { toast } from "sonner";
+import { getUser } from "../lib/utils";
 
 const CodingArena = () => {
+  const user = getUser();
+  const codingStreakKey =
+    user?.id || user?._id || user?.email
+      ? `codingStreak:${user.id || user._id || user.email}`
+      : "codingStreak:anonymous";
+  const codingSubmissionsKey =
+    user?.id || user?._id || user?.email
+      ? `codingSubmissions:${user.id || user._id || user.email}`
+      : "codingSubmissions:anonymous";
+
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("python");
   const [problemId, setProblemId] = useState("fibonacci");
@@ -122,8 +133,21 @@ const CodingArena = () => {
 
   // Load streak from localStorage
   useEffect(() => {
-    const savedStreak = localStorage.getItem("codingStreak");
-    if (savedStreak) setStreak(parseInt(savedStreak));
+    try {
+      const savedStreak = localStorage.getItem(codingStreakKey);
+      if (savedStreak) {
+        setStreak(parseInt(savedStreak));
+      } else {
+        const legacy = localStorage.getItem("codingStreak");
+        if (legacy) {
+          localStorage.setItem(codingStreakKey, legacy);
+          localStorage.removeItem("codingStreak");
+          setStreak(parseInt(legacy));
+        }
+      }
+    } catch (e) {
+      // ignore malformed storage
+    }
   }, []);
 
   const problems = [
@@ -251,9 +275,20 @@ const CodingArena = () => {
 
   useEffect(() => {
     // Load submissions from localStorage
-    const savedSubmissions = localStorage.getItem("codingSubmissions");
-    if (savedSubmissions) {
-      setSubmissions(JSON.parse(savedSubmissions));
+    try {
+      const savedSubmissions = localStorage.getItem(codingSubmissionsKey);
+      if (savedSubmissions) {
+        setSubmissions(JSON.parse(savedSubmissions));
+      } else {
+        const legacy = localStorage.getItem("codingSubmissions");
+        if (legacy) {
+          localStorage.setItem(codingSubmissionsKey, legacy);
+          localStorage.removeItem("codingSubmissions");
+          setSubmissions(JSON.parse(legacy));
+        }
+      }
+    } catch (e) {
+      // ignore malformed storage
     }
   }, []);
 
@@ -268,9 +303,9 @@ const CodingArena = () => {
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
       case "Easy":
-        return "text-green-400 bg-green-500/10";
+        return "text-[rgb(var(--accent-rgb))] bg-[rgba(var(--accent-rgb),0.10)]";
       case "Medium":
-        return "text-yellow-400 bg-yellow-500/10";
+        return "text-[rgb(var(--accent-rgb))] bg-[rgba(var(--accent-rgb),0.10)]";
       case "Hard":
         return "text-red-400 bg-red-500/10";
       default:
@@ -337,7 +372,7 @@ const CodingArena = () => {
       const updatedSubmissions = [newSubmission, ...submissions.slice(0, 9)];
       setSubmissions(updatedSubmissions);
       localStorage.setItem(
-        "codingSubmissions",
+        codingSubmissionsKey,
         JSON.stringify(updatedSubmissions)
       );
 
@@ -345,7 +380,7 @@ const CodingArena = () => {
       if (response.data.passed) {
         const newStreak = streak + 1;
         setStreak(newStreak);
-        localStorage.setItem("codingStreak", newStreak.toString());
+        localStorage.setItem(codingStreakKey, newStreak.toString());
         toast.success("Excellent! Your code passed all test cases! 🎉");
       } else {
         toast.warning("Code needs improvement. Check the AI feedback.");
@@ -413,34 +448,34 @@ const CodingArena = () => {
       case "online":
         return {
           text: "AI Online",
-          color: "text-green-400",
-          bg: "bg-green-400",
+          color: "text-[rgb(var(--accent-rgb))]",
+          bg: "bg-[rgb(var(--accent-rgb))]",
         };
       case "thinking":
         return {
           text: "Thinking...",
-          color: "text-yellow-400",
-          bg: "bg-yellow-400",
+          color: "text-[rgb(var(--accent-rgb))]",
+          bg: "bg-[rgb(var(--accent-rgb))]",
         };
       case "analyzing":
         return {
           text: "Analyzing Code...",
-          color: "text-blue-400",
-          bg: "bg-blue-400",
+          color: "text-[rgb(var(--accent-rgb))]",
+          bg: "bg-[rgb(var(--accent-rgb))]",
         };
       case "responding":
         return {
           text: "Responding...",
-          color: "text-purple-400",
-          bg: "bg-purple-400",
+          color: "text-[rgb(var(--accent-rgb))]",
+          bg: "bg-[rgb(var(--accent-rgb))]",
         };
       case "error":
         return { text: "Error", color: "text-red-400", bg: "bg-red-400" };
       default:
         return {
           text: "AI Online",
-          color: "text-green-400",
-          bg: "bg-green-400",
+          color: "text-[rgb(var(--accent-rgb))]",
+          bg: "bg-[rgb(var(--accent-rgb))]",
         };
     }
   };
@@ -469,7 +504,7 @@ const CodingArena = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-r from-green-500 to-green-600 rounded-2xl relative shadow-lg">
+            <div className="p-3 bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgba(var(--accent-rgb),0.85)] rounded-2xl relative shadow-lg">
               <Code className="w-8 h-8 text-white" />
               <div
                 className={`absolute -bottom-1 -right-1 w-3 h-3 ${
@@ -497,7 +532,7 @@ const CodingArena = () => {
           <div className="hidden md:flex items-center gap-4">
             {/* Streak */}
             <div className="flex items-center gap-2 px-3 py-2 bg-zinc-800 rounded-lg border border-zinc-700">
-              <div className="w-4 h-4 bg-gradient-to-r from-orange-500 to-orange-600 rounded flex items-center justify-center">
+              <div className="w-4 h-4 bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgba(var(--accent-rgb),0.85)] rounded flex items-center justify-center">
                 <Flame className="w-3 h-3 text-white" />
               </div>
               <span className="text-sm text-white font-semibold">
@@ -505,7 +540,7 @@ const CodingArena = () => {
               </span>
             </div>
             <div className="flex items-center gap-2 px-3 py-2 bg-zinc-900 rounded-lg">
-              <div className="w-4 h-4 bg-gradient-to-r from-blue-500 to-blue-600 rounded flex items-center justify-center">
+              <div className="w-4 h-4 bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgba(var(--accent-rgb),0.85)] rounded flex items-center justify-center">
                 <Timer className="w-3 h-3 text-white" />
               </div>
               <span className="text-sm text-white font-mono">
@@ -513,7 +548,7 @@ const CodingArena = () => {
               </span>
             </div>
             <div className="flex items-center gap-2 px-3 py-2 bg-zinc-900 rounded-lg">
-              <div className="w-4 h-4 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded flex items-center justify-center">
+              <div className="w-4 h-4 bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgba(var(--accent-rgb),0.85)] rounded flex items-center justify-center">
                 <Trophy className="w-3 h-3 text-white" />
               </div>
               <span className="text-sm text-white">
@@ -659,11 +694,11 @@ const CodingArena = () => {
                 {activeTab === "hints" && (
                   <div className="space-y-2">
                     <div className="flex items-start gap-2 text-sm text-zinc-400">
-                      <Zap className="w-4 h-4 text-yellow-400 mt-0.5" />
+                      <Zap className="w-4 h-4 text-[rgb(var(--accent-rgb))] mt-0.5" />
                       <span>Think about edge cases like empty inputs</span>
                     </div>
                     <div className="flex items-start gap-2 text-sm text-zinc-400">
-                      <Zap className="w-4 h-4 text-yellow-400 mt-0.5" />
+                      <Zap className="w-4 h-4 text-[rgb(var(--accent-rgb))] mt-0.5" />
                       <span>Consider time and space complexity</span>
                     </div>
                   </div>
@@ -765,7 +800,7 @@ const CodingArena = () => {
                     <div>
                       <h3 className="font-semibold text-white flex items-center gap-2">
                         Code Evaluator AI
-                        <Badge className="bg-green-500/20 text-green-400 text-xs">
+                        <Badge className="bg-[rgba(var(--accent-rgb),0.20)] text-[rgb(var(--accent-rgb))] text-xs">
                           Gemini
                         </Badge>
                       </h3>
@@ -778,7 +813,7 @@ const CodingArena = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => setShowAiChat(!showAiChat)}
-                    className="border-green-500/30 text-green-400 hover:bg-green-500/10"
+                    className="border-[rgba(var(--accent-rgb),0.30)] text-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.10)]"
                   >
                     <MessageSquare className="w-4 h-4 mr-1" />
                     {showAiChat ? "Hide" : "Ask AI"}
@@ -800,7 +835,7 @@ const CodingArena = () => {
                   <div className="h-48 overflow-y-auto mb-4 space-y-3">
                     {aiMessages.length === 0 ? (
                       <div className="text-center py-8">
-                        <Lightbulb className="w-8 h-8 mx-auto mb-2 text-yellow-400/50" />
+                        <Lightbulb className="w-8 h-8 mx-auto mb-2 text-[rgba(var(--accent-rgb),0.50)]" />
                         <p className="text-sm text-zinc-500">
                           Ask me anything about this problem!
                         </p>
@@ -852,7 +887,7 @@ const CodingArena = () => {
                     <Button
                       onClick={askAiHelp}
                       disabled={!userQuestion.trim() || aiStatus === "thinking"}
-                      className="bg-green-500 hover:bg-green-600"
+                      className="bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.90)]"
                     >
                       <Send className="w-4 h-4" />
                     </Button>
@@ -868,7 +903,7 @@ const CodingArena = () => {
                   <Crosshair className="w-5 h-5" />
                   AI Evaluation
                   {loading && (
-                    <Badge className="bg-blue-500/20 text-blue-400 ml-2">
+                    <Badge className="bg-[rgba(var(--accent-rgb),0.20)] text-[rgb(var(--accent-rgb))] ml-2">
                       <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                       Analyzing
                     </Badge>
@@ -912,7 +947,7 @@ const CodingArena = () => {
                         {[0, 1, 2].map((i) => (
                           <div
                             key={i}
-                            className="w-2 h-2 bg-green-400 rounded-full animate-bounce"
+                            className="w-2 h-2 bg-[rgb(var(--accent-rgb))] rounded-full animate-bounce"
                             style={{ animationDelay: `${i * 0.15}s` }}
                           />
                         ))}
@@ -929,24 +964,24 @@ const CodingArena = () => {
                       className={`p-4 rounded-xl flex items-center justify-between ${
                         evaluation.passed
                           ? "bg-green-500/10 border border-green-500/30"
-                          : "bg-orange-500/10 border border-orange-500/30"
+                          : "bg-[rgba(var(--accent-rgb),0.10)] border border-[rgba(var(--accent-rgb),0.30)]"
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         {evaluation.passed ? (
                           <div className="relative">
                             <CheckCircle2 className="w-10 h-10 text-green-400" />
-                            <Sparkles className="w-4 h-4 text-yellow-400 absolute -top-1 -right-1" />
+                            <Sparkles className="w-4 h-4 text-[rgb(var(--accent-rgb))] absolute -top-1 -right-1" />
                           </div>
                         ) : (
-                          <AlertCircle className="w-10 h-10 text-orange-400" />
+                          <AlertCircle className="w-10 h-10 text-[rgb(var(--accent-rgb))]" />
                         )}
                         <div>
                           <p
                             className={`font-semibold text-lg ${
                               evaluation.passed
                                 ? "text-green-400"
-                                : "text-orange-400"
+                                : "text-[rgb(var(--accent-rgb))]"
                             }`}
                           >
                             {evaluation.passed
@@ -969,7 +1004,7 @@ const CodingArena = () => {
                     {/* Score Breakdown */}
                     <div className="grid grid-cols-3 gap-3">
                       <div className="p-3 bg-zinc-800 rounded-lg text-center">
-                        <Star className="w-5 h-5 text-yellow-400 mx-auto mb-1" />
+                        <Star className="w-5 h-5 text-[rgb(var(--accent-rgb))] mx-auto mb-1" />
                         <p className="text-xs text-zinc-400 mb-1">
                           Correctness
                         </p>
@@ -978,14 +1013,14 @@ const CodingArena = () => {
                         </span>
                       </div>
                       <div className="p-3 bg-zinc-800 rounded-lg text-center">
-                        <TrendingUp className="w-5 h-5 text-blue-400 mx-auto mb-1" />
+                        <TrendingUp className="w-5 h-5 text-[rgb(var(--accent-rgb))] mx-auto mb-1" />
                         <p className="text-xs text-zinc-400 mb-1">Quality</p>
                         <span className="font-bold text-white">
                           {evaluation.passed ? "Good" : "Fair"}
                         </span>
                       </div>
                       <div className="p-3 bg-zinc-800 rounded-lg text-center">
-                        <Zap className="w-5 h-5 text-purple-400 mx-auto mb-1" />
+                        <Zap className="w-5 h-5 text-[rgb(var(--accent-rgb))] mx-auto mb-1" />
                         <p className="text-xs text-zinc-400 mb-1">Efficiency</p>
                         <span className="font-bold text-white">
                           {evaluation.score >= 80 ? "Optimal" : "Moderate"}
@@ -995,9 +1030,9 @@ const CodingArena = () => {
 
                     {/* Suggestions */}
                     {evaluation.suggestions && (
-                      <div className="p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-xl border border-yellow-500/20">
+                      <div className="p-4 bg-[rgba(var(--accent-rgb),0.08)] rounded-xl border border-[rgba(var(--accent-rgb),0.20)]">
                         <h4 className="font-semibold mb-2 flex items-center gap-2 text-white">
-                          <Lightbulb className="w-4 h-4 text-yellow-400" />
+                          <Lightbulb className="w-4 h-4 text-[rgb(var(--accent-rgb))]" />
                           AI Suggestions
                         </h4>
                         <p className="text-sm text-zinc-300">
@@ -1009,10 +1044,10 @@ const CodingArena = () => {
                     {/* Detailed Analysis with Typing Effect */}
                     <div className="p-4 bg-zinc-800 rounded-xl">
                       <h4 className="font-semibold mb-3 flex items-center gap-2 text-white">
-                        <Bot className="w-4 h-4 text-green-400" />
+                        <Bot className="w-4 h-4 text-[rgb(var(--accent-rgb))]" />
                         AI Analysis
                         {isTyping && (
-                          <span className="text-xs text-green-400 animate-pulse">
+                          <span className="text-xs text-[rgb(var(--accent-rgb))] animate-pulse">
                             typing...
                           </span>
                         )}
@@ -1021,7 +1056,7 @@ const CodingArena = () => {
                         <pre className="text-sm text-zinc-300 whitespace-pre-wrap font-mono leading-relaxed">
                           {displayedEvaluation}
                           {isTyping && (
-                            <span className="inline-block w-2 h-4 bg-green-400 animate-pulse ml-0.5" />
+                            <span className="inline-block w-2 h-4 bg-[rgb(var(--accent-rgb))] animate-pulse ml-0.5" />
                           )}
                         </pre>
                       </div>
@@ -1033,7 +1068,7 @@ const CodingArena = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-zinc-400 hover:text-green-400"
+                          className="text-zinc-400 hover:text-[rgb(var(--accent-rgb))]"
                         >
                           <ThumbsUp className="w-4 h-4 mr-1" />
                           Helpful
@@ -1041,7 +1076,7 @@ const CodingArena = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-zinc-400 hover:text-blue-400"
+                          className="text-zinc-400 hover:text-[rgb(var(--accent-rgb))]"
                         >
                           <MessageSquare className="w-4 h-4 mr-1" />
                           Ask Follow-up
@@ -1091,8 +1126,8 @@ const CodingArena = () => {
                       >
                         <div className="flex items-center gap-3">
                           {sub.passed ? (
-                            <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center">
-                              <CheckCircle2 className="w-4 h-4 text-green-400" />
+                            <div className="w-8 h-8 bg-[rgba(var(--accent-rgb),0.20)] rounded-full flex items-center justify-center">
+                              <CheckCircle2 className="w-4 h-4 text-[rgb(var(--accent-rgb))]" />
                             </div>
                           ) : (
                             <div className="w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center">
@@ -1100,7 +1135,7 @@ const CodingArena = () => {
                             </div>
                           )}
                           <div>
-                            <p className="text-sm font-medium text-white group-hover:text-green-400 transition-colors">
+                            <p className="text-sm font-medium text-white group-hover:text-[rgb(var(--accent-rgb))] transition-colors">
                               {sub.problemTitle}
                             </p>
                             <p className="text-xs text-zinc-500 flex items-center gap-2">
@@ -1115,7 +1150,9 @@ const CodingArena = () => {
                         <div className="flex items-center gap-2">
                           <span
                             className={`text-sm font-bold ${
-                              sub.passed ? "text-green-400" : "text-red-400"
+                              sub.passed
+                                ? "text-[rgb(var(--accent-rgb))]"
+                                : "text-red-400"
                             }`}
                           >
                             {sub.score}
@@ -1130,28 +1167,28 @@ const CodingArena = () => {
             </Card>
 
             {/* Quick Tips */}
-            <Card className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/20">
+            <Card className="bg-[rgba(var(--accent-rgb),0.10)] border-[rgba(var(--accent-rgb),0.20)]">
               <CardContent className="p-4">
                 <h4 className="font-semibold text-white flex items-center gap-2 mb-3">
-                  <Lightbulb className="w-4 h-4 text-yellow-400" />
+                  <Lightbulb className="w-4 h-4 text-[rgb(var(--accent-rgb))]" />
                   AI Tips
                 </h4>
                 <div className="space-y-2 text-sm text-zinc-400">
                   <div className="flex items-start gap-2">
-                    <ArrowRight className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                    <ArrowRight className="w-4 h-4 text-[rgb(var(--accent-rgb))] mt-0.5 flex-shrink-0" />
                     <span>
                       Use the "Ask AI" button for hints without revealing the
                       solution
                     </span>
                   </div>
                   <div className="flex items-start gap-2">
-                    <ArrowRight className="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" />
+                    <ArrowRight className="w-4 h-4 text-[rgb(var(--accent-rgb))] mt-0.5 flex-shrink-0" />
                     <span>
                       AI analyzes time complexity and suggests optimizations
                     </span>
                   </div>
                   <div className="flex items-start gap-2">
-                    <ArrowRight className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
+                    <ArrowRight className="w-4 h-4 text-[rgb(var(--accent-rgb))] mt-0.5 flex-shrink-0" />
                     <span>Build your streak by solving problems daily!</span>
                   </div>
                 </div>

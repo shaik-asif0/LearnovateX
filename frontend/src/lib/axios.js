@@ -34,6 +34,15 @@ axiosInstance.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
+    // If we're sending FormData, ensure we don't force JSON content-type.
+    // The browser must set `multipart/form-data` with a boundary.
+    if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+      if (config.headers) {
+        delete config.headers["Content-Type"];
+        delete config.headers["content-type"];
+      }
+    }
+
     // Add retry logic for mobile
     config.retry = retryConfig;
 

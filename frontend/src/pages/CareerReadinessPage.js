@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
@@ -46,6 +46,29 @@ import {
 import axiosInstance from "../lib/axios";
 import { toast } from "sonner";
 
+// ------------------------------
+// Demo / viva-friendly mock data
+// ------------------------------
+// This is only used as a fallback if the backend is unavailable.
+// It also serves as sample mock data for the "AI Career Digital Twin".
+const MOCK_TWIN_SNAPSHOT = {
+  career_readiness_score: 21.5,
+  avg_code_score: 46,
+  code_submissions: 12,
+  resume_analyses: 6,
+  interviews_taken: 1,
+  learning_sessions: 4,
+  learning_consistency_score: 32,
+  active_days_30: 6,
+  current_streak: 1,
+  longest_streak: 5,
+  // Backward compatibility with older frontend UI keys
+  total_problems_solved: 12,
+  last_activity_at: new Date(
+    Date.now() - 4 * 24 * 60 * 60 * 1000
+  ).toISOString(),
+};
+
 const CareerReadinessPage = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
@@ -62,6 +85,7 @@ const CareerReadinessPage = () => {
   const [showGoalsModal, setShowGoalsModal] = useState(false);
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [showMarketModal, setShowMarketModal] = useState(false);
+  const [showTwinInfoModal, setShowTwinInfoModal] = useState(false);
 
   const advancedMetrics = [
     {
@@ -69,32 +93,34 @@ const CareerReadinessPage = () => {
       value: `${streakData.current} days`,
       description: "Current consecutive learning days",
       icon: Flame,
-      color: "text-orange-400",
+      color: "text-accent",
       trend: streakData.current > 0 ? "up" : "stable",
     },
     {
-      title: "Weekly Progress",
-      value: "+8.5%",
-      description: "Improvement this week",
+      title: "Learning Consistency",
+      value: `${Math.round(stats?.learning_consistency_score || 0)}%`,
+      description: "Consistency score (last 30 days)",
       icon: TrendingUp,
-      color: "text-green-400",
-      trend: "up",
+      color: "text-accent",
+      trend: (stats?.learning_consistency_score || 0) > 0 ? "up" : "stable",
     },
     {
-      title: "Skill Velocity",
-      value: "Fast",
-      description: "Rate of skill acquisition",
-      icon: Rocket,
-      color: "text-blue-400",
-      trend: "up",
+      title: "Active Days (30d)",
+      value: `${stats?.active_days_30 || 0} days`,
+      description: "Days with at least one session",
+      icon: CalendarDays,
+      color: "text-accent",
+      trend: (stats?.active_days_30 || 0) > 0 ? "up" : "stable",
     },
     {
-      title: "Competitive Rank",
-      value: "Top 15%",
-      description: "Among peers in your level",
-      icon: Trophy,
-      color: "text-yellow-400",
-      trend: "up",
+      title: "Last Activity",
+      value: stats?.last_activity_at
+        ? new Date(stats.last_activity_at).toLocaleDateString()
+        : "—",
+      description: "Most recent learning session",
+      icon: Clock,
+      color: "text-accent",
+      trend: stats?.last_activity_at ? "up" : "stable",
     },
   ];
 
@@ -140,10 +166,10 @@ const CareerReadinessPage = () => {
       const codingScore = stats.avg_code_score;
       const resumeScore = Math.min(stats.resume_analyses * 10, 100);
       const interviewScore = Math.min(stats.interviews_taken * 15, 100);
-      const learningScore = Math.min(
-        stats.learning_sessions * (100.0 / 30.0),
-        100
-      );
+      const learningScore =
+        typeof stats.learning_consistency_score === "number"
+          ? stats.learning_consistency_score
+          : Math.min(stats.learning_sessions * (100.0 / 30.0), 100);
 
       const breakdown = {
         coding: {
@@ -175,10 +201,10 @@ const CareerReadinessPage = () => {
       setCrsBreakdown(breakdown);
       setLastUpdated(new Date());
 
-      // Mock additional data for new features
+      // Real streak data from backend (learning_history)
       setStreakData({
-        current: Math.floor(Math.random() * 30) + 1,
-        longest: Math.floor(Math.random() * 60) + 30,
+        current: stats.current_streak || 0,
+        longest: stats.longest_streak || 0,
       });
 
       setPersonalGoals([
@@ -209,7 +235,54 @@ const CareerReadinessPage = () => {
         toast.success("Data updated");
       }
     } catch (error) {
-      toast.error("Failed to load career readiness data");
+      // Fallback to demo data to keep the dashboard usable for demos/viva.
+      // The UI/logic is still the same (weighted scoring + rule-based prediction).
+      const fallback = MOCK_TWIN_SNAPSHOT;
+      setStats(fallback);
+
+      const codingScore = fallback.avg_code_score;
+      const resumeScore = Math.min(fallback.resume_analyses * 10, 100);
+      const interviewScore = Math.min(fallback.interviews_taken * 15, 100);
+      const learningScore =
+        typeof fallback.learning_consistency_score === "number"
+          ? fallback.learning_consistency_score
+          : Math.min(fallback.learning_sessions * (100.0 / 30.0), 100);
+
+      setCrsBreakdown({
+        coding: {
+          score: codingScore,
+          weight: 30,
+          contribution: codingScore * 0.3,
+          trend: "up",
+        },
+        resume: {
+          score: resumeScore,
+          weight: 25,
+          contribution: resumeScore * 0.25,
+          trend: "up",
+        },
+        interview: {
+          score: interviewScore,
+          weight: 25,
+          contribution: interviewScore * 0.25,
+          trend: "stable",
+        },
+        learning: {
+          score: learningScore,
+          weight: 20,
+          contribution: learningScore * 0.2,
+          trend: "up",
+        },
+      });
+
+      setStreakData({
+        current: fallback.current_streak || 0,
+        longest: fallback.longest_streak || 0,
+      });
+
+      toast.error(
+        "Failed to load career readiness data (showing demo snapshot)"
+      );
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -240,17 +313,17 @@ const CareerReadinessPage = () => {
   };
 
   const getScoreColor = (score) => {
-    if (score >= 80) return "text-green-400";
-    if (score >= 60) return "text-yellow-400";
-    return "text-red-400";
+    if (score >= 80) return "text-accent";
+    if (score >= 60) return "text-accent";
+    return "text-accent";
   };
 
   const getTrendIcon = (trend) => {
     switch (trend) {
       case "up":
-        return <TrendingUp className="w-4 h-4 text-green-400" />;
+        return <TrendingUp className="w-4 h-4 text-accent" />;
       case "down":
-        return <TrendingDown className="w-4 h-4 text-red-400" />;
+        return <TrendingDown className="w-4 h-4 text-accent" />;
       default:
         return <BarChart3 className="w-4 h-4 text-gray-400" />;
     }
@@ -266,27 +339,191 @@ const CareerReadinessPage = () => {
 
   const crsLevel = stats ? getCrsLevel(stats.career_readiness_score) : null;
 
+  // UI-safe derived values (avoid complex inline template expressions in JSX)
+  const problemsSolvedCount =
+    stats?.total_problems_solved ?? stats?.code_submissions ?? 0;
+  const problemsSolvedProgress = Math.min(
+    (Number(problemsSolvedCount) / 100) * 100,
+    100
+  );
+
+  // -------------------------------------------------------------------
+  // AI Career Digital Twin logic (rule-based; no ML training required)
+  // -------------------------------------------------------------------
+  // Inputs:
+  // - Coding performance, Resume score, Mock interview results
+  // - Learning consistency, Roadmap progress (approximated via activity)
+  // Logic:
+  // - Weighted scoring (already computed by backend + breakdown here)
+  // - Rule-based prediction (days-to-job-ready, milestone ETA, risk alerts)
+  // - LLM explanation (represented in UI as a transparent explainability modal)
+  const twin = useMemo(() => {
+    const jobReadiness = Number(stats?.career_readiness_score || 0);
+    const codingScore = Number(crsBreakdown?.coding?.score || 0);
+    const resumeScore = Number(crsBreakdown?.resume?.score || 0);
+    const interviewScore = Number(crsBreakdown?.interview?.score || 0);
+    const learningScore = Number(crsBreakdown?.learning?.score || 0);
+
+    const lastActivityAt = stats?.last_activity_at
+      ? new Date(stats.last_activity_at)
+      : null;
+    const inactiveDays = lastActivityAt
+      ? Math.floor(
+          (Date.now() - lastActivityAt.getTime()) / (1000 * 60 * 60 * 24)
+        )
+      : null;
+
+    // --- Rule-based prediction: days until job-ready ---
+    // Calibrated so that ~21.5% → ~90 days (for demo impact).
+    const baseDaysToJobReady = Math.round((100 - jobReadiness) * 1.15);
+
+    // Pace multiplier uses learning consistency + inactivity signal.
+    const paceMultiplier =
+      inactiveDays !== null && inactiveDays > 3
+        ? 1.25
+        : learningScore >= 70
+        ? 0.9
+        : learningScore >= 40
+        ? 1.0
+        : 1.1;
+
+    const daysToJobReady = Math.min(
+      180,
+      Math.max(30, Math.round(baseDaysToJobReady * paceMultiplier))
+    );
+
+    // --- Cross-module intelligence: decide biggest blocker + best next action ---
+    let biggestBlocker = "Coding Consistency";
+    if (inactiveDays !== null && inactiveDays > 3)
+      biggestBlocker = "Inactivity";
+    else if (resumeScore < 80) biggestBlocker = "Resume Quality";
+    else if (interviewScore < 70) biggestBlocker = "Interview Practice";
+    else if (codingScore < 70) biggestBlocker = "Coding Consistency";
+    else biggestBlocker = "Maintain Momentum";
+
+    const aiRiskAlert =
+      inactiveDays !== null && inactiveDays > 3
+        ? {
+            level: "High",
+            message: `AI Risk Alert: inactivity for ${inactiveDays} days may slow your job-readiness timeline.`,
+          }
+        : null;
+
+    // Single "best action" per day. Priority: inactivity > coding > resume > interview.
+    let bestAction = {
+      title: "🎯 AI Career Twin – Today’s Best Action",
+      task: "Solve 2 Medium DSA problems (Estimated time: 45 minutes)",
+      moduleHint: "Recommended module: DSA Roadmap",
+      ctaLabel: "Start Coding",
+      ctaPath: "/coding",
+    };
+
+    if (aiRiskAlert) {
+      bestAction = {
+        title: "🎯 AI Career Twin – Today’s Best Action",
+        task: "Do a 20-minute comeback session: 1 Easy + 1 Medium DSA problem",
+        moduleHint: "Recommended module: DSA Roadmap",
+        ctaLabel: "Resume Practice",
+        ctaPath: "/coding",
+      };
+    } else if (codingScore < 70) {
+      bestAction = {
+        title: "🎯 AI Career Twin – Today’s Best Action",
+        task: "Solve 2 Medium DSA problems (Estimated time: 45 minutes)",
+        moduleHint: "Recommended module: DSA Roadmap",
+        ctaLabel: "Start Coding",
+        ctaPath: "/coding",
+      };
+    } else if (resumeScore < 80) {
+      bestAction = {
+        title: "🎯 AI Career Twin – Today’s Best Action",
+        task: "Improve 2 resume bullet points with metrics (Estimated time: 25 minutes)",
+        moduleHint: "Triggered because Resume score < 80",
+        ctaLabel: "Improve Resume",
+        ctaPath: "/resume",
+      };
+    } else if (interviewScore < 70) {
+      bestAction = {
+        title: "🎯 AI Career Twin – Today’s Best Action",
+        task: "Take 1 mock interview (Estimated time: 30 minutes)",
+        moduleHint: "Triggered because Interview readiness is low",
+        ctaLabel: "Start Mock Interview",
+        ctaPath: "/interview",
+      };
+    }
+
+    // Next milestone (lightweight + demo-friendly)
+    const nextMilestone = resumeScore < 80 ? "Resume-Ready" : "Interview-Ready";
+    const milestoneDays = resumeScore < 80 ? 15 : 10;
+
+    // Risk level: simple aggregate view for the prediction card.
+    const riskLevel = aiRiskAlert
+      ? "High"
+      : jobReadiness < 35 || learningScore < 40
+      ? "Medium"
+      : "Low";
+
+    // Confidence score: heuristic based on data availability/recency.
+    const confidenceScore = Math.max(
+      70,
+      Math.min(99, 92 - (inactiveDays !== null && inactiveDays > 7 ? 10 : 0))
+    );
+
+    // --- What-if simulation (rule-based) ---
+    // If coding daily for 14 days, we assume a meaningful boost in job readiness.
+    const whatIfJobReadiness = Math.min(100, Math.round(jobReadiness + 13.5));
+
+    return {
+      jobReadiness,
+      daysToJobReady,
+      nextMilestone,
+      milestoneDays,
+      biggestBlocker,
+      riskLevel,
+      confidenceScore,
+      bestAction,
+      aiRiskAlert,
+      whatIfJobReadiness,
+    };
+  }, [stats, crsBreakdown]);
+
+  // Advanced feature (demo impact): lock "Today’s Best Action" for the whole day.
+  // This ensures the UI always shows ONE task per day, even as live stats refresh.
+  const bestActionForToday = useMemo(() => {
+    const dayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const storageKey = `careerTwin.bestAction.${dayKey}`;
+
+    try {
+      const existing = localStorage.getItem(storageKey);
+      if (existing) return JSON.parse(existing);
+      localStorage.setItem(storageKey, JSON.stringify(twin.bestAction));
+      return twin.bestAction;
+    } catch {
+      return twin.bestAction;
+    }
+  }, [twin.bestAction]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white">
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         {/* Enhanced Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-6">
           <div className="flex-1">
             <div className="flex items-center gap-4 mb-4">
               <div className="relative">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <div className="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center shadow-lg">
                   <Trophy className="w-8 h-8 text-white" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                <div className="absolute -top-1 -right-1 w-6 h-6 bg-accent rounded-full flex items-center justify-center">
                   <Flame className="w-3 h-3 text-white" />
                 </div>
               </div>
               <div>
                 <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white to-zinc-300 bg-clip-text text-transparent">
-                  Career Readiness Dashboard
+                  AI Career Digital Twin Dashboard
                 </h1>
                 <p className="text-zinc-400 text-lg">
-                  Your personalized journey to career success
+                  Simulating your future career growth using AI
                 </p>
               </div>
             </div>
@@ -300,13 +537,13 @@ const CareerReadinessPage = () => {
                 Live tracking active
               </div>
               <div className="flex items-center gap-2">
-                <Flame className="w-4 h-4 text-orange-400" />
+                <Flame className="w-4 h-4 text-accent" />
                 {streakData.current} day streak
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex flex-wrap gap-2">
               {["week", "month", "quarter"].map((timeframe) => (
                 <Button
                   key={timeframe}
@@ -317,7 +554,7 @@ const CareerReadinessPage = () => {
                   onClick={() => setSelectedTimeframe(timeframe)}
                   className={
                     selectedTimeframe === timeframe
-                      ? "bg-blue-500 hover:bg-blue-600"
+                      ? "bg-accent hover:bg-accent"
                       : "border-zinc-700 text-zinc-300 hover:bg-zinc-800"
                   }
                 >
@@ -328,9 +565,18 @@ const CareerReadinessPage = () => {
             <Button
               variant="outline"
               size="sm"
+              onClick={() => setShowTwinInfoModal(true)}
+              className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 w-full sm:w-auto"
+            >
+              <Lightbulb className="w-4 h-4 mr-2" />
+              How AI Works
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => fetchStats(true)}
               disabled={isRefreshing}
-              className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+              className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 w-full sm:w-auto"
             >
               <RefreshCw
                 className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
@@ -343,21 +589,37 @@ const CareerReadinessPage = () => {
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
+              <div
+                className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4"
+                style={{
+                  borderColor: "rgba(var(--accent-rgb), 0.3)",
+                  borderBottomColor: "var(--accent-color)",
+                }}
+              ></div>
               <p className="text-zinc-400">Loading your career insights...</p>
             </div>
           </div>
         ) : stats && crsBreakdown ? (
           <>
             {/* Enhanced Main Score Card */}
-            <Card className="bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 border-zinc-700 mb-8 overflow-hidden relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5"></div>
+            <Card className="bg-zinc-900 border-zinc-700 mb-8 overflow-hidden relative">
+              <div
+                className="absolute inset-0"
+                style={{ background: `rgba(var(--accent-rgb), 0.05)` }}
+              ></div>
               <CardContent className="p-8 relative">
                 <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
                   <div className="flex-1">
                     <div className="flex items-center gap-6 mb-6">
                       <div className="relative">
-                        <div className="text-7xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                        <div className="text-xs uppercase tracking-wide text-zinc-400 mb-2 flex items-center gap-2">
+                          <Shield className="w-4 h-4 text-accent" />
+                          Job Readiness
+                        </div>
+                        <div
+                          className="text-5xl sm:text-6xl lg:text-7xl font-bold"
+                          style={{ color: "var(--accent-color)" }}
+                        >
                           {(stats?.career_readiness_score || 0).toFixed(1)}%
                         </div>
                         <div className="absolute -top-2 -right-2">
@@ -365,13 +627,13 @@ const CareerReadinessPage = () => {
                             className={`w-4 h-4 rounded-full ${
                               getScoreColor(
                                 stats?.career_readiness_score || 0
-                              ) === "text-green-400"
-                                ? "bg-green-400"
+                              ) === "text-accent"
+                                ? "bg-accent"
                                 : getScoreColor(
                                     stats?.career_readiness_score || 0
-                                  ) === "text-yellow-400"
-                                ? "bg-yellow-400"
-                                : "bg-red-400"
+                                  ) === "text-accent"
+                                ? "bg-accent"
+                                : "bg-accent"
                             } animate-pulse`}
                           ></div>
                         </div>
@@ -383,12 +645,11 @@ const CareerReadinessPage = () => {
                           {crsLevel.level} Level
                         </Badge>
                         <div className="flex items-center gap-2 text-sm text-zinc-400">
-                          <Star className="w-4 h-4 text-yellow-400" />
-                          Rank #{Math.floor(Math.random() * 100) + 1} of{" "}
-                          {Math.floor(Math.random() * 500) + 200}
+                          <Star className="w-4 h-4 text-accent" />
+                          Active days (30d): {stats?.active_days_30 || 0}
                         </div>
                         <div className="flex items-center gap-2 text-sm text-zinc-400">
-                          <Flame className="w-4 h-4 text-orange-400" />
+                          <Flame className="w-4 h-4 text-accent" />
                           {streakData.longest} day best streak
                         </div>
                       </div>
@@ -399,20 +660,22 @@ const CareerReadinessPage = () => {
                     />
                     <div className="space-y-2">
                       <p className="text-zinc-300 text-lg font-medium">
-                        {getMotivationalMessage(stats.career_readiness_score)}
+                        Prediction: At your current learning pace, you may be
+                        job-ready in ~{twin.daysToJobReady} days.
                       </p>
                       <p className="text-zinc-400 text-sm">
-                        Based on your coding performance, resume quality,
-                        interview skills, and learning consistency
+                        Explainability: weighted scoring + rule-based prediction
+                        using coding, resume, interview, and consistency
+                        signals.
                       </p>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 lg:gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
                     <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
                       <div className="flex items-center justify-between mb-2">
                         <div className="text-2xl font-bold text-zinc-300 mb-1">
-                          {stats?.total_problems_solved || 0}
+                          {problemsSolvedCount}
                         </div>
                         {/* Progress bars for problems solved */}
                         <div className="flex space-x-1">
@@ -422,12 +685,10 @@ const CareerReadinessPage = () => {
                               className={`w-1 h-4 rounded-sm transition-all duration-300 ${
                                 i <
                                 Math.min(
-                                  Math.floor(
-                                    (stats?.total_problems_solved || 0) / 20
-                                  ),
+                                  Math.floor(Number(problemsSolvedCount) / 20),
                                   5
                                 )
-                                  ? "bg-gradient-to-t from-blue-400 to-blue-600"
+                                  ? "bg-accent"
                                   : "bg-zinc-600"
                               }`}
                             />
@@ -440,12 +701,9 @@ const CareerReadinessPage = () => {
                       </div>
                       <div className="w-full bg-zinc-700 rounded-full h-1 mt-2">
                         <div
-                          className="bg-gradient-to-r from-blue-400 to-blue-600 h-1 rounded-full transition-all duration-500"
+                          className="bg-accent h-1 rounded-full transition-all duration-500"
                           style={{
-                            width: `${Math.min(
-                              ((stats?.total_problems_solved || 0) / 100) * 100,
-                              100
-                            )}%`,
+                            width: `${problemsSolvedProgress}%`,
                           }}
                         ></div>
                       </div>
@@ -466,7 +724,7 @@ const CareerReadinessPage = () => {
                                   Math.floor((stats?.resume_analyses || 0) / 2),
                                   5
                                 )
-                                  ? "bg-gradient-to-t from-green-400 to-green-600"
+                                  ? "bg-accent"
                                   : "bg-zinc-600"
                               }`}
                             />
@@ -479,7 +737,7 @@ const CareerReadinessPage = () => {
                       </div>
                       <div className="w-full bg-zinc-700 rounded-full h-1 mt-2">
                         <div
-                          className="bg-gradient-to-r from-green-400 to-green-600 h-1 rounded-full transition-all duration-500"
+                          className="bg-accent h-1 rounded-full transition-all duration-500"
                           style={{
                             width: `${Math.min(
                               ((stats?.resume_analyses || 0) / 10) * 100,
@@ -507,7 +765,7 @@ const CareerReadinessPage = () => {
                                   ),
                                   5
                                 )
-                                  ? "bg-gradient-to-t from-purple-400 to-purple-600"
+                                  ? "bg-accent"
                                   : "bg-zinc-600"
                               }`}
                             />
@@ -520,7 +778,7 @@ const CareerReadinessPage = () => {
                       </div>
                       <div className="w-full bg-zinc-700 rounded-full h-1 mt-2">
                         <div
-                          className="bg-gradient-to-r from-purple-400 to-purple-600 h-1 rounded-full transition-all duration-500"
+                          className="bg-accent h-1 rounded-full transition-all duration-500"
                           style={{
                             width: `${Math.min(
                               ((stats?.interviews_taken || 0) / 10) * 100,
@@ -548,7 +806,7 @@ const CareerReadinessPage = () => {
                                   ),
                                   5
                                 )
-                                  ? "bg-gradient-to-t from-orange-400 to-orange-600"
+                                  ? "bg-accent"
                                   : "bg-zinc-600"
                               }`}
                             />
@@ -561,7 +819,7 @@ const CareerReadinessPage = () => {
                       </div>
                       <div className="w-full bg-zinc-700 rounded-full h-1 mt-2">
                         <div
-                          className="bg-gradient-to-r from-orange-400 to-orange-600 h-1 rounded-full transition-all duration-500"
+                          className="bg-accent h-1 rounded-full transition-all duration-500"
                           style={{
                             width: `${Math.min(
                               ((stats?.learning_sessions || 0) / 50) * 100,
@@ -570,6 +828,77 @@ const CareerReadinessPage = () => {
                           }}
                         ></div>
                       </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* NEW: Career Twin Prediction Card (below main score) */}
+            <Card className="bg-zinc-900 border-zinc-800 mb-8">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Rocket className="w-5 h-5" />
+                  AI Career Twin Prediction
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
+                      <div className="text-sm text-zinc-400">
+                        Next Milestone
+                      </div>
+                      <div className="text-white font-semibold">
+                        {twin.nextMilestone} ({twin.milestoneDays} days)
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
+                      <div className="text-sm text-zinc-400">
+                        Biggest Blocker
+                      </div>
+                      <div className="text-white font-semibold">
+                        {twin.biggestBlocker}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
+                      <div className="text-sm text-zinc-400">Risk Level</div>
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-zinc-800 border-zinc-600 text-white">
+                          {twin.riskLevel}
+                        </Badge>
+                        {twin.aiRiskAlert && (
+                          <div className="text-xs text-zinc-400 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3 text-accent" />
+                            AI risk detected
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
+                      <div className="text-sm text-zinc-400">
+                        Confidence Score
+                      </div>
+                      <div className="text-white font-semibold">
+                        {twin.confidenceScore}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* What-if simulation (lightweight, rule-based) */}
+                <div className="mt-6 p-4 bg-zinc-800/50 rounded-lg border border-zinc-700">
+                  <div className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-accent" />
+                    What-if Simulation
+                  </div>
+                  <div className="text-sm text-zinc-400">
+                    If you practice coding daily for 14 days:
+                    <div className="mt-2 text-zinc-300">
+                      → Job readiness increases to {twin.whatIfJobReadiness}%
+                      <br />→ Interview readiness improves significantly
                     </div>
                   </div>
                 </div>
@@ -637,6 +966,7 @@ const CareerReadinessPage = () => {
                   <Button
                     variant="outline"
                     className="w-full border-dashed border-zinc-600 text-zinc-400 hover:border-zinc-500 hover:text-zinc-300"
+                    onClick={() => setShowGoalsModal(true)}
                   >
                     <Goal className="w-4 h-4 mr-2" />
                     Add New Goal
@@ -719,7 +1049,7 @@ const CareerReadinessPage = () => {
                               <div className="flex items-center gap-2">
                                 <div className="w-20 bg-zinc-700 rounded-full h-2">
                                   <div
-                                    className="bg-blue-500 h-2 rounded-full"
+                                    className="bg-accent h-2 rounded-full"
                                     style={{ width: `${data.score}%` }}
                                   ></div>
                                 </div>
@@ -737,7 +1067,7 @@ const CareerReadinessPage = () => {
                         </h4>
                         <div className="space-y-3">
                           <div className="flex items-center gap-3 p-3 bg-zinc-800 rounded-lg">
-                            <TrendingUp className="w-4 h-4 text-green-400" />
+                            <TrendingUp className="w-4 h-4 text-accent" />
                             <div>
                               <div className="text-sm font-medium text-white">
                                 Strong Performance
@@ -748,7 +1078,7 @@ const CareerReadinessPage = () => {
                             </div>
                           </div>
                           <div className="flex items-center gap-3 p-3 bg-zinc-800 rounded-lg">
-                            <Target className="w-4 h-4 text-yellow-400" />
+                            <Target className="w-4 h-4 text-accent" />
                             <div>
                               <div className="text-sm font-medium text-white">
                                 Focus Area
@@ -776,7 +1106,7 @@ const CareerReadinessPage = () => {
                 <Card className="bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition-colors">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium text-zinc-400 flex items-center gap-2">
-                      <Code className="w-4 h-4 text-blue-400" />
+                      <Code className="w-4 h-4 text-accent" />
                       Coding Performance
                       {getTrendIcon(crsBreakdown?.coding?.trend || "up")}
                     </CardTitle>
@@ -804,7 +1134,7 @@ const CareerReadinessPage = () => {
                 <Card className="bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition-colors">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium text-zinc-400 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-green-400" />
+                      <FileText className="w-4 h-4 text-accent" />
                       Resume Credibility
                       {getTrendIcon(crsBreakdown?.resume?.trend || "up")}
                     </CardTitle>
@@ -832,7 +1162,7 @@ const CareerReadinessPage = () => {
                 <Card className="bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition-colors">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium text-zinc-400 flex items-center gap-2">
-                      <MessageSquare className="w-4 h-4 text-purple-400" />
+                      <MessageSquare className="w-4 h-4 text-accent" />
                       Interview Readiness
                       {getTrendIcon(crsBreakdown?.interview?.trend || "stable")}
                     </CardTitle>
@@ -861,7 +1191,7 @@ const CareerReadinessPage = () => {
                 <Card className="bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition-colors">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium text-zinc-400 flex items-center gap-2">
-                      <BookOpen className="w-4 h-4 text-yellow-400" />
+                      <BookOpen className="w-4 h-4 text-accent" />
                       Learning Consistency
                       {getTrendIcon(crsBreakdown?.learning?.trend || "up")}
                     </CardTitle>
@@ -889,173 +1219,55 @@ const CareerReadinessPage = () => {
               </div>
             </div>
 
-            {/* Smart Recommendations */}
+            {/* UPGRADE: Single daily recommendation */}
             <Card className="bg-zinc-900 border-zinc-800">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Target className="w-5 h-5" />
-                  Smart Recommendations
+                  {bestActionForToday.title}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {(crsBreakdown?.coding?.score || 0) < 70 && (
-                    <div className="flex items-start gap-3 p-4 bg-zinc-800 rounded-lg border border-zinc-700 hover:border-blue-500/50 transition-colors">
-                      <Code className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                {twin.aiRiskAlert && (
+                  <div className="mb-4 p-4 bg-zinc-800 rounded-lg border border-zinc-700">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
                       <div className="flex-1">
-                        <h4 className="font-semibold text-white mb-1">
-                          Boost Coding Skills
-                        </h4>
-                        <p className="text-sm text-zinc-400 mb-3">
-                          Focus on algorithmic problem-solving and data
-                          structures
-                        </p>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => navigate("/coding")}
-                            className="bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20"
-                          >
-                            Practice Now
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => navigate("/learning-path")}
-                            className="border-zinc-600 text-zinc-300 hover:bg-zinc-800"
-                          >
-                            View Roadmap
-                          </Button>
+                        <div className="text-sm font-semibold text-white mb-1">
+                          {twin.aiRiskAlert.message}
+                        </div>
+                        <div className="text-xs text-zinc-400">
+                          This alert is triggered when inactivity &gt; 3 days.
                         </div>
                       </div>
                     </div>
-                  )}
-                  {(crsBreakdown?.resume?.score || 0) < 70 && (
-                    <div className="flex items-start gap-3 p-4 bg-zinc-800 rounded-lg border border-zinc-700 hover:border-green-500/50 transition-colors">
-                      <FileText className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-white mb-1">
-                          Optimize Resume
-                        </h4>
-                        <p className="text-sm text-zinc-400 mb-3">
-                          Add quantifiable achievements and relevant keywords
-                        </p>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => navigate("/resume")}
-                            className="bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20"
-                          >
-                            Analyze Resume
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => navigate("/resources")}
-                            className="border-zinc-600 text-zinc-300 hover:bg-zinc-800"
-                          >
-                            Get Templates
-                          </Button>
-                        </div>
-                      </div>
+                  </div>
+                )}
+
+                <div className="flex items-start gap-3 p-4 bg-zinc-800 rounded-lg border border-zinc-700 hover:border-accent transition-colors">
+                  <Target className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-white mb-1">
+                      Today’s Best Action
+                    </h4>
+                    <p className="text-sm text-zinc-300 mb-1">
+                      {bestActionForToday.task}
+                    </p>
+                    <p className="text-xs text-zinc-400 mb-3">
+                      {bestActionForToday.moduleHint}
+                    </p>
+                    <div className="text-xs text-zinc-500 mb-3">
+                      Locked for today (updates again tomorrow).
                     </div>
-                  )}
-                  {(crsBreakdown?.interview?.score || 0) < 70 && (
-                    <div className="flex items-start gap-3 p-4 bg-zinc-800 rounded-lg border border-zinc-700 hover:border-purple-500/50 transition-colors">
-                      <MessageSquare className="w-5 h-5 text-purple-400 mt-0.5 flex-shrink-0" />
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-white mb-1">
-                          Master Interviews
-                        </h4>
-                        <p className="text-sm text-zinc-400 mb-3">
-                          Practice behavioral and technical interview questions
-                        </p>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => navigate("/interview")}
-                            className="bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20"
-                          >
-                            Start Practice
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => navigate("/resources")}
-                            className="border-zinc-600 text-zinc-300 hover:bg-zinc-800"
-                          >
-                            Interview Tips
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  {stats.career_readiness_score >= 85 && (
-                    <div className="flex items-start gap-3 p-4 bg-green-900/20 border border-green-500/20 rounded-lg">
-                      <Award className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-green-400 mb-1">
-                          🎉 Outstanding Performance!
-                        </h4>
-                        <p className="text-sm text-zinc-400 mb-3">
-                          You're ready to apply for jobs! Focus on networking
-                          and applications.
-                        </p>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => navigate("/resources")}
-                            className="bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20"
-                          >
-                            Browse Jobs
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => navigate("/resources")}
-                            className="border-zinc-600 text-zinc-300 hover:bg-zinc-800"
-                          >
-                            Network
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  {(stats?.career_readiness_score || 0) >= 70 &&
-                    (crsBreakdown?.coding?.score || 0) >= 70 &&
-                    (crsBreakdown?.resume?.score || 0) >= 70 &&
-                    (crsBreakdown?.interview?.score || 0) >= 70 &&
-                    (crsBreakdown?.learning?.score || 0) >= 70 && (
-                      <div className="flex items-start gap-3 p-4 bg-blue-900/20 border border-blue-500/20 rounded-lg">
-                        <CheckCircle className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-blue-400 mb-1">
-                            ⭐ Well-Balanced Profile!
-                          </h4>
-                          <p className="text-sm text-zinc-400 mb-3">
-                            All skills are strong. Consider leadership roles or
-                            specialization.
-                          </p>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={() => navigate("/achievements")}
-                              className="bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20"
-                            >
-                              View Achievements
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => navigate("/learning-path")}
-                              className="border-zinc-600 text-zinc-300 hover:bg-zinc-800"
-                            >
-                              Explore Specializations
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                    <Button
+                      size="sm"
+                      onClick={() => navigate(bestActionForToday.ctaPath)}
+                      className="bg-accent hover:bg-accent"
+                    >
+                      {bestActionForToday.ctaLabel}
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -1090,24 +1302,8 @@ const CareerReadinessPage = () => {
                   >
                     <CardContent className="p-6">
                       <div className="flex items-center gap-3 mb-3">
-                        <div
-                          className={`p-2 rounded-lg ${
-                            insight.type === "success"
-                              ? "bg-green-500/10"
-                              : insight.type === "warning"
-                              ? "bg-yellow-500/10"
-                              : "bg-blue-500/10"
-                          }`}
-                        >
-                          <insight.icon
-                            className={`w-5 h-5 ${
-                              insight.type === "success"
-                                ? "text-green-400"
-                                : insight.type === "warning"
-                                ? "text-yellow-400"
-                                : "text-blue-400"
-                            }`}
-                          />
+                        <div className="p-2 rounded-lg bg-accent-10">
+                          <insight.icon className="w-5 h-5 text-accent" />
                         </div>
                         <h3 className="font-semibold text-white">
                           {insight.title}
@@ -1142,12 +1338,12 @@ const CareerReadinessPage = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <h4 className="font-semibold mb-4 text-white flex items-center gap-2">
-                          <Rocket className="w-4 h-4 text-blue-400" />
+                          <Rocket className="w-4 h-4 text-accent" />
                           Next Steps
                         </h4>
                         <div className="space-y-3">
                           <div className="flex items-start gap-3 p-3 bg-zinc-800 rounded-lg">
-                            <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
+                            <div className="w-2 h-2 bg-accent rounded-full mt-2 flex-shrink-0"></div>
                             <div>
                               <div className="text-sm font-medium text-white">
                                 Build Portfolio Projects
@@ -1158,7 +1354,7 @@ const CareerReadinessPage = () => {
                             </div>
                           </div>
                           <div className="flex items-start gap-3 p-3 bg-zinc-800 rounded-lg">
-                            <div className="w-2 h-2 bg-green-400 rounded-full mt-2 flex-shrink-0"></div>
+                            <div className="w-2 h-2 bg-accent rounded-full mt-2 flex-shrink-0"></div>
                             <div>
                               <div className="text-sm font-medium text-white">
                                 Network Actively
@@ -1170,7 +1366,7 @@ const CareerReadinessPage = () => {
                             </div>
                           </div>
                           <div className="flex items-start gap-3 p-3 bg-zinc-800 rounded-lg">
-                            <div className="w-2 h-2 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
+                            <div className="w-2 h-2 bg-accent rounded-full mt-2 flex-shrink-0"></div>
                             <div>
                               <div className="text-sm font-medium text-white">
                                 Certifications
@@ -1185,20 +1381,20 @@ const CareerReadinessPage = () => {
                       </div>
                       <div>
                         <h4 className="font-semibold mb-4 text-white flex items-center gap-2">
-                          <Briefcase className="w-4 h-4 text-green-400" />
+                          <Briefcase className="w-4 h-4 text-accent" />
                           Job Market Fit
                         </h4>
                         <div className="space-y-3">
-                          <div className="p-3 bg-green-900/20 border border-green-500/20 rounded-lg">
-                            <div className="text-sm font-medium text-green-400 mb-1">
+                          <div className="p-3 bg-accent-20 border border-accent rounded-lg">
+                            <div className="text-sm font-medium text-accent mb-1">
                               High Match
                             </div>
                             <div className="text-xs text-zinc-400">
                               Full-Stack Developer, Backend Engineer
                             </div>
                           </div>
-                          <div className="p-3 bg-yellow-900/20 border border-yellow-500/20 rounded-lg">
-                            <div className="text-sm font-medium text-yellow-400 mb-1">
+                          <div className="p-3 bg-accent-20 border border-accent rounded-lg">
+                            <div className="text-sm font-medium text-accent mb-1">
                               Medium Match
                             </div>
                             <div className="text-xs text-zinc-400">
@@ -1225,10 +1421,10 @@ const CareerReadinessPage = () => {
           <div className="text-center py-16">
             <div className="max-w-md mx-auto">
               <div className="relative mb-6">
-                <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <div className="w-24 h-24 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
                   <Trophy className="w-12 h-12 text-white" />
                 </div>
-                <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                <div className="absolute -top-2 -right-2 w-8 h-8 bg-accent rounded-full flex items-center justify-center">
                   <Star className="w-4 h-4 text-white" />
                 </div>
               </div>
@@ -1236,12 +1432,12 @@ const CareerReadinessPage = () => {
                 Start Your Journey
               </h2>
               <p className="text-zinc-400 mb-8 text-lg">
-                Begin building your career readiness score by engaging with our
-                platform. Every step counts towards your professional growth!
+                Begin building your AI Career Digital Twin by engaging with our
+                platform. Every step strengthens your job readiness prediction.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                 <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg">
-                  <Code className="w-8 h-8 text-blue-400 mx-auto mb-2" />
+                  <Code className="w-8 h-8 text-accent mx-auto mb-2" />
                   <div className="text-sm font-semibold text-white mb-1">
                     Solve Problems
                   </div>
@@ -1250,7 +1446,7 @@ const CareerReadinessPage = () => {
                   </div>
                 </div>
                 <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg">
-                  <FileText className="w-8 h-8 text-green-400 mx-auto mb-2" />
+                  <FileText className="w-8 h-8 text-accent mx-auto mb-2" />
                   <div className="text-sm font-semibold text-white mb-1">
                     Optimize Resume
                   </div>
@@ -1259,7 +1455,7 @@ const CareerReadinessPage = () => {
                   </div>
                 </div>
                 <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg">
-                  <MessageSquare className="w-8 h-8 text-purple-400 mx-auto mb-2" />
+                  <MessageSquare className="w-8 h-8 text-accent mx-auto mb-2" />
                   <div className="text-sm font-semibold text-white mb-1">
                     Practice Interviews
                   </div>
@@ -1268,7 +1464,7 @@ const CareerReadinessPage = () => {
                   </div>
                 </div>
                 <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg">
-                  <BookOpen className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
+                  <BookOpen className="w-8 h-8 text-accent mx-auto mb-2" />
                   <div className="text-sm font-semibold text-white mb-1">
                     Learn & Grow
                   </div>
@@ -1280,7 +1476,7 @@ const CareerReadinessPage = () => {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button
                   onClick={() => navigate("/coding")}
-                  className="bg-blue-500 hover:bg-blue-600 px-8 py-3"
+                  className="bg-accent hover:bg-accent px-8 py-3"
                 >
                   <Code className="w-5 h-5 mr-2" />
                   Start Coding Challenge
@@ -1345,24 +1541,24 @@ const CareerReadinessPage = () => {
             <div className="space-y-4">
               <div className="bg-zinc-800 p-4 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="w-5 h-5 text-green-400" />
+                  <TrendingUp className="w-5 h-5 text-accent" />
                   <span className="text-white font-medium">
                     Weekly Progress
                   </span>
                 </div>
-                <div className="text-2xl font-bold text-green-400">+8.5%</div>
+                <div className="text-2xl font-bold text-accent">+8.5%</div>
                 <div className="text-sm text-zinc-400">
                   Improvement this week
                 </div>
               </div>
               <div className="bg-zinc-800 p-4 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <Flame className="w-5 h-5 text-orange-400" />
+                  <Flame className="w-5 h-5 text-accent" />
                   <span className="text-white font-medium">
                     Learning Streak
                   </span>
                 </div>
-                <div className="text-2xl font-bold text-orange-400">
+                <div className="text-2xl font-bold text-accent">
                   {streakData.current} days
                 </div>
                 <div className="text-sm text-zinc-400">
@@ -1392,20 +1588,20 @@ const CareerReadinessPage = () => {
             <div className="space-y-4">
               <div className="bg-zinc-800 p-4 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="w-5 h-5 text-blue-400" />
+                  <TrendingUp className="w-5 h-5 text-accent" />
                   <span className="text-white font-medium">
                     High Demand Skills
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Badge className="bg-blue-500/20 text-blue-400">React</Badge>
-                  <Badge className="bg-blue-500/20 text-blue-400">Python</Badge>
-                  <Badge className="bg-blue-500/20 text-blue-400">AI/ML</Badge>
+                  <Badge className="bg-accent-20 text-accent">React</Badge>
+                  <Badge className="bg-accent-20 text-accent">Python</Badge>
+                  <Badge className="bg-accent-20 text-accent">AI/ML</Badge>
                 </div>
               </div>
               <div className="bg-zinc-800 p-4 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <Briefcase className="w-5 h-5 text-green-400" />
+                  <Briefcase className="w-5 h-5 text-accent" />
                   <span className="text-white font-medium">Top Industries</span>
                 </div>
                 <div className="text-sm text-zinc-400">
@@ -1416,6 +1612,71 @@ const CareerReadinessPage = () => {
             <div className="flex gap-2 mt-6">
               <Button
                 onClick={() => setShowMarketModal(false)}
+                className="flex-1"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Explainability Modal: How AI Career Digital Twin Works */}
+      {showTwinInfoModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 w-full max-w-lg">
+            <h3 className="text-xl font-bold text-white mb-2">
+              How AI Career Digital Twin Works
+            </h3>
+            <p className="text-sm text-zinc-400 mb-4">
+              This dashboard simulates your career growth using transparent,
+              explainable AI logic (rule-based + weighted scoring).
+            </p>
+
+            <div className="space-y-4">
+              <div className="bg-zinc-800 p-4 rounded-lg">
+                <div className="text-sm font-semibold text-white mb-2">
+                  Inputs (Signals)
+                </div>
+                <div className="text-sm text-zinc-400 space-y-1">
+                  <div>• Coding performance</div>
+                  <div>• Resume score</div>
+                  <div>• Mock interview results</div>
+                  <div>• Learning consistency</div>
+                  <div>• Roadmap progress (approximated via activity)</div>
+                </div>
+              </div>
+
+              <div className="bg-zinc-800 p-4 rounded-lg">
+                <div className="text-sm font-semibold text-white mb-2">
+                  Logic
+                </div>
+                <div className="text-sm text-zinc-400 space-y-1">
+                  <div>• Weighted scoring to compute Job Readiness %</div>
+                  <div>
+                    • Rule-based prediction to estimate timeline + risks
+                  </div>
+                  <div>
+                    • LLM-style explanation (shown as human-readable reasons)
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-zinc-800 p-4 rounded-lg">
+                <div className="text-sm font-semibold text-white mb-2">
+                  Outputs
+                </div>
+                <div className="text-sm text-zinc-400 space-y-1">
+                  <div>• Job readiness %</div>
+                  <div>• Risk alerts (e.g., inactivity &gt; 3 days)</div>
+                  <div>• Next best action (ONE task per day)</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              <Button
+                onClick={() => setShowTwinInfoModal(false)}
                 className="flex-1"
               >
                 Close

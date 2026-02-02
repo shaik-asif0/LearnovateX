@@ -7,10 +7,10 @@ import {
   CardTitle,
   CardDescription,
 } from "../components/ui/card";
-import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
 import { Progress } from "../components/ui/progress";
 import { Textarea } from "../components/ui/textarea";
+import { Input } from "../components/ui/input";
 import {
   Select,
   SelectContent,
@@ -21,10 +21,10 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "../components/ui/dialog";
 import {
   Tabs,
@@ -90,7 +90,6 @@ import {
   Loader2,
   GraduationCap,
   Bookmark,
-  BookmarkCheck,
   ThumbsUp,
   ThumbsDown,
   Video,
@@ -203,8 +202,9 @@ const CompanyPortal = () => {
 
   const fetchCandidates = async () => {
     try {
-      const response = await axiosInstance.get("/company/candidates/status");
-      const transformedCandidates = response.data.map((candidate, index) => ({
+      const response = await axiosInstance.get("/company/candidates");
+      const candidateList = Array.isArray(response.data) ? response.data : [];
+      const transformedCandidates = candidateList.map((candidate, index) => ({
         ...candidate,
         skills: ["Python", "React", "Node.js", "Java", "AWS"][index % 5].split(
           ", "
@@ -228,7 +228,14 @@ const CompanyPortal = () => {
       setCandidates(transformedCandidates);
     } catch (error) {
       console.error("Failed to fetch candidates:", error);
-      toast.error("Failed to load candidates. Please check your permissions.");
+      const status = error?.response?.status;
+      if (status === 401 || status === 403) {
+        toast.error(
+          "Failed to load candidates. Please check your permissions."
+        );
+      } else {
+        toast.error("Failed to load candidates. Please try again.");
+      }
       setCandidates([]);
     } finally {
       setLoading(false);
@@ -390,11 +397,16 @@ const CompanyPortal = () => {
 
   const getStatusColor = (status) => {
     const colors = {
-      shortlisted: "bg-green-500/20 text-green-400 border-green-500/30",
-      interview_scheduled: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-      under_review: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-      rejected: "bg-red-500/20 text-red-400 border-red-500/30",
-      offer_sent: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+      shortlisted:
+        "bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] border-[rgba(var(--accent-rgb),0.3)]",
+      interview_scheduled:
+        "bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] border-[rgba(var(--accent-rgb),0.3)]",
+      under_review:
+        "bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] border-[rgba(var(--accent-rgb),0.3)]",
+      rejected:
+        "bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] border-[rgba(var(--accent-rgb),0.3)]",
+      offer_sent:
+        "bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] border-[rgba(var(--accent-rgb),0.3)]",
     };
     return colors[status] || "bg-zinc-500/20 text-zinc-400 border-zinc-500/30";
   };
@@ -411,9 +423,9 @@ const CompanyPortal = () => {
   };
 
   const getScoreColor = (score) => {
-    if (score >= 85) return "text-green-400";
-    if (score >= 70) return "text-yellow-400";
-    return "text-red-400";
+    if (score >= 85) return "text-[var(--accent-color)]";
+    if (score >= 70) return "text-[var(--accent-color)]";
+    return "text-[var(--accent-color)]";
   };
 
   const createTest = async () => {
@@ -712,7 +724,7 @@ const CompanyPortal = () => {
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 bg-gradient-to-r from-zinc-900 to-zinc-800 p-6 rounded-xl border border-zinc-800 shadow-lg">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg">
+            <div className="p-3 bg-gradient-to-br from-[rgb(var(--accent-rgb))] to-[rgba(var(--accent-rgb),0.9)] rounded-xl shadow-lg">
               <Building2 className="w-8 h-8 text-white" />
             </div>
             <div>
@@ -723,11 +735,11 @@ const CompanyPortal = () => {
                 AI-powered talent acquisition with intelligent matching
               </p>
               <div className="flex items-center gap-2 mt-2">
-                <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                <Badge className="bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] border-[rgba(var(--accent-rgb),0.3)] text-xs">
                   <Sparkles className="w-3 h-3 mr-1" />
                   AI Enabled
                 </Badge>
-                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
+                <Badge className="bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] border-[rgba(var(--accent-rgb),0.3)] text-xs">
                   <Brain className="w-3 h-3 mr-1" />
                   Smart Analytics
                 </Badge>
@@ -738,7 +750,7 @@ const CompanyPortal = () => {
             <Button
               size="sm"
               onClick={() => setShowAnalyticsDashboard(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+              className="bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)] text-white transition-colors"
             >
               <BarChart3 className="w-4 h-4 mr-2" />
               Analytics
@@ -746,7 +758,7 @@ const CompanyPortal = () => {
             <Button
               size="sm"
               onClick={() => setShowInterviewScheduler(true)}
-              className="bg-green-600 hover:bg-green-700 text-white transition-colors"
+              className="bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)] text-white transition-colors"
             >
               <Calendar className="w-4 h-4 mr-2" />
               Schedule
@@ -754,7 +766,7 @@ const CompanyPortal = () => {
             <Button
               size="sm"
               onClick={() => setShowBulkActionModal(true)}
-              className="bg-orange-600 hover:bg-orange-700 text-white transition-colors"
+              className="bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)] text-white transition-colors"
               disabled={selectedCandidates.length === 0}
             >
               <ClipboardList className="w-4 h-4 mr-2" />
@@ -763,7 +775,7 @@ const CompanyPortal = () => {
             <Button
               size="sm"
               onClick={() => setShowCreateTestModal(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+              className="bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)] text-white transition-colors"
             >
               <Plus className="w-4 h-4 mr-2" />
               Create Test
@@ -795,95 +807,95 @@ const CompanyPortal = () => {
 
         {/* Advanced Analytics Dashboard */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 hover:scale-105">
+          <Card className="bg-gradient-to-br from-[rgba(var(--accent-rgb),0.1)] to-[rgba(var(--accent-rgb),0.05)] border-[rgba(var(--accent-rgb),0.2)] hover:border-[rgba(var(--accent-rgb),0.4)] transition-all duration-300 hover:scale-105">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-blue-400 text-sm font-medium mb-1">
+                  <p className="text-[var(--accent-color)] text-sm font-medium mb-1">
                     New Applications
                   </p>
                   <p className="text-3xl font-bold text-white mb-2">
                     {realtimeStats.newApplications}
                   </p>
                   <div className="flex items-center gap-1">
-                    <TrendingUp className="w-3 h-3 text-green-400" />
-                    <span className="text-xs text-green-400">
+                    <TrendingUp className="w-3 h-3 text-[var(--accent-color)]" />
+                    <span className="text-xs text-[var(--accent-color)]">
                       +12% this week
                     </span>
                   </div>
                 </div>
-                <div className="p-3 bg-blue-500/20 rounded-xl">
-                  <UserPlus className="w-6 h-6 text-blue-400" />
+                <div className="p-3 bg-[rgba(var(--accent-rgb),0.2)] rounded-xl">
+                  <UserPlus className="w-6 h-6 text-[var(--accent-color)]" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20 hover:border-green-500/40 transition-all duration-300 hover:scale-105">
+          <Card className="bg-gradient-to-br from-[rgba(var(--accent-rgb),0.1)] to-[rgba(var(--accent-rgb),0.05)] border-[rgba(var(--accent-rgb),0.2)] hover:border-[rgba(var(--accent-rgb),0.4)] transition-all duration-300 hover:scale-105">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-green-400 text-sm font-medium mb-1">
+                  <p className="text-[var(--accent-color)] text-sm font-medium mb-1">
                     Tests Completed
                   </p>
                   <p className="text-3xl font-bold text-white mb-2">
                     {realtimeStats.testsCompleted}
                   </p>
                   <div className="flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3 text-green-400" />
-                    <span className="text-xs text-green-400">
+                    <CheckCircle2 className="w-3 h-3 text-[var(--accent-color)]" />
+                    <span className="text-xs text-[var(--accent-color)]">
                       85% pass rate
                     </span>
                   </div>
                 </div>
-                <div className="p-3 bg-green-500/20 rounded-xl">
-                  <Brain className="w-6 h-6 text-green-400" />
+                <div className="p-3 bg-[rgba(var(--accent-rgb),0.2)] rounded-xl">
+                  <Brain className="w-6 h-6 text-[var(--accent-color)]" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:scale-105">
+          <Card className="bg-gradient-to-br from-[rgba(var(--accent-rgb),0.1)] to-[rgba(var(--accent-rgb),0.05)] border-[rgba(var(--accent-rgb),0.2)] hover:border-[rgba(var(--accent-rgb),0.4)] transition-all duration-300 hover:scale-105">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-purple-400 text-sm font-medium mb-1">
+                  <p className="text-[var(--accent-color)] text-sm font-medium mb-1">
                     Interviews Scheduled
                   </p>
                   <p className="text-3xl font-bold text-white mb-2">
                     {realtimeStats.interviewsScheduled}
                   </p>
                   <div className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3 text-purple-400" />
-                    <span className="text-xs text-purple-400">
+                    <Calendar className="w-3 h-3 text-[var(--accent-color)]" />
+                    <span className="text-xs text-[var(--accent-color)]">
                       Next: Today 2PM
                     </span>
                   </div>
                 </div>
-                <div className="p-3 bg-purple-500/20 rounded-xl">
-                  <Video className="w-6 h-6 text-purple-400" />
+                <div className="p-3 bg-[rgba(var(--accent-rgb),0.2)] rounded-xl">
+                  <Video className="w-6 h-6 text-[var(--accent-color)]" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:scale-105">
+          <Card className="bg-gradient-to-br from-[rgba(var(--accent-rgb),0.1)] to-[rgba(var(--accent-rgb),0.05)] border-[rgba(var(--accent-rgb),0.2)] hover:border-[rgba(var(--accent-rgb),0.4)] transition-all duration-300 hover:scale-105">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-orange-400 text-sm font-medium mb-1">
+                  <p className="text-[var(--accent-color)] text-sm font-medium mb-1">
                     AI Match Score
                   </p>
                   <p className="text-3xl font-bold text-white mb-2">94%</p>
                   <div className="flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-orange-400" />
-                    <span className="text-xs text-orange-400">
+                    <Sparkles className="w-3 h-3 text-[var(--accent-color)]" />
+                    <span className="text-xs text-[var(--accent-color)]">
                       Top 5% matches
                     </span>
                   </div>
                 </div>
-                <div className="p-3 bg-orange-500/20 rounded-xl">
-                  <Target className="w-6 h-6 text-orange-400" />
+                <div className="p-3 bg-[rgba(var(--accent-rgb),0.2)] rounded-xl">
+                  <Target className="w-6 h-6 text-[var(--accent-color)]" />
                 </div>
               </div>
             </CardContent>
@@ -901,7 +913,7 @@ const CompanyPortal = () => {
           </Card>
           <Card className="bg-zinc-900 border-zinc-800">
             <CardContent className="p-4 text-center">
-              <Star className="w-6 h-6 mx-auto text-green-400 mb-2" />
+              <Star className="w-6 h-6 mx-auto text-[var(--accent-color)] mb-2" />
               <p className="text-2xl font-bold text-white">
                 {stats.shortlisted}
               </p>
@@ -910,7 +922,7 @@ const CompanyPortal = () => {
           </Card>
           <Card className="bg-zinc-900 border-zinc-800">
             <CardContent className="p-4 text-center">
-              <Video className="w-6 h-6 mx-auto text-blue-400 mb-2" />
+              <Video className="w-6 h-6 mx-auto text-[var(--accent-color)] mb-2" />
               <p className="text-2xl font-bold text-white">
                 {stats.interviewing}
               </p>
@@ -919,14 +931,14 @@ const CompanyPortal = () => {
           </Card>
           <Card className="bg-zinc-900 border-zinc-800">
             <CardContent className="p-4 text-center">
-              <Send className="w-6 h-6 mx-auto text-purple-400 mb-2" />
+              <Send className="w-6 h-6 mx-auto text-[var(--accent-color)] mb-2" />
               <p className="text-2xl font-bold text-white">{stats.offered}</p>
               <p className="text-xs text-zinc-400">Offers Sent</p>
             </CardContent>
           </Card>
           <Card className="bg-zinc-900 border-zinc-800">
             <CardContent className="p-4 text-center">
-              <FileText className="w-6 h-6 mx-auto text-yellow-400 mb-2" />
+              <FileText className="w-6 h-6 mx-auto text-[var(--accent-color)] mb-2" />
               <p className="text-2xl font-bold text-white">
                 {stats.avgResumeScore}%
               </p>
@@ -935,7 +947,7 @@ const CompanyPortal = () => {
           </Card>
           <Card className="bg-zinc-900 border-zinc-800">
             <CardContent className="p-4 text-center">
-              <Code className="w-6 h-6 mx-auto text-cyan-400 mb-2" />
+              <Code className="w-6 h-6 mx-auto text-[var(--accent-color)] mb-2" />
               <p className="text-2xl font-bold text-white">
                 {stats.avgCodeScore}%
               </p>
@@ -1003,7 +1015,7 @@ const CompanyPortal = () => {
               <Card className="bg-zinc-900/50 border-zinc-800">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-purple-400" />
+                    <Sparkles className="w-5 h-5 text-[var(--accent-color)]" />
                     AI-Powered Matching
                   </CardTitle>
                   <CardDescription>
@@ -1017,23 +1029,25 @@ const CompanyPortal = () => {
                       <p className="text-sm font-medium text-white">
                         Top Match Rate
                       </p>
-                      <p className="text-2xl font-bold text-green-400">94%</p>
+                      <p className="text-2xl font-bold text-[var(--accent-color)]">
+                        94%
+                      </p>
                     </div>
-                    <Target className="w-8 h-8 text-green-400" />
+                    <Target className="w-8 h-8 text-[var(--accent-color)]" />
                   </div>
                   <div className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
                     <div>
                       <p className="text-sm font-medium text-white">
                         Skills Analysis
                       </p>
-                      <p className="text-lg font-semibold text-blue-400">
+                      <p className="text-lg font-semibold text-[var(--accent-color)]">
                         AI Processed
                       </p>
                     </div>
-                    <Brain className="w-8 h-8 text-blue-400" />
+                    <Brain className="w-8 h-8 text-[var(--accent-color)]" />
                   </div>
                   <Button
-                    className="w-full bg-purple-600 hover:bg-purple-700"
+                    className="w-full bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)]"
                     onClick={() => performAIMatching(1)}
                   >
                     <Sparkles className="w-4 h-4 mr-2" />
@@ -1045,7 +1059,7 @@ const CompanyPortal = () => {
               <Card className="bg-zinc-900/50 border-zinc-800">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-green-400" />
+                    <TrendingUp className="w-5 h-5 text-[var(--accent-color)]" />
                     Skill Gap Analysis
                   </CardTitle>
                   <CardDescription>
@@ -1060,7 +1074,7 @@ const CompanyPortal = () => {
                           <span className="text-sm font-medium text-white">
                             {gap.skill}
                           </span>
-                          <Badge className="bg-red-500/20 text-red-400">
+                          <Badge className="bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)]">
                             {gap.gap}% gap
                           </Badge>
                         </div>
@@ -1074,7 +1088,7 @@ const CompanyPortal = () => {
                         Run analysis to identify skill gaps
                       </p>
                       <Button
-                        className="mt-4 bg-blue-600 hover:bg-blue-700"
+                        className="mt-4 bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)]"
                         onClick={() => analyzeSkillGap(selectedCandidates[0])}
                         disabled={selectedCandidates.length === 0}
                       >
@@ -1185,7 +1199,7 @@ const CompanyPortal = () => {
                 <div className="flex items-center gap-4 text-sm text-zinc-400">
                   <span>{filteredCandidates.length} candidates found</span>
                   {aiMatchingEnabled && (
-                    <Badge className="bg-purple-500/20 text-purple-400">
+                    <Badge className="bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)]">
                       <Sparkles className="w-3 h-3 mr-1" />
                       AI Matching Active
                     </Badge>
@@ -1198,7 +1212,7 @@ const CompanyPortal = () => {
                     onClick={() => setAiMatchingEnabled(!aiMatchingEnabled)}
                     className={`border-zinc-700 ${
                       aiMatchingEnabled
-                        ? "bg-purple-500/20 border-purple-500/50"
+                        ? "bg-[rgba(var(--accent-rgb),0.2)] border-[rgba(var(--accent-rgb),0.5)]"
                         : ""
                     }`}
                   >
@@ -1230,12 +1244,12 @@ const CompanyPortal = () => {
                           setSelectedCandidates([]);
                         }
                       }}
-                      className="w-4 h-4 text-blue-600 bg-zinc-800 border-zinc-600 rounded focus:ring-blue-500 mr-2"
+                      className="w-4 h-4 text-[var(--accent-color)] bg-zinc-800 border-zinc-600 rounded focus:ring-[rgba(var(--accent-rgb),0.3)] mr-2"
                     />
                     <Users className="w-5 h-5" />
                     Job Seekers ({filteredCandidates.length})
                     {selectedCandidates.length > 0 && (
-                      <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 ml-2">
+                      <Badge className="bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] border-[rgba(var(--accent-rgb),0.3)] ml-2">
                         {selectedCandidates.length} selected
                       </Badge>
                     )}
@@ -1247,7 +1261,7 @@ const CompanyPortal = () => {
                           size="sm"
                           variant="outline"
                           onClick={() => handleBulkShortlist()}
-                          className="border-green-700 text-green-400 hover:bg-green-900/50"
+                          className="border-[rgba(var(--accent-rgb),0.6)] text-[var(--accent-color)] hover:bg-[rgba(var(--accent-rgb),0.15)]"
                         >
                           <Bookmark className="w-4 h-4 mr-2" />
                           Shortlist ({selectedCandidates.length})
@@ -1256,7 +1270,7 @@ const CompanyPortal = () => {
                           size="sm"
                           variant="outline"
                           onClick={() => handleBulkMessage()}
-                          className="border-blue-700 text-blue-400 hover:bg-blue-900/50"
+                          className="border-[rgba(var(--accent-rgb),0.6)] text-[var(--accent-color)] hover:bg-[rgba(var(--accent-rgb),0.15)]"
                         >
                           <MessageSquare className="w-4 h-4 mr-2" />
                           Message
@@ -1265,7 +1279,7 @@ const CompanyPortal = () => {
                           size="sm"
                           variant="outline"
                           onClick={() => handleBulkReject()}
-                          className="border-red-700 text-red-400 hover:bg-red-900/50"
+                          className="border-[rgba(var(--accent-rgb),0.6)] text-[var(--accent-color)] hover:bg-[rgba(var(--accent-rgb),0.15)]"
                         >
                           <X className="w-4 h-4 mr-2" />
                           Reject
@@ -1327,14 +1341,14 @@ const CompanyPortal = () => {
                                 );
                               }
                             }}
-                            className="w-4 h-4 text-blue-600 bg-zinc-800 border-zinc-600 rounded focus:ring-blue-500"
+                            className="w-4 h-4 text-[var(--accent-color)] bg-zinc-800 border-zinc-600 rounded focus:ring-[rgba(var(--accent-rgb),0.3)]"
                           />
                           <div className="relative">
                             <div className="w-12 h-12 bg-gradient-to-br from-white to-zinc-300 rounded-xl flex items-center justify-center text-black font-bold text-lg">
                               {candidate.name.charAt(0)}
                             </div>
                             {shortlistedCandidates.includes(candidate.id) && (
-                              <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center">
+                              <div className="absolute -top-1 -right-1 w-5 h-5 bg-[rgb(var(--accent-rgb))] rounded-full flex items-center justify-center">
                                 <Star className="w-3 h-3 text-black fill-black" />
                               </div>
                             )}
@@ -1417,10 +1431,10 @@ const CompanyPortal = () => {
                               e.stopPropagation();
                               toggleShortlist(candidate.id);
                             }}
-                            className="text-zinc-400 hover:text-yellow-400"
+                            className="text-zinc-400 hover:text-[var(--accent-color)]"
                           >
                             {shortlistedCandidates.includes(candidate.id) ? (
-                              <BookmarkCheck className="w-5 h-5 text-yellow-400" />
+                              <BookmarkCheck className="w-5 h-5 text-[var(--accent-color)]" />
                             ) : (
                               <Bookmark className="w-5 h-5" />
                             )}
@@ -1440,7 +1454,7 @@ const CompanyPortal = () => {
               <Card className="bg-zinc-900/50 border-zinc-800">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
-                    <Mail className="w-5 h-5 text-blue-400" />
+                    <Mail className="w-5 h-5 text-[var(--accent-color)]" />
                     Email Campaigns
                   </CardTitle>
                   <CardDescription>
@@ -1477,7 +1491,7 @@ const CompanyPortal = () => {
                           <Badge
                             className={
                               campaign.status === "active"
-                                ? "bg-green-500/20 text-green-400"
+                                ? "bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)]"
                                 : "bg-zinc-500/20 text-zinc-400"
                             }
                           >
@@ -1491,7 +1505,7 @@ const CompanyPortal = () => {
                       </div>
                     ))}
                   </div>
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                  <Button className="w-full bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)]">
                     <Plus className="w-4 h-4 mr-2" />
                     Create Campaign
                   </Button>
@@ -1501,7 +1515,7 @@ const CompanyPortal = () => {
               <Card className="bg-zinc-900/50 border-zinc-800">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
-                    <Send className="w-5 h-5 text-green-400" />
+                    <Send className="w-5 h-5 text-[var(--accent-color)]" />
                     Bulk Messaging
                   </CardTitle>
                   <CardDescription>
@@ -1523,20 +1537,20 @@ const CompanyPortal = () => {
                         Available Templates
                       </p>
                       <div className="flex flex-wrap gap-1">
-                        <Badge className="bg-blue-500/20 text-blue-400">
+                        <Badge className="bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)]">
                           Interview Invite
                         </Badge>
-                        <Badge className="bg-green-500/20 text-green-400">
+                        <Badge className="bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)]">
                           Offer Letter
                         </Badge>
-                        <Badge className="bg-purple-500/20 text-purple-400">
+                        <Badge className="bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)]">
                           Feedback Request
                         </Badge>
                       </div>
                     </div>
                   </div>
                   <Button
-                    className="w-full bg-green-600 hover:bg-green-700"
+                    className="w-full bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)]"
                     onClick={() =>
                       sendBulkEmail(selectedCandidates, "interview_invite")
                     }
@@ -1570,7 +1584,7 @@ const CompanyPortal = () => {
                       <Badge
                         className={
                           assessment.status === "active"
-                            ? "bg-green-500/20 text-green-400"
+                            ? "bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)]"
                             : "bg-zinc-500/20 text-zinc-400"
                         }
                       >
@@ -1590,7 +1604,7 @@ const CompanyPortal = () => {
                         </Badge>
                       ))}
                     </div>
-                    <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
                       <div className="p-2 bg-zinc-800 rounded-lg">
                         <p className="text-lg font-bold text-white">
                           {assessment.candidates}
@@ -1678,7 +1692,7 @@ const CompanyPortal = () => {
                           <Badge
                             className={
                               job.status === "active"
-                                ? "bg-green-500/20 text-green-400"
+                                ? "bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)]"
                                 : "bg-zinc-500/20 text-zinc-400"
                             }
                           >
@@ -1698,7 +1712,7 @@ const CompanyPortal = () => {
                             <Clock className="w-4 h-4" />
                             {job.type}
                           </span>
-                          <span className="text-green-400 font-medium">
+                          <span className="text-[var(--accent-color)] font-medium">
                             {job.salary}
                           </span>
                         </div>
@@ -1761,34 +1775,34 @@ const CompanyPortal = () => {
                     {
                       label: "Applied",
                       count: candidates.length,
-                      color: "bg-blue-500",
+                      color: "bg-[rgb(var(--accent-rgb))]",
                     },
                     {
                       label: "Under Review",
                       count: candidates.filter(
                         (c) => c.status === "under_review"
                       ).length,
-                      color: "bg-yellow-500",
+                      color: "bg-[rgb(var(--accent-rgb))]",
                     },
                     {
                       label: "Shortlisted",
                       count: candidates.filter(
                         (c) => c.status === "shortlisted"
                       ).length,
-                      color: "bg-green-500",
+                      color: "bg-[rgb(var(--accent-rgb))]",
                     },
                     {
                       label: "Interview",
                       count: candidates.filter(
                         (c) => c.status === "interview_scheduled"
                       ).length,
-                      color: "bg-purple-500",
+                      color: "bg-[rgb(var(--accent-rgb))]",
                     },
                     {
                       label: "Offer Sent",
                       count: candidates.filter((c) => c.status === "offer_sent")
                         .length,
-                      color: "bg-cyan-500",
+                      color: "bg-[rgb(var(--accent-rgb))]",
                     },
                   ].map((stage) => {
                     const percentage =
@@ -1891,7 +1905,7 @@ const CompanyPortal = () => {
                   Schedule and manage candidate interviews
                 </p>
               </div>
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button className="bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)] text-white">
                 <Calendar className="w-4 h-4 mr-2" />
                 Schedule Interview
               </Button>
@@ -1980,7 +1994,7 @@ const CompanyPortal = () => {
                   <Download className="w-4 h-4 mr-2" />
                   Export Report
                 </Button>
-                <Button className="bg-green-600 hover:bg-green-700 text-white">
+                <Button className="bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)] text-white">
                   <FileText className="w-4 h-4 mr-2" />
                   Generate Report
                 </Button>
@@ -1998,7 +2012,7 @@ const CompanyPortal = () => {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-400">
+                      <div className="text-2xl font-bold text-[var(--accent-color)]">
                         {candidates.length}
                       </div>
                       <div className="text-sm text-zinc-400">
@@ -2006,7 +2020,7 @@ const CompanyPortal = () => {
                       </div>
                     </div>
                     <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-400">
+                      <div className="text-2xl font-bold text-[var(--accent-color)]">
                         {
                           candidates.filter((c) => c.status === "shortlisted")
                             .length
@@ -2015,7 +2029,7 @@ const CompanyPortal = () => {
                       <div className="text-sm text-zinc-400">Shortlisted</div>
                     </div>
                     <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
-                      <div className="text-2xl font-bold text-purple-400">
+                      <div className="text-2xl font-bold text-[var(--accent-color)]">
                         {
                           candidates.filter(
                             (c) => c.status === "interview_scheduled"
@@ -2025,7 +2039,7 @@ const CompanyPortal = () => {
                       <div className="text-sm text-zinc-400">Interviews</div>
                     </div>
                     <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
-                      <div className="text-2xl font-bold text-orange-400">
+                      <div className="text-2xl font-bold text-[var(--accent-color)]">
                         {
                           candidates.filter((c) => c.status === "offer_sent")
                             .length
@@ -2046,27 +2060,27 @@ const CompanyPortal = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <span className="text-zinc-400">Average Time</span>
                       <span className="text-white font-semibold">18 days</span>
                     </div>
                     <Progress value={75} className="h-2 bg-zinc-800" />
-                    <div className="grid grid-cols-3 gap-4 text-center text-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center text-sm">
                       <div>
                         <div className="text-zinc-400">Fastest</div>
-                        <div className="text-green-400 font-semibold">
+                        <div className="text-[var(--accent-color)] font-semibold">
                           5 days
                         </div>
                       </div>
                       <div>
                         <div className="text-zinc-400">Median</div>
-                        <div className="text-blue-400 font-semibold">
+                        <div className="text-[var(--accent-color)] font-semibold">
                           15 days
                         </div>
                       </div>
                       <div>
                         <div className="text-zinc-400">Slowest</div>
-                        <div className="text-red-400 font-semibold">
+                        <div className="text-[var(--accent-color)] font-semibold">
                           45 days
                         </div>
                       </div>
@@ -2120,19 +2134,7 @@ const CompanyPortal = () => {
                         key={idx}
                         className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg"
                       >
-                        <div
-                          className={`p-2 rounded-lg ${
-                            activity.type === "application"
-                              ? "bg-blue-500/20 text-blue-400"
-                              : activity.type === "interview"
-                              ? "bg-purple-500/20 text-purple-400"
-                              : activity.type === "assessment"
-                              ? "bg-green-500/20 text-green-400"
-                              : activity.type === "offer"
-                              ? "bg-orange-500/20 text-orange-400"
-                              : "bg-red-500/20 text-red-400"
-                          }`}
-                        >
+                        <div className="p-2 rounded-lg bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)]">
                           {activity.type === "application" ? (
                             <UserPlus className="w-4 h-4" />
                           ) : activity.type === "interview" ? (
@@ -2196,7 +2198,7 @@ const CompanyPortal = () => {
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-3 bg-zinc-800 rounded-lg">
-                    <FileText className="w-5 h-5 mx-auto text-blue-400 mb-1" />
+                    <FileText className="w-5 h-5 mx-auto text-[var(--accent-color)] mb-1" />
                     <p
                       className={`text-xl font-bold ${getScoreColor(
                         selectedCandidate.resume_score
@@ -2207,7 +2209,7 @@ const CompanyPortal = () => {
                     <p className="text-xs text-zinc-500">Resume Score</p>
                   </div>
                   <div className="text-center p-3 bg-zinc-800 rounded-lg">
-                    <Code className="w-5 h-5 mx-auto text-purple-400 mb-1" />
+                    <Code className="w-5 h-5 mx-auto text-[var(--accent-color)] mb-1" />
                     <p
                       className={`text-xl font-bold ${getScoreColor(
                         selectedCandidate.avg_code_score
@@ -2218,14 +2220,14 @@ const CompanyPortal = () => {
                     <p className="text-xs text-zinc-500">Code Score</p>
                   </div>
                   <div className="text-center p-3 bg-zinc-800 rounded-lg">
-                    <Video className="w-5 h-5 mx-auto text-green-400 mb-1" />
+                    <Video className="w-5 h-5 mx-auto text-[var(--accent-color)] mb-1" />
                     <p className="text-xl font-bold text-white">
                       {selectedCandidate.interview_score || "-"}
                     </p>
                     <p className="text-xs text-zinc-500">Interview</p>
                   </div>
                   <div className="text-center p-3 bg-zinc-800 rounded-lg">
-                    <Briefcase className="w-5 h-5 mx-auto text-orange-400 mb-1" />
+                    <Briefcase className="w-5 h-5 mx-auto text-[var(--accent-color)] mb-1" />
                     <p className="text-xl font-bold text-white">
                       {selectedCandidate.experience}
                     </p>
@@ -2292,14 +2294,14 @@ const CompanyPortal = () => {
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
-                    className="flex-1 border-green-700 text-green-400 hover:bg-green-900/30"
+                    className="flex-1 border-[rgba(var(--accent-rgb),0.6)] text-[var(--accent-color)] hover:bg-[rgba(var(--accent-rgb),0.12)]"
                   >
                     <ThumbsUp className="w-4 h-4 mr-2" />
                     Shortlist
                   </Button>
                   <Button
                     variant="outline"
-                    className="flex-1 border-red-700 text-red-400 hover:bg-red-900/30"
+                    className="flex-1 border-[rgba(var(--accent-rgb),0.6)] text-[var(--accent-color)] hover:bg-[rgba(var(--accent-rgb),0.12)]"
                   >
                     <ThumbsDown className="w-4 h-4 mr-2" />
                     Reject
@@ -2439,7 +2441,7 @@ const CompanyPortal = () => {
           <DialogContent className="bg-zinc-900 border-zinc-800 text-white max-w-lg">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Mail className="w-5 h-5 text-blue-400" />
+                <Mail className="w-5 h-5 text-[var(--accent-color)]" />
                 Send Bulk Message
               </DialogTitle>
               <DialogDescription className="text-zinc-400">
@@ -2509,7 +2511,7 @@ const CompanyPortal = () => {
               </Button>
               <Button
                 onClick={sendBulkMessage}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)] text-white"
               >
                 <Send className="w-4 h-4 mr-2" />
                 Send Message
@@ -2526,7 +2528,7 @@ const CompanyPortal = () => {
           <DialogContent className="bg-zinc-900 border-zinc-800 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-purple-400" />
+                <BarChart3 className="w-5 h-5 text-[var(--accent-color)]" />
                 Advanced Analytics Dashboard
               </DialogTitle>
               <DialogDescription className="text-zinc-400">
@@ -2537,56 +2539,56 @@ const CompanyPortal = () => {
             <div className="space-y-6 mt-6">
               {/* Key Metrics */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
+                <Card className="bg-gradient-to-br from-[rgba(var(--accent-rgb),0.1)] to-[rgba(var(--accent-rgb),0.05)] border-[rgba(var(--accent-rgb),0.2)]">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-blue-400 text-sm font-medium">
+                        <p className="text-[var(--accent-color)] text-sm font-medium">
                           Total Candidates
                         </p>
                         <p className="text-2xl font-bold text-white">
                           {candidates.length}
                         </p>
                       </div>
-                      <UserPlus className="w-6 h-6 text-blue-400" />
+                      <UserPlus className="w-6 h-6 text-[var(--accent-color)]" />
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
+                <Card className="bg-gradient-to-br from-[rgba(var(--accent-rgb),0.1)] to-[rgba(var(--accent-rgb),0.05)] border-[rgba(var(--accent-rgb),0.2)]">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-green-400 text-sm font-medium">
+                        <p className="text-[var(--accent-color)] text-sm font-medium">
                           Shortlisted
                         </p>
                         <p className="text-2xl font-bold text-white">
                           {shortlistedCandidates.length}
                         </p>
                       </div>
-                      <CheckCircle2 className="w-6 h-6 text-green-400" />
+                      <CheckCircle2 className="w-6 h-6 text-[var(--accent-color)]" />
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
+                <Card className="bg-gradient-to-br from-[rgba(var(--accent-rgb),0.1)] to-[rgba(var(--accent-rgb),0.05)] border-[rgba(var(--accent-rgb),0.2)]">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-purple-400 text-sm font-medium">
+                        <p className="text-[var(--accent-color)] text-sm font-medium">
                           Interviews
                         </p>
                         <p className="text-2xl font-bold text-white">
                           {realtimeStats.interviewsScheduled}
                         </p>
                       </div>
-                      <Video className="w-6 h-6 text-purple-400" />
+                      <Video className="w-6 h-6 text-[var(--accent-color)]" />
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 border-yellow-500/20">
+                <Card className="bg-gradient-to-br from-[rgba(var(--accent-rgb),0.1)] to-[rgba(var(--accent-rgb),0.05)] border-[rgba(var(--accent-rgb),0.2)]">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-yellow-400 text-sm font-medium">
+                        <p className="text-[var(--accent-color)] text-sm font-medium">
                           Avg Score
                         </p>
                         <p className="text-2xl font-bold text-white">
@@ -2601,7 +2603,7 @@ const CompanyPortal = () => {
                           %
                         </p>
                       </div>
-                      <Trophy className="w-6 h-6 text-yellow-400" />
+                      <Trophy className="w-6 h-6 text-[var(--accent-color)]" />
                     </div>
                   </CardContent>
                 </Card>
@@ -2631,7 +2633,7 @@ const CompanyPortal = () => {
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-zinc-400">Conversion Rate</span>
-                        <span className="text-green-400 font-semibold">
+                        <span className="text-[var(--accent-color)] font-semibold">
                           {candidates.length > 0
                             ? Math.round(
                                 (shortlistedCandidates.length /
@@ -2698,7 +2700,7 @@ const CompanyPortal = () => {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-green-400">
+                      <p className="text-2xl font-bold text-[var(--accent-color)]">
                         {candidates.filter((c) => (c.score || 0) >= 80).length}
                       </p>
                       <p className="text-zinc-400 text-sm">
@@ -2706,7 +2708,7 @@ const CompanyPortal = () => {
                       </p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-yellow-400">
+                      <p className="text-2xl font-bold text-[var(--accent-color)]">
                         {
                           candidates.filter(
                             (c) => (c.score || 0) >= 60 && (c.score || 0) < 80
@@ -2718,7 +2720,7 @@ const CompanyPortal = () => {
                       </p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-red-400">
+                      <p className="text-2xl font-bold text-[var(--accent-color)]">
                         {candidates.filter((c) => (c.score || 0) < 60).length}
                       </p>
                       <p className="text-zinc-400 text-sm">
@@ -2732,7 +2734,7 @@ const CompanyPortal = () => {
             <DialogFooter className="mt-6">
               <Button
                 onClick={() => setShowAnalyticsDashboard(false)}
-                className="bg-purple-600 hover:bg-purple-700 text-white"
+                className="bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)] text-white"
               >
                 Close Dashboard
               </Button>
@@ -2748,7 +2750,7 @@ const CompanyPortal = () => {
           <DialogContent className="bg-zinc-900 border-zinc-800 text-white max-w-lg">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-green-400" />
+                <Calendar className="w-5 h-5 text-[var(--accent-color)]" />
                 Schedule Interview
               </DialogTitle>
               <DialogDescription className="text-zinc-400">
@@ -2817,7 +2819,7 @@ const CompanyPortal = () => {
                   toast.success("Interview scheduled successfully!");
                   setShowInterviewScheduler(false);
                 }}
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)] text-white"
               >
                 <Calendar className="w-4 h-4 mr-2" />
                 Schedule Interview
@@ -2834,7 +2836,7 @@ const CompanyPortal = () => {
           <DialogContent className="bg-zinc-900 border-zinc-800 text-white max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Zap className="w-5 h-5 text-yellow-400" />
+                <Zap className="w-5 h-5 text-[var(--accent-color)]" />
                 Bulk Actions
               </DialogTitle>
               <DialogDescription className="text-zinc-400">
@@ -2845,7 +2847,7 @@ const CompanyPortal = () => {
             <div className="space-y-3 mt-4">
               <Button
                 onClick={handleBulkShortlist}
-                className="w-full bg-green-600 hover:bg-green-700 text-white justify-start"
+                className="w-full bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)] text-white justify-start"
                 disabled={selectedCandidates.length === 0}
               >
                 <ThumbsUp className="w-4 h-4 mr-2" />
@@ -2853,7 +2855,7 @@ const CompanyPortal = () => {
               </Button>
               <Button
                 onClick={handleBulkMessage}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white justify-start"
+                className="w-full bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)] text-white justify-start"
                 disabled={selectedCandidates.length === 0}
               >
                 <Mail className="w-4 h-4 mr-2" />
@@ -2861,7 +2863,7 @@ const CompanyPortal = () => {
               </Button>
               <Button
                 onClick={handleBulkReject}
-                className="w-full bg-red-600 hover:bg-red-700 text-white justify-start"
+                className="w-full bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)] text-white justify-start"
                 disabled={selectedCandidates.length === 0}
               >
                 <ThumbsDown className="w-4 h-4 mr-2" />

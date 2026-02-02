@@ -48,7 +48,7 @@ const CareerDashboard = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Page Title */}
         <div className="flex items-center gap-3 mb-6">
           <TrendingUp className="w-8 h-8 text-white" />
@@ -64,47 +64,47 @@ const CareerDashboard = () => {
               data-testid="stats-grid"
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
             >
-              <Card className="bg-gradient-to-br from-blue-900/50 to-blue-800/50 border-blue-700/50 hover:border-blue-600/70 transition-all duration-300">
+              <Card className="bg-gradient-to-br from-orange-900/50 to-orange-800/50 border-orange-700/50 hover:border-orange-600/70 transition-all duration-300">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-blue-300">
+                  <CardTitle className="text-sm font-medium text-orange-300">
                     Code Submissions
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-blue-100">
+                  <div className="text-3xl font-bold text-orange-100">
                     {stats.code_submissions}
                   </div>
-                  <p className="text-xs text-blue-400 mt-1">
+                  <p className="text-xs text-orange-400 mt-1">
                     Total submissions
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-green-900/50 to-green-800/50 border-green-700/50 hover:border-green-600/70 transition-all duration-300">
+              <Card className="bg-gradient-to-br from-orange-900/50 to-orange-800/50 border-orange-700/50 hover:border-orange-600/70 transition-all duration-300">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-green-300">
+                  <CardTitle className="text-sm font-medium text-orange-300">
                     Average Score
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-green-100">
+                  <div className="text-3xl font-bold text-orange-100">
                     {stats.avg_code_score}%
                   </div>
-                  <p className="text-xs text-green-400 mt-1">Code quality</p>
+                  <p className="text-xs text-orange-400 mt-1">Code quality</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-purple-900/50 to-purple-800/50 border-purple-700/50 hover:border-purple-600/70 transition-all duration-300">
+              <Card className="bg-gradient-to-br from-orange-900/50 to-orange-800/50 border-orange-700/50 hover:border-orange-600/70 transition-all duration-300">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-purple-300">
+                  <CardTitle className="text-sm font-medium text-orange-300">
                     Interviews Taken
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-purple-100">
+                  <div className="text-3xl font-bold text-orange-100">
                     {stats.interviews_taken}
                   </div>
-                  <p className="text-xs text-purple-400 mt-1">
+                  <p className="text-xs text-orange-400 mt-1">
                     Mock interviews
                   </p>
                 </CardContent>
@@ -187,8 +187,8 @@ const CareerDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="p-4 bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-lg border border-blue-700/30">
-                    <h4 className="font-semibold mb-2 text-blue-300">
+                  <div className="p-4 bg-gradient-to-r from-orange-900/30 to-orange-900/30 rounded-lg border border-orange-700/30">
+                    <h4 className="font-semibold mb-2 text-orange-300">
                       🎯 Focus Areas
                     </h4>
                     <ul className="space-y-2 text-sm text-zinc-300">
@@ -216,15 +216,15 @@ const CareerDashboard = () => {
                       )}
                       {stats.code_submissions >= 5 &&
                         stats.avg_code_score >= 70 && (
-                          <li className="text-green-400">
+                          <li className="text-orange-400">
                             ✓ Great job! Keep maintaining this momentum
                           </li>
                         )}
                     </ul>
                   </div>
 
-                  <div className="p-4 bg-gradient-to-r from-green-900/30 to-teal-900/30 rounded-lg border border-green-700/30">
-                    <h4 className="font-semibold mb-2 text-green-300">
+                  <div className="p-4 bg-gradient-to-r from-orange-900/30 to-orange-900/30 rounded-lg border border-orange-700/30">
+                    <h4 className="font-semibold mb-2 text-orange-300">
                       ✨ Next Steps
                     </h4>
                     <p className="text-sm text-zinc-300">

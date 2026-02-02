@@ -1,0 +1,114 @@
+.application-container {
+  padding: 2rem 1rem;
+  min-height: 80vh;
+  background: #000;
+  color: #fff;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.application-container h2 {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: #fff;
+}
+
+.internship-info {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  align-items: flex-start;
+}
+
+.internship-info-image {
+  width: 200px;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 1rem;
+}
+
+.internship-info-details p {
+  margin-bottom: 0.5rem;
+  color: #d1d5db;
+}
+
+.application-form {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2rem;
+  border-radius: 1rem;
+  border: 2px solid transparent;
+}
+
+.application-form:hover {
+  border-color: #fff;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  color: #d1d5db;
+  margin-bottom: 0.5rem;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group input[type="file"] {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #4b5563;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.qr-section {
+  text-align: center;
+  margin: 1rem 0;
+}
+
+.qr-section p {
+  color: #d1d5db;
+  margin-bottom: 0.5rem;
+}
+
+.application-form button[type="submit"] {
+  width: 100%;
+  padding: 0.75rem;
+  background: #34d399;
+  color: #fff;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.application-form button[type="submit"]:hover:not(:disabled) {
+  background: #10b981;
+}
+
+.application-form button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 700px) {
+  .application-container {
+    padding: 1.25rem 1rem;
+  }
+  .internship-info {
+    flex-direction: column;
+    align-items: center;
+  }
+  .internship-info-image {
+    width: 100%;
+    max-width: 300px;
+  }
+  .application-form {
+    padding: 1.25rem;
+  }
+}

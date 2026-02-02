@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { Textarea } from "../components/ui/textarea";
+import { Switch } from "../components/ui/switch";
 import {
   User,
   Mail,
@@ -87,12 +88,16 @@ const ProfilePage = () => {
   const user = getUser();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [editing, setEditing] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [showPassword, setShowPassword] = useState(false);
-  const [profileData, setProfileData] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const avatarInputRef = useRef(null);
+
+  const getBaseProfileData = (currentUser) => ({
+    name: currentUser?.name || "",
+    email: currentUser?.email || "",
     phone: "",
     location: "",
     bio: "",
@@ -105,19 +110,230 @@ const ProfilePage = () => {
     linkedin: "",
     portfolio: "",
   });
+
+  const getProfileStorageKey = (currentUser) => {
+    const keyPart = currentUser?.id || currentUser?._id || currentUser?.email;
+    return keyPart ? `userProfile:${keyPart}` : "userProfile:anonymous";
+  };
+
+  const [profileData, setProfileData] = useState(getBaseProfileData(user));
   const [newSkill, setNewSkill] = useState("");
   const [activityHistory, setActivityHistory] = useState([]);
 
+  // For true "Cancel" behavior (discard unsaved edits)
+  const editSnapshotRef = useRef(null);
+
+  // Settings-page bridge: allow Profile buttons to open a specific Settings tab.
+  const setSettingsRedirectTabAndGo = (tab) => {
+    try {
+      localStorage.setItem("settings.redirectTab", tab);
+    } catch (e) {
+      // ignore
+    }
+    navigate("/settings");
+  };
+
+  // Share the same settings storage as SettingsPage so changes feel real-time.
+  const getUserSettingsKey = (currentUser) => {
+    const keyPart = currentUser?.id || currentUser?._id || currentUser?.email;
+    return keyPart ? `userSettings:${keyPart}` : "userSettings:anonymous";
+  };
+
+  const userSettingsKey = getUserSettingsKey(user);
+  const [linkedNotificationSettings, setLinkedNotificationSettings] = useState({
+    email: true,
+    reminders: true,
+    achievements: true,
+  });
+
   useEffect(() => {
     fetchStats();
-    loadProfileFromStorage();
+    loadProfile();
     generateActivityHistory();
+
+    // Load notification settings snapshot (shared with SettingsPage)
+    try {
+      const saved = localStorage.getItem(userSettingsKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const n = parsed?.notifications || {};
+        setLinkedNotificationSettings({
+          email: typeof n.email === "boolean" ? n.email : true,
+          reminders: typeof n.reminders === "boolean" ? n.reminders : true,
+          achievements:
+            typeof n.achievements === "boolean" ? n.achievements : true,
+        });
+      }
+    } catch (e) {
+      // ignore malformed storage
+    }
   }, []);
 
+  // Real-time sync: if SettingsPage changes notifications, reflect it here instantly.
+  useEffect(() => {
+    const syncFromStorage = () => {
+      try {
+        const saved = localStorage.getItem(userSettingsKey);
+        if (!saved) return;
+        const parsed = JSON.parse(saved);
+        const n = parsed?.notifications || {};
+        setLinkedNotificationSettings({
+          email: typeof n.email === "boolean" ? n.email : true,
+          reminders: typeof n.reminders === "boolean" ? n.reminders : true,
+          achievements:
+            typeof n.achievements === "boolean" ? n.achievements : true,
+        });
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    const onStorage = (e) => {
+      if (e?.key === userSettingsKey) syncFromStorage();
+    };
+
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("userSettingsChange", syncFromStorage);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("userSettingsChange", syncFromStorage);
+    };
+  }, [userSettingsKey]);
+
+  const persistNotificationSetting = (key, value) => {
+    setLinkedNotificationSettings((prev) => ({ ...prev, [key]: value }));
+    try {
+      const saved = localStorage.getItem(userSettingsKey);
+      const parsed = saved ? JSON.parse(saved) : {};
+      const next = {
+        ...parsed,
+        notifications: {
+          ...(parsed.notifications || {}),
+          [key]: value,
+        },
+      };
+      localStorage.setItem(userSettingsKey, JSON.stringify(next));
+      window.dispatchEvent(new Event("userSettingsChange"));
+      toast.success("Notification preference updated", {
+        duration: 1200,
+        position: "bottom-right",
+      });
+    } catch (e) {
+      // ignore
+    }
+  };
+
   const loadProfileFromStorage = () => {
-    const savedProfile = localStorage.getItem("userProfile");
-    if (savedProfile) {
-      setProfileData((prev) => ({ ...prev, ...JSON.parse(savedProfile) }));
+    const base = getBaseProfileData(user);
+    const perUserKey = getProfileStorageKey(user);
+
+    try {
+      const perUserSaved = localStorage.getItem(perUserKey);
+      if (perUserSaved) {
+        return { ...base, ...JSON.parse(perUserSaved) };
+      }
+
+      // Legacy fallback (previous versions stored a single shared "userProfile")
+      const legacySaved = localStorage.getItem("userProfile");
+      if (legacySaved) {
+        const parsedLegacy = JSON.parse(legacySaved);
+
+        // Only migrate/apply legacy data if it belongs to the currently authenticated user.
+        if (
+          parsedLegacy?.email &&
+          user?.email &&
+          parsedLegacy.email === user.email
+        ) {
+          localStorage.setItem(perUserKey, legacySaved);
+          localStorage.removeItem("userProfile");
+          return { ...base, ...parsedLegacy };
+        }
+      }
+    } catch (e) {
+      // Ignore malformed storage
+    }
+
+    return base;
+  };
+
+  const getApiBaseUrl = () => {
+    const base = axiosInstance?.defaults?.baseURL || "";
+    return base.replace(/\/api\/?$/, "");
+  };
+
+  const toAbsoluteUploadsUrl = (maybeRelativeUrl) => {
+    if (!maybeRelativeUrl) return "";
+    if (
+      maybeRelativeUrl.startsWith("http://") ||
+      maybeRelativeUrl.startsWith("https://")
+    ) {
+      return maybeRelativeUrl;
+    }
+    return `${getApiBaseUrl()}${maybeRelativeUrl}`;
+  };
+
+  // Social link helpers
+  // - GitHub field is stored as username, but users often paste full URLs.
+  // - LinkedIn/Portfolio should be valid URLs; we keep them as-is but ensure https://.
+  const normalizeGithubUsername = (value) => {
+    if (!value) return "";
+    const raw = String(value).trim();
+    if (!raw) return "";
+
+    // Accept:
+    // - "username"
+    // - "@username"
+    // - "https://github.com/username" (or with trailing slash/query)
+    let cleaned = raw.replace(/^@/, "");
+    cleaned = cleaned.replace(/^https?:\/\//i, "").replace(/^www\./i, "");
+    if (cleaned.toLowerCase().startsWith("github.com/")) {
+      cleaned = cleaned.slice("github.com/".length);
+    }
+    return cleaned.split(/[/?#]/)[0].trim();
+  };
+
+  const ensureHttpsUrl = (value) => {
+    if (!value) return "";
+    const raw = String(value).trim();
+    if (!raw) return "";
+    if (/^https?:\/\//i.test(raw)) return raw;
+    return `https://${raw}`;
+  };
+
+  const loadProfile = async () => {
+    // Start from a clean base so switching accounts doesn't reuse previous user's cached fields.
+    const base = getBaseProfileData(user);
+    const localProfile = loadProfileFromStorage();
+    setProfileData(localProfile);
+
+    setProfileLoading(true);
+    try {
+      const response = await axiosInstance.get("/profile");
+      const serverProfile = response.data;
+
+      const mergedProfileData = {
+        ...base,
+        ...localProfile,
+        ...(serverProfile?.profile_data || {}),
+        name: serverProfile?.name || user?.name || "",
+        email: serverProfile?.email || user?.email || "",
+      };
+
+      setProfileData(mergedProfileData);
+      setAvatarUrl(serverProfile?.avatar_url || "");
+
+      // Keep auth user in sync for name (and avatar if present)
+      const updatedUser = {
+        ...user,
+        name: serverProfile?.name || user?.name,
+        avatar_url: serverProfile?.avatar_url || user?.avatar_url,
+      };
+      saveUser(updatedUser);
+      window.dispatchEvent(new Event("authChange"));
+    } catch (error) {
+      // Fallback to local storage only
+    } finally {
+      setProfileLoading(false);
     }
   };
 
@@ -183,11 +399,130 @@ const ProfilePage = () => {
   };
 
   const handleSaveProfile = async () => {
-    const updatedUser = { ...user, name: profileData.name };
-    saveUser(updatedUser);
-    localStorage.setItem("userProfile", JSON.stringify(profileData));
+    try {
+      const { name, email, ...profilePayload } = profileData;
+      const response = await axiosInstance.put("/profile", {
+        name: profileData.name,
+        profile_data: profilePayload,
+      });
+
+      const updated = response.data;
+      setAvatarUrl(updated?.avatar_url || avatarUrl);
+
+      const updatedUser = {
+        ...user,
+        name: updated?.name || profileData.name,
+        avatar_url: updated?.avatar_url || user?.avatar_url,
+      };
+      saveUser(updatedUser);
+
+      const perUserKey = getProfileStorageKey(user);
+      localStorage.setItem(perUserKey, JSON.stringify(profileData));
+      // Clean up legacy shared key if it exists
+      localStorage.removeItem("userProfile");
+      setEditing(false);
+      editSnapshotRef.current = null;
+      window.dispatchEvent(new Event("authChange"));
+      toast.success("Profile updated successfully!");
+    } catch (error) {
+      toast.error("Failed to update profile");
+    }
+  };
+
+  const toggleEditing = () => {
+    if (!editing) {
+      // entering edit mode
+      editSnapshotRef.current = profileData;
+      setEditing(true);
+      return;
+    }
+
+    // leaving edit mode => treat as Cancel
+    if (editSnapshotRef.current) {
+      setProfileData(editSnapshotRef.current);
+    }
+    editSnapshotRef.current = null;
     setEditing(false);
-    toast.success("Profile updated successfully!");
+    toast.message("Edits discarded", { duration: 1000 });
+  };
+
+  const handleAvatarClick = () => {
+    avatarInputRef.current?.click();
+  };
+
+  const handleAvatarSelected = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const form = new FormData();
+      form.append("file", file);
+
+      // IMPORTANT: don't manually set multipart Content-Type (boundary must be set by Axios)
+      const response = await axiosInstance.post("/profile/avatar", form);
+
+      const newAvatarUrl = response.data?.avatar_url;
+      setAvatarUrl(newAvatarUrl);
+
+      const updatedUser = {
+        ...user,
+        name: profileData.name,
+        avatar_url: newAvatarUrl,
+      };
+      saveUser(updatedUser);
+      window.dispatchEvent(new Event("authChange"));
+
+      toast.success("Avatar updated!");
+    } catch (error) {
+      const status = error?.response?.status;
+      const apiBase = axiosInstance?.defaults?.baseURL;
+      const endpointUrl = apiBase
+        ? `${apiBase.replace(/\/$/, "")}/profile/avatar`
+        : "";
+
+      const detail =
+        error?.response?.data?.detail ||
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to upload avatar";
+
+      // If auth is invalid or user no longer exists in DB, force re-login.
+      if (
+        status === 401 ||
+        status === 403 ||
+        (status === 404 && String(detail).toLowerCase() === "user not found")
+      ) {
+        clearAuth();
+        window.dispatchEvent(new Event("authChange"));
+        toast.error("Session expired. Please login again.");
+        navigate("/auth");
+        return;
+      }
+
+      // Helpful message when the backend doesn't have this route (usually wrong API base URL or backend not restarted).
+      if (status === 404 && String(detail).toLowerCase() === "not found") {
+        toast.error(
+          endpointUrl
+            ? `Avatar upload endpoint not found: ${endpointUrl}`
+            : "Avatar upload endpoint not found"
+        );
+        return;
+      }
+
+      // FastAPI validation errors come as an array under `detail`
+      if (status === 422 && Array.isArray(error?.response?.data?.detail)) {
+        const first = error.response.data.detail[0];
+        const loc = Array.isArray(first?.loc) ? first.loc.join(".") : "request";
+        const msg = first?.msg || "Validation error";
+        toast.error(`422: ${loc} - ${msg}`);
+        return;
+      }
+
+      toast.error(status ? `${status}: ${detail}` : String(detail));
+    } finally {
+      // allow re-selecting same file
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
   };
 
   const handleAddSkill = () => {
@@ -309,15 +644,15 @@ const ProfilePage = () => {
   const getRoleBadge = (role) => {
     const badges = {
       student: {
-        color: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+        color: "bg-orange-500/20 text-orange-400 border-orange-500/30",
         icon: GraduationCap,
       },
       job_seeker: {
-        color: "bg-green-500/20 text-green-400 border-green-500/30",
+        color: "bg-orange-500/20 text-orange-400 border-orange-500/30",
         icon: Briefcase,
       },
       company: {
-        color: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+        color: "bg-orange-500/20 text-orange-400 border-orange-500/30",
         icon: Briefcase,
       },
       college_admin: {
@@ -336,7 +671,7 @@ const ProfilePage = () => {
       <main className="max-w-7xl mx-auto px-4 md:px-6 py-8">
         {/* Profile Header Card */}
         <Card className="mb-8 bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-800 border-zinc-800 overflow-hidden">
-          <div className="h-32 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 relative">
+          <div className="h-32 bg-gradient-to-r from-orange-600 via-orange-600 to-orange-600 relative">
             <div className="absolute inset-0 bg-black/20" />
             <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-zinc-900 to-transparent" />
           </div>
@@ -345,15 +680,28 @@ const ProfilePage = () => {
               {/* Avatar */}
               <div className="relative group">
                 <Avatar className="w-32 h-32 border-4 border-zinc-900 shadow-xl">
-                  <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-4xl font-bold">
-                    {user?.name?.charAt(0).toUpperCase()}
+                  <AvatarImage src={toAbsoluteUploadsUrl(avatarUrl)} />
+                  <AvatarFallback className="bg-gradient-to-br from-orange-500 to-orange-500 text-white text-3xl sm:text-4xl font-bold">
+                    {profileData.name?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className="absolute bottom-2 right-2 p-2 bg-zinc-800 rounded-full border border-zinc-700 cursor-pointer hover:bg-zinc-700 transition-colors">
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarSelected}
+                />
+                <div
+                  className="absolute bottom-2 right-2 p-2 bg-zinc-800 rounded-full border border-zinc-700 cursor-pointer hover:bg-zinc-700 transition-colors"
+                  onClick={handleAvatarClick}
+                  role="button"
+                  tabIndex={0}
+                >
                   <Camera className="w-4 h-4 text-zinc-400" />
                 </div>
                 {/* Level Badge */}
-                <div className="absolute -top-2 -right-2 px-2 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full text-xs font-bold text-black flex items-center gap-1">
+                <div className="absolute -top-2 -right-2 px-2 py-1 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full text-xs font-bold text-black flex items-center gap-1">
                   <Zap className="w-3 h-3" />
                   LVL {levelInfo.level}
                 </div>
@@ -365,7 +713,7 @@ const ProfilePage = () => {
                   <div>
                     <div className="flex items-center gap-3 mb-2">
                       <h1 className="text-2xl md:text-3xl font-bold text-white">
-                        {user?.name}
+                        {profileData.name}
                       </h1>
                       <Badge className={`${roleBadge.color} border`}>
                         <RoleIcon className="w-3 h-3 mr-1" />
@@ -375,7 +723,7 @@ const ProfilePage = () => {
                     <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-400">
                       <span className="flex items-center gap-1">
                         <Mail className="w-4 h-4" />
-                        {user?.email}
+                        {profileData.email}
                       </span>
                       {profileData.location && (
                         <span className="flex items-center gap-1">
@@ -400,7 +748,7 @@ const ProfilePage = () => {
                   </div>
                   <div className="flex gap-2">
                     <Button
-                      onClick={() => setEditing(!editing)}
+                      onClick={toggleEditing}
                       variant={editing ? "default" : "outline"}
                       className={
                         editing
@@ -461,7 +809,7 @@ const ProfilePage = () => {
                             Math.floor((stats?.code_submissions || 0) / 20),
                             3
                           )
-                            ? "bg-gradient-to-t from-blue-400 to-blue-600"
+                            ? "bg-gradient-to-t from-orange-400 to-orange-600"
                             : "bg-zinc-600"
                         }`}
                       />
@@ -483,7 +831,7 @@ const ProfilePage = () => {
                         className={`w-1 h-3 rounded-sm transition-all duration-300 ${
                           i <
                           Math.floor(((stats?.avg_code_score || 0) / 100) * 5)
-                            ? "bg-gradient-to-t from-green-400 to-green-600"
+                            ? "bg-gradient-to-t from-orange-400 to-orange-600"
                             : "bg-zinc-600"
                         }`}
                       />
@@ -508,7 +856,7 @@ const ProfilePage = () => {
                             Math.floor((stats?.learning_sessions || 0) / 10),
                             3
                           )
-                            ? "bg-gradient-to-t from-purple-400 to-purple-600"
+                            ? "bg-gradient-to-t from-orange-400 to-orange-600"
                             : "bg-zinc-600"
                         }`}
                       />
@@ -603,7 +951,7 @@ const ProfilePage = () => {
               <Card className="lg:col-span-2 bg-zinc-900 border-zinc-800">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-white">
-                    <User className="w-5 h-5 text-purple-400" />
+                    <User className="w-5 h-5 text-orange-400" />
                     Personal Information
                   </CardTitle>
                   <CardDescription className="text-zinc-400">
@@ -637,7 +985,7 @@ const ProfilePage = () => {
                       <Label className="text-zinc-300">Email</Label>
                       <p className="text-white font-medium p-2 flex items-center gap-2">
                         {user?.email}
-                        <CheckCircle2 className="w-4 h-4 text-green-400" />
+                        <CheckCircle2 className="w-4 h-4 text-orange-400" />
                       </p>
                     </div>
                     <div className="space-y-2">
@@ -746,7 +1094,7 @@ const ProfilePage = () => {
                   {editing && (
                     <Button
                       onClick={handleSaveProfile}
-                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                      className="w-full bg-gradient-to-r from-orange-600 to-orange-600 hover:from-orange-700 hover:to-orange-700 text-white"
                     >
                       <Save className="w-4 h-4 mr-2" />
                       Save Changes
@@ -761,7 +1109,7 @@ const ProfilePage = () => {
                 <Card className="bg-zinc-900 border-zinc-800">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-white text-lg">
-                      <Sparkles className="w-5 h-5 text-yellow-400" />
+                      <Sparkles className="w-5 h-5 text-orange-400" />
                       Skills
                     </CardTitle>
                   </CardHeader>
@@ -811,7 +1159,7 @@ const ProfilePage = () => {
                 <Card className="bg-zinc-900 border-zinc-800">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-white text-lg">
-                      <Link2 className="w-5 h-5 text-blue-400" />
+                      <Link2 className="w-5 h-5 text-orange-400" />
                       Social Links
                     </CardTitle>
                   </CardHeader>
@@ -819,7 +1167,7 @@ const ProfilePage = () => {
                     {editing ? (
                       <>
                         <div className="flex items-center gap-2">
-                          <Github className="w-5 h-5 text-zinc-400" />
+                          <Github className="w-5 h-5 text-orange-400" />
                           <Input
                             value={profileData.github}
                             onChange={(e) =>
@@ -828,12 +1176,23 @@ const ProfilePage = () => {
                                 github: e.target.value,
                               })
                             }
-                            placeholder="GitHub username"
+                            onBlur={(e) => {
+                              const normalized = normalizeGithubUsername(
+                                e.target.value
+                              );
+                              if (normalized !== profileData.github) {
+                                setProfileData({
+                                  ...profileData,
+                                  github: normalized,
+                                });
+                              }
+                            }}
+                            placeholder="GitHub username (or paste profile URL)"
                             className="bg-zinc-800 border-zinc-700 text-white"
                           />
                         </div>
                         <div className="flex items-center gap-2">
-                          <Linkedin className="w-5 h-5 text-blue-400" />
+                          <Linkedin className="w-5 h-5 text-orange-400" />
                           <Input
                             value={profileData.linkedin}
                             onChange={(e) =>
@@ -842,12 +1201,21 @@ const ProfilePage = () => {
                                 linkedin: e.target.value,
                               })
                             }
+                            onBlur={(e) => {
+                              const normalized = ensureHttpsUrl(e.target.value);
+                              if (normalized !== profileData.linkedin) {
+                                setProfileData({
+                                  ...profileData,
+                                  linkedin: normalized,
+                                });
+                              }
+                            }}
                             placeholder="LinkedIn profile URL"
                             className="bg-zinc-800 border-zinc-700 text-white"
                           />
                         </div>
                         <div className="flex items-center gap-2">
-                          <Globe className="w-5 h-5 text-green-400" />
+                          <Globe className="w-5 h-5 text-orange-400" />
                           <Input
                             value={profileData.portfolio}
                             onChange={(e) =>
@@ -856,6 +1224,15 @@ const ProfilePage = () => {
                                 portfolio: e.target.value,
                               })
                             }
+                            onBlur={(e) => {
+                              const normalized = ensureHttpsUrl(e.target.value);
+                              if (normalized !== profileData.portfolio) {
+                                setProfileData({
+                                  ...profileData,
+                                  portfolio: normalized,
+                                });
+                              }
+                            }}
                             placeholder="Portfolio website"
                             className="bg-zinc-800 border-zinc-700 text-white"
                           />
@@ -865,39 +1242,43 @@ const ProfilePage = () => {
                       <>
                         {profileData.github && (
                           <a
-                            href={`https://github.com/${profileData.github}`}
+                            href={`https://github.com/${normalizeGithubUsername(
+                              profileData.github
+                            )}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-3 p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+                            className="group flex items-center gap-3 p-2 hover:bg-zinc-800 rounded-lg transition-colors"
                           >
-                            <Github className="w-5 h-5 text-zinc-400" />
-                            <span className="text-zinc-300">
-                              {profileData.github}
+                            <Github className="w-5 h-5 text-zinc-400 group-hover:text-orange-400 transition-colors" />
+                            <span className="text-zinc-300 group-hover:text-white transition-colors">
+                              GitHub Profile
                             </span>
                           </a>
                         )}
                         {profileData.linkedin && (
                           <a
-                            href={profileData.linkedin}
+                            href={ensureHttpsUrl(profileData.linkedin)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-3 p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+                            className="group flex items-center gap-3 p-2 hover:bg-zinc-800 rounded-lg transition-colors"
                           >
-                            <Linkedin className="w-5 h-5 text-blue-400" />
-                            <span className="text-zinc-300">
+                            <Linkedin className="w-5 h-5 text-zinc-400 group-hover:text-orange-400 transition-colors" />
+                            <span className="text-zinc-300 group-hover:text-white transition-colors">
                               LinkedIn Profile
                             </span>
                           </a>
                         )}
                         {profileData.portfolio && (
                           <a
-                            href={profileData.portfolio}
+                            href={ensureHttpsUrl(profileData.portfolio)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-3 p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+                            className="group flex items-center gap-3 p-2 hover:bg-zinc-800 rounded-lg transition-colors"
                           >
-                            <Globe className="w-5 h-5 text-green-400" />
-                            <span className="text-zinc-300">Portfolio</span>
+                            <Globe className="w-5 h-5 text-zinc-400 group-hover:text-orange-400 transition-colors" />
+                            <span className="text-zinc-300 group-hover:text-white transition-colors">
+                              Portfolio
+                            </span>
                           </a>
                         )}
                         {!profileData.github &&
@@ -918,9 +1299,9 @@ const ProfilePage = () => {
           {/* Statistics Tab */}
           <TabsContent value="stats" className="space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="bg-gradient-to-br from-blue-900/30 to-blue-800/10 border-blue-800/30">
+              <Card className="bg-gradient-to-br from-orange-900/30 to-orange-800/10 border-orange-800/30">
                 <CardContent className="p-6 text-center">
-                  <Code className="w-8 h-8 text-blue-400 mx-auto mb-2" />
+                  <Code className="w-8 h-8 text-orange-400 mx-auto mb-2" />
                   <div className="flex items-center justify-center mb-1">
                     <p className="text-3xl font-bold text-white mr-2">
                       {stats?.code_submissions || 0}
@@ -936,7 +1317,7 @@ const ProfilePage = () => {
                               Math.floor((stats?.code_submissions || 0) / 20),
                               5
                             )
-                              ? "bg-gradient-to-t from-blue-400 to-blue-600"
+                              ? "bg-gradient-to-t from-orange-400 to-orange-600"
                               : "bg-zinc-600"
                           }`}
                         />
@@ -946,7 +1327,7 @@ const ProfilePage = () => {
                   <p className="text-sm text-zinc-400">Problems Solved</p>
                   <div className="w-full bg-zinc-700 rounded-full h-1 mt-2">
                     <div
-                      className="bg-gradient-to-r from-blue-400 to-blue-600 h-1 rounded-full transition-all duration-500"
+                      className="bg-gradient-to-r from-orange-400 to-orange-600 h-1 rounded-full transition-all duration-500"
                       style={{
                         width: `${Math.min(
                           ((stats?.code_submissions || 0) / 100) * 100,
@@ -957,9 +1338,9 @@ const ProfilePage = () => {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="bg-gradient-to-br from-green-900/30 to-green-800/10 border-green-800/30">
+              <Card className="bg-gradient-to-br from-orange-900/30 to-orange-800/10 border-orange-800/30">
                 <CardContent className="p-6 text-center">
-                  <TrendingUp className="w-8 h-8 text-green-400 mx-auto mb-2" />
+                  <TrendingUp className="w-8 h-8 text-orange-400 mx-auto mb-2" />
                   <div className="flex items-center justify-center mb-1">
                     <p className="text-3xl font-bold text-white mr-2">
                       {stats?.avg_code_score || 0}%
@@ -972,7 +1353,7 @@ const ProfilePage = () => {
                           className={`w-1 h-4 rounded-sm transition-all duration-300 ${
                             i <
                             Math.floor(((stats?.avg_code_score || 0) / 100) * 5)
-                              ? "bg-gradient-to-t from-green-400 to-green-600"
+                              ? "bg-gradient-to-t from-orange-400 to-orange-600"
                               : "bg-zinc-600"
                           }`}
                         />
@@ -982,7 +1363,7 @@ const ProfilePage = () => {
                   <p className="text-sm text-zinc-400">Average Score</p>
                   <div className="w-full bg-zinc-700 rounded-full h-1 mt-2">
                     <div
-                      className="bg-gradient-to-r from-green-400 to-green-600 h-1 rounded-full transition-all duration-500"
+                      className="bg-gradient-to-r from-orange-400 to-orange-600 h-1 rounded-full transition-all duration-500"
                       style={{
                         width: `${stats?.avg_code_score || 0}%`,
                       }}
@@ -990,9 +1371,9 @@ const ProfilePage = () => {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="bg-gradient-to-br from-purple-900/30 to-purple-800/10 border-purple-800/30">
+              <Card className="bg-gradient-to-br from-orange-900/30 to-orange-800/10 border-orange-800/30">
                 <CardContent className="p-6 text-center">
-                  <BookOpen className="w-8 h-8 text-purple-400 mx-auto mb-2" />
+                  <BookOpen className="w-8 h-8 text-orange-400 mx-auto mb-2" />
                   <div className="flex items-center justify-center mb-1">
                     <p className="text-3xl font-bold text-white mr-2">
                       {stats?.learning_sessions || 0}
@@ -1008,7 +1389,7 @@ const ProfilePage = () => {
                               Math.floor((stats?.learning_sessions || 0) / 10),
                               5
                             )
-                              ? "bg-gradient-to-t from-purple-400 to-purple-600"
+                              ? "bg-gradient-to-t from-orange-400 to-orange-600"
                               : "bg-zinc-600"
                           }`}
                         />
@@ -1018,7 +1399,7 @@ const ProfilePage = () => {
                   <p className="text-sm text-zinc-400">Learning Sessions</p>
                   <div className="w-full bg-zinc-700 rounded-full h-1 mt-2">
                     <div
-                      className="bg-gradient-to-r from-purple-400 to-purple-600 h-1 rounded-full transition-all duration-500"
+                      className="bg-gradient-to-r from-orange-400 to-orange-600 h-1 rounded-full transition-all duration-500"
                       style={{
                         width: `${Math.min(
                           ((stats?.learning_sessions || 0) / 50) * 100,
@@ -1074,7 +1455,7 @@ const ProfilePage = () => {
               <Card className="bg-zinc-900 border-zinc-800">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5 text-blue-400" />
+                    <BarChart3 className="w-5 h-5 text-orange-400" />
                     Performance Overview
                   </CardTitle>
                 </CardHeader>
@@ -1150,9 +1531,9 @@ const ProfilePage = () => {
                       {totalXpEarned} XP
                     </span>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-900/50 to-pink-900/50 rounded-lg border border-purple-500/30">
+                  <div className="flex items-center justify-between p-3 bg-gradient-to-r from-orange-900/50 to-orange-900/50 rounded-lg border border-orange-500/30">
                     <span className="text-white font-medium">Total XP</span>
-                    <span className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+                    <span className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-400">
                       {(stats?.code_submissions || 0) * 10 +
                         (stats?.learning_sessions || 0) * 5 +
                         (stats?.interviews_taken || 0) * 15 +
@@ -1172,7 +1553,7 @@ const ProfilePage = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2 text-white">
-                      <Trophy className="w-5 h-5 text-yellow-400" />
+                      <Trophy className="w-5 h-5 text-orange-400" />
                       Achievements
                     </CardTitle>
                     <CardDescription className="text-zinc-400">
@@ -1180,7 +1561,7 @@ const ProfilePage = () => {
                       unlocked
                     </CardDescription>
                   </div>
-                  <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+                  <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
                     <Gem className="w-3 h-3 mr-1" />
                     {totalXpEarned} XP Earned
                   </Badge>
@@ -1193,14 +1574,14 @@ const ProfilePage = () => {
                       key={achievement.id}
                       className={`p-4 rounded-xl border transition-all ${
                         achievement.earned
-                          ? "bg-gradient-to-br from-zinc-800 to-zinc-900 border-yellow-500/30 shadow-lg shadow-yellow-500/10"
+                          ? "bg-gradient-to-br from-zinc-800 to-zinc-900 border-orange-500/30 shadow-lg shadow-orange-500/10"
                           : "bg-zinc-900 border-zinc-800 opacity-60"
                       }`}
                     >
                       <div className="flex items-start justify-between mb-3">
                         <span className="text-4xl">{achievement.icon}</span>
                         {achievement.earned && (
-                          <Badge className="bg-yellow-500/20 text-yellow-400 text-xs">
+                          <Badge className="bg-orange-500/20 text-orange-400 text-xs">
                             +{achievement.xp} XP
                           </Badge>
                         )}
@@ -1212,7 +1593,7 @@ const ProfilePage = () => {
                         {achievement.description}
                       </p>
                       {achievement.earned ? (
-                        <div className="flex items-center gap-1 text-green-400 text-sm">
+                        <div className="flex items-center gap-1 text-orange-400 text-sm">
                           <CheckCircle2 className="w-4 h-4" />
                           Unlocked
                         </div>
@@ -1234,7 +1615,7 @@ const ProfilePage = () => {
             <Card className="bg-zinc-900 border-zinc-800">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-green-400" />
+                  <Activity className="w-5 h-5 text-orange-400" />
                   Recent Activity
                 </CardTitle>
               </CardHeader>
@@ -1277,45 +1658,80 @@ const ProfilePage = () => {
               <Card className="bg-zinc-900 border-zinc-800">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
-                    <Bell className="w-5 h-5 text-blue-400" />
+                    <Bell className="w-5 h-5 text-orange-400" />
                     Notifications
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {[
-                    {
-                      label: "Email notifications",
-                      desc: "Receive updates via email",
-                    },
-                    {
-                      label: "Learning reminders",
-                      desc: "Daily learning reminders",
-                    },
-                    {
-                      label: "Achievement alerts",
-                      desc: "Get notified on new achievements",
-                    },
-                  ].map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 bg-zinc-800 rounded-lg"
-                    >
-                      <div>
-                        <p className="text-white font-medium">{item.label}</p>
-                        <p className="text-sm text-zinc-400">{item.desc}</p>
-                      </div>
-                      <div className="w-12 h-6 bg-zinc-700 rounded-full relative cursor-pointer">
-                        <div className="w-5 h-5 bg-white rounded-full absolute top-0.5 left-0.5 transition-transform" />
-                      </div>
+                  <div className="flex items-center justify-between p-3 bg-zinc-800 rounded-lg">
+                    <div>
+                      <p className="text-white font-medium">
+                        Email notifications
+                      </p>
+                      <p className="text-sm text-zinc-400">
+                        Receive updates via email
+                      </p>
                     </div>
-                  ))}
+                    <Switch
+                      checked={linkedNotificationSettings.email}
+                      onCheckedChange={(checked) =>
+                        persistNotificationSetting("email", checked)
+                      }
+                      className="data-[state=checked]:bg-white"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-zinc-800 rounded-lg">
+                    <div>
+                      <p className="text-white font-medium">
+                        Learning reminders
+                      </p>
+                      <p className="text-sm text-zinc-400">
+                        Daily learning reminders
+                      </p>
+                    </div>
+                    <Switch
+                      checked={linkedNotificationSettings.reminders}
+                      onCheckedChange={(checked) =>
+                        persistNotificationSetting("reminders", checked)
+                      }
+                      className="data-[state=checked]:bg-white"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-zinc-800 rounded-lg">
+                    <div>
+                      <p className="text-white font-medium">
+                        Achievement alerts
+                      </p>
+                      <p className="text-sm text-zinc-400">
+                        Get notified on new achievements
+                      </p>
+                    </div>
+                    <Switch
+                      checked={linkedNotificationSettings.achievements}
+                      onCheckedChange={(checked) =>
+                        persistNotificationSetting("achievements", checked)
+                      }
+                      className="data-[state=checked]:bg-white"
+                    />
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start border-zinc-700 text-white hover:bg-zinc-800"
+                    onClick={() => setSettingsRedirectTabAndGo("notifications")}
+                  >
+                    <ChevronRight className="w-4 h-4 mr-2" />
+                    Manage all notification settings
+                  </Button>
                 </CardContent>
               </Card>
 
               <Card className="bg-zinc-900 border-zinc-800">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-green-400" />
+                    <Shield className="w-5 h-5 text-orange-400" />
                     Security
                   </CardTitle>
                 </CardHeader>
@@ -1323,6 +1739,7 @@ const ProfilePage = () => {
                   <Button
                     variant="outline"
                     className="w-full justify-start border-zinc-700 text-white hover:bg-zinc-800"
+                    onClick={() => setSettingsRedirectTabAndGo("security")}
                   >
                     <Lock className="w-4 h-4 mr-2" />
                     Change Password
@@ -1330,13 +1747,14 @@ const ProfilePage = () => {
                   <Button
                     variant="outline"
                     className="w-full justify-start border-zinc-700 text-white hover:bg-zinc-800"
+                    onClick={() => setSettingsRedirectTabAndGo("security")}
                   >
                     <Shield className="w-4 h-4 mr-2" />
                     Two-Factor Authentication
                   </Button>
                   <Button
                     variant="outline"
-                    className="w-full justify-start border-red-500/50 text-red-400 hover:bg-red-500/10"
+                    className="w-full justify-start border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
                     onClick={handleLogout}
                   >
                     <LogOut className="w-4 h-4 mr-2" />
@@ -1346,11 +1764,11 @@ const ProfilePage = () => {
               </Card>
             </div>
 
-            <Card className="bg-gradient-to-r from-red-900/20 via-zinc-900 to-red-900/20 border-red-800/30">
+            <Card className="bg-gradient-to-r from-orange-900/20 via-zinc-900 to-orange-900/20 border-orange-800/30">
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-red-500/20 rounded-xl">
-                    <AlertTriangle className="w-8 h-8 text-red-400" />
+                  <div className="p-3 bg-orange-500/20 rounded-xl">
+                    <AlertTriangle className="w-8 h-8 text-orange-400" />
                   </div>
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-white">
@@ -1362,7 +1780,8 @@ const ProfilePage = () => {
                   </div>
                   <Button
                     variant="outline"
-                    className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                    className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
+                    onClick={() => setSettingsRedirectTabAndGo("data")}
                   >
                     Delete Account
                   </Button>

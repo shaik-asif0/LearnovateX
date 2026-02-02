@@ -2,6 +2,10 @@
 
 A comprehensive full-stack platform that combines **AI tutoring**, **automated code evaluation**, **resume analysis**, **mock interviews**, and **career tracking** - designed for final year projects and college demonstrations.
 
+**Repository**: [shaik-asif0/finalyearProject](https://github.com/shaik-asif0/finalyearProject)
+**Author**: Shaik Asif
+**Project Type**: Final Year College Project
+
 ## ✨ Features
 
 ### For Students & Job Seekers
@@ -50,6 +54,7 @@ The platform is designed to work seamlessly both online and offline:
 - **FastAPI**: High-performance Python web framework
 - **SQLite**: Lightweight database for data storage
 - **Azure OpenAI**: Microsoft's GPT-4 for real-time AI tutoring, code evaluation, and analysis
+- **AWS Bedrock**: Alternative AI provider with Claude models
 - **PyJWT**: Authentication and authorization
 - **Azure SDK**: Cloud integration for AI services
 
@@ -77,8 +82,8 @@ The platform is designed to work seamlessly both online and offline:
 #### 1. Clone the repository
 
 ```bash
-git clone <your-repo-url>
-cd <project-folder>
+git clone https://github.com/shaik-asif0/finalyearProject.git
+cd finalyearProject
 ```
 
 #### 2. Azure OpenAI Setup
@@ -221,11 +226,25 @@ Once the backend is running, visit `http://localhost:8001/docs` for interactive 
 ### Backend (.env)
 
 ```env
-MONGO_URL="mongodb://localhost:27017"
-DB_NAME="test_database"
-CORS_ORIGINS="*"
-GEMINI_API_KEY="AIzaSyAnZyY8TXTprbmtQBWduoZErZ9nHXoVwBE"
-JWT_SECRET="your-secret-key-change-in-production"
+# Database Configuration (SQLite - no additional setup required)
+DATABASE_URL=sqlite:///./learnovatex.db
+
+# AI Configuration
+AI_MODE=demo  # or 'azure' for Azure OpenAI, 'bedrock' for AWS Bedrock
+
+# Azure OpenAI (only needed if AI_MODE=azure)
+AZURE_OPENAI_API_KEY=your_azure_openai_key
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+AZURE_OPENAI_DEPLOYMENT=gpt-4
+
+# AWS Bedrock (only needed if AI_MODE=bedrock)
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
+AWS_BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
+
+# Security
+JWT_SECRET=change-this-to-a-random-string-in-production
 ```
 
 ### Frontend (.env)
@@ -320,11 +339,12 @@ REACT_APP_BACKEND_URL=http://localhost:8001
 
 ## 💡 Key Design Decisions
 
-1. **Gemini AI Integration**: Used Google's Gemini 3 Flash for fast, cost-effective AI responses
-2. **MongoDB**: Flexible schema for diverse data types (users, code, resumes, interviews)
-3. **Monaco Editor**: Professional code editing experience in the browser
-4. **Shadcn/UI**: Beautiful, accessible components without the bloat
-5. **Role-based Access**: Different experiences for students, companies, and colleges
+1. **Azure OpenAI Integration**: Used Microsoft's GPT-4 for real-time AI tutoring, code evaluation, and analysis
+2. **AWS Bedrock Alternative**: Added support for Claude models as a cost-effective alternative
+3. **SQLite Database**: Chose lightweight SQLite for easy deployment and no external dependencies
+4. **Monaco Editor**: Professional code editing experience in the browser
+5. **Shadcn/UI**: Beautiful, accessible components without the bloat
+6. **Role-based Access**: Different experiences for students, companies, and colleges
 
 ## 🚀 Future Enhancements
 
@@ -447,12 +467,9 @@ MIT License - Feel free to use this for your final year project or startup!
 
 ## 👨‍💻 Author
 
-Built with ❤️ using:
-
-- FastAPI
-- React
-- MongoDB
-- Gemini AI
+**Shaik Asif**  
+Final Year College Project  
+Built with ❤️ using FastAPI, React, SQLite, and Azure OpenAI
 
 ---
 
