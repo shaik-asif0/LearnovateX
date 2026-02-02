@@ -5,9 +5,27 @@ export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-export const API = `${
-  process.env.REACT_APP_API_BASE_URL || "http://localhost:8000"
-}/api`;
+const getApiBaseUrl = () => {
+  const envBaseUrl =
+    process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+  const trimmed = envBaseUrl.replace(/\/+$/, "");
+
+  // If the app is served over HTTPS, browsers will block HTTP API calls (mixed content).
+  // Auto-upgrade to HTTPS for non-localhost URLs as a safety net.
+  if (
+    typeof window !== "undefined" &&
+    window.location?.protocol === "https:" &&
+    trimmed.startsWith("http://") &&
+    !trimmed.includes("localhost") &&
+    !trimmed.includes("127.0.0.1")
+  ) {
+    return `https://${trimmed.slice("http://".length)}`;
+  }
+
+  return trimmed;
+};
+
+export const API = `${getApiBaseUrl()}/api`;
 
 // Enhanced storage functions for mobile compatibility
 const isMobile = () => {

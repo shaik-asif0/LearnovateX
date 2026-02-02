@@ -3,7 +3,7 @@ from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
-from starlette.middleware.cors import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 import os
 import logging
 from pathlib import Path
@@ -42,15 +42,25 @@ class AchievementCategory(BaseModel):
 # Create the main app without a prefix
 app = FastAPI()
 
-from fastapi.middleware.cors import CORSMiddleware
+default_cors_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://purple-river-029d38c00.2.azurestaticapps.net",
+]
+
+cors_origins_env = os.environ.get("CORS_ORIGINS")
+if cors_origins_env:
+    cors_origins = [o.strip() for o in cors_origins_env.split(",") if o.strip()]
+else:
+    cors_origins = default_cors_origins
+
+# Allow preview environments on Azure Static Web Apps unless overridden.
+cors_origin_regex = os.environ.get("CORS_ORIGIN_REGEX", r"https://.*\.azurestaticapps\.net")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://purple-river-029d38c00.2.azurestaticapps.net"
-        # "http://localhost:3000",
-        # "http://127.0.0.1:3000"
-    ],
+    allow_origins=cors_origins,
+    allow_origin_regex=cors_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
