@@ -84,9 +84,12 @@ logger = logging.getLogger(__name__)
 # ==================== ROUTES ====================
 
 ROOT_DIR = Path(__file__).parent
-# Load local env file. `override=True` ensures values in `.env` win over any
-# pre-existing OS environment variables (common on Windows).
-load_dotenv(ROOT_DIR / '.env', override=True)
+# Load local env file.
+# IMPORTANT: Do NOT override cloud/App Service environment variables by default.
+# If you really need `.env` to override pre-existing OS vars (local-only), set:
+#   DOTENV_OVERRIDE=true
+dotenv_override = os.environ.get("DOTENV_OVERRIDE", "false").lower() == "true"
+load_dotenv(ROOT_DIR / ".env", override=dotenv_override)
 
 # Database Configuration
 DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///./learnovatex.db')
