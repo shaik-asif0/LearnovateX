@@ -19,6 +19,7 @@ pydantic-core
 
 # PDF
 PyPDF2
+reportlab==4.4.4
 
 # Async & HTTP
 anyio
