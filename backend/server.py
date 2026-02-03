@@ -24,6 +24,7 @@ import secrets
 import smtplib
 from email.message import EmailMessage
 import hashlib
+import re
 
 # Azure OpenAI SDK
 from openai import AzureOpenAI
