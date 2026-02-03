@@ -42,9 +42,11 @@ import {
   Goal,
   CalendarDays,
   PieChart,
+  CircleDot,
 } from "lucide-react";
 import axiosInstance from "../lib/axios";
 import { toast } from "sonner";
+import { getUser } from "../lib/utils";
 
 // ------------------------------
 // Demo / viva-friendly mock data
@@ -71,9 +73,19 @@ const MOCK_TWIN_SNAPSHOT = {
 
 const CareerReadinessPage = () => {
   const navigate = useNavigate();
+  const user = getUser();
+  const userKey =
+    user?.id || user?._id || user?.email
+      ? String(user.id || user._id || user.email)
+      : "anonymous";
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [crsBreakdown, setCrsBreakdown] = useState(null);
+  const [mentorData, setMentorData] = useState(null);
+  const [applyTrackerItems, setApplyTrackerItems] = useState([]);
+  const [applyTrackerLoading, setApplyTrackerLoading] = useState(false);
+  const [applyTrackerError, setApplyTrackerError] = useState(null);
+  const [applyTrackerBusyId, setApplyTrackerBusyId] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showAdvancedMetrics, setShowAdvancedMetrics] = useState(false);
@@ -87,42 +99,209 @@ const CareerReadinessPage = () => {
   const [showMarketModal, setShowMarketModal] = useState(false);
   const [showTwinInfoModal, setShowTwinInfoModal] = useState(false);
 
-  const advancedMetrics = [
-    {
-      title: "Learning Streak",
-      value: `${streakData.current} days`,
-      description: "Current consecutive learning days",
-      icon: Flame,
-      color: "text-accent",
-      trend: streakData.current > 0 ? "up" : "stable",
+  const formatDuration = useCallback((seconds) => {
+    if (typeof seconds !== "number" || Number.isNaN(seconds) || seconds < 0)
+      return "—";
+
+    const totalSeconds = Math.floor(seconds);
+    const totalMinutes = Math.floor(totalSeconds / 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours <= 0) return `${totalMinutes}m`;
+    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+  }, []);
+
+  const activityTracking =
+    mentorData?.tracking?.activity || mentorData?.tracking?.learning || null;
+  const lastActivityAtForUi =
+    activityTracking?.last_activity_at || stats?.last_activity_at || null;
+
+  const pageAnalytics7 = useMemo(() => {
+    const pages = activityTracking?.pages_7d;
+    return Array.isArray(pages) ? pages : [];
+  }, [activityTracking]);
+
+  const pageAnalytics30 = useMemo(() => {
+    const pages = activityTracking?.pages_30d;
+    return Array.isArray(pages) ? pages : [];
+  }, [activityTracking]);
+
+  const codingTracking = mentorData?.tracking?.coding || null;
+  const difficultyMix = codingTracking?.easy_medium_hard || null;
+  const topicPerf = Array.isArray(codingTracking?.topic_wise_performance)
+    ? codingTracking.topic_wise_performance
+    : [];
+  const weakTopics = Array.isArray(codingTracking?.weak_topics)
+    ? codingTracking.weak_topics
+    : [];
+  const avgSolveTimeSeconds =
+    typeof codingTracking?.average_solve_time_seconds === "number"
+      ? codingTracking.average_solve_time_seconds
+      : null;
+
+  const weekStartKey = useMemo(() => {
+    const now = new Date();
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const day = d.getDay(); // 0=Sun
+    const diffToMonday = (day + 6) % 7;
+    d.setDate(d.getDate() - diffToMonday);
+    return d.toISOString().slice(0, 10);
+  }, []);
+
+  const weeklyPlan = useMemo(() => {
+    const plan = mentorData?.action_plan?.weekly;
+    return Array.isArray(plan) ? plan : [];
+  }, [mentorData]);
+
+  const weeklyChecklistStorageKey = useMemo(() => {
+    return `careerReadiness.weeklyPlan.${userKey}.${weekStartKey}`;
+  }, [userKey, weekStartKey]);
+
+  const [weeklyDoneMap, setWeeklyDoneMap] = useState({});
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(weeklyChecklistStorageKey);
+      if (!raw) {
+        setWeeklyDoneMap({});
+        return;
+      }
+      const parsed = JSON.parse(raw);
+      setWeeklyDoneMap(parsed && typeof parsed === "object" ? parsed : {});
+    } catch {
+      setWeeklyDoneMap({});
+    }
+  }, [weeklyChecklistStorageKey]);
+
+  const weeklyItemsWithIds = useMemo(() => {
+    return weeklyPlan.map((item, idx) => {
+      const day = item?.day || "";
+      const task = item?.task || "";
+      const minutes = item?.minutes;
+      const priority = item?.priority;
+      const id = `${day}:${task}:${idx}`;
+
+      const taskText = String(task || "").toLowerCase();
+      let ctaPath = null;
+      let ctaLabel = null;
+      if (taskText.includes("resume")) {
+        ctaPath = "/resume";
+        ctaLabel = "Resume";
+      } else if (
+        taskText.includes("mock interview") ||
+        taskText.includes("interview")
+      ) {
+        ctaPath = "/interview";
+        ctaLabel = "Interview";
+      } else if (
+        taskText.includes("solve") ||
+        taskText.includes("dsa") ||
+        taskText.includes("sql")
+      ) {
+        ctaPath = "/coding";
+        ctaLabel = "Coding";
+      } else if (taskText.includes("apply")) {
+        ctaPath = "/resources";
+        ctaLabel = "Jobs";
+      }
+
+      return { id, day, task, minutes, priority, ctaPath, ctaLabel };
+    });
+  }, [weeklyPlan]);
+
+  const weeklyCompletedCount = useMemo(() => {
+    return weeklyItemsWithIds.reduce(
+      (acc, item) => acc + (weeklyDoneMap?.[item.id] ? 1 : 0),
+      0
+    );
+  }, [weeklyDoneMap, weeklyItemsWithIds]);
+
+  const weeklyProgressPct = useMemo(() => {
+    if (!weeklyItemsWithIds.length) return 0;
+    return Math.round((weeklyCompletedCount / weeklyItemsWithIds.length) * 100);
+  }, [weeklyCompletedCount, weeklyItemsWithIds.length]);
+
+  const toggleWeeklyDone = useCallback(
+    (id) => {
+      setWeeklyDoneMap((prev) => {
+        const next = { ...(prev || {}) };
+        next[id] = !next[id];
+        try {
+          localStorage.setItem(weeklyChecklistStorageKey, JSON.stringify(next));
+        } catch {
+          // ignore
+        }
+        return next;
+      });
     },
-    {
-      title: "Learning Consistency",
-      value: `${Math.round(stats?.learning_consistency_score || 0)}%`,
-      description: "Consistency score (last 30 days)",
-      icon: TrendingUp,
-      color: "text-accent",
-      trend: (stats?.learning_consistency_score || 0) > 0 ? "up" : "stable",
-    },
-    {
-      title: "Active Days (30d)",
-      value: `${stats?.active_days_30 || 0} days`,
-      description: "Days with at least one session",
-      icon: CalendarDays,
-      color: "text-accent",
-      trend: (stats?.active_days_30 || 0) > 0 ? "up" : "stable",
-    },
-    {
-      title: "Last Activity",
-      value: stats?.last_activity_at
-        ? new Date(stats.last_activity_at).toLocaleDateString()
-        : "—",
-      description: "Most recent learning session",
-      icon: Clock,
-      color: "text-accent",
-      trend: stats?.last_activity_at ? "up" : "stable",
-    },
-  ];
+    [weeklyChecklistStorageKey]
+  );
+
+  const advancedMetrics = useMemo(() => {
+    const timeSpent7 = activityTracking?.time_spent_seconds_7;
+    const timeSpent30 = activityTracking?.time_spent_seconds_30;
+
+    return [
+      {
+        title: "Learning Streak",
+        value: `${streakData.current} days`,
+        description: "Current consecutive learning days",
+        icon: Flame,
+        color: "text-accent",
+        trend: streakData.current > 0 ? "up" : "stable",
+      },
+      {
+        title: "Learning Consistency",
+        value: `${Math.round(stats?.learning_consistency_score || 0)}%`,
+        description: "Consistency score (last 30 days)",
+        icon: TrendingUp,
+        color: "text-accent",
+        trend: (stats?.learning_consistency_score || 0) > 0 ? "up" : "stable",
+      },
+      {
+        title: "Time Spent (7d)",
+        value: formatDuration(timeSpent7),
+        description: "Estimated time spent across the app",
+        icon: Clock,
+        color: "text-accent",
+        trend:
+          typeof timeSpent7 === "number" && timeSpent7 > 0 ? "up" : "stable",
+      },
+      {
+        title: "Time Spent (30d)",
+        value: formatDuration(timeSpent30),
+        description: "Engagement over the last 30 days",
+        icon: Activity,
+        color: "text-accent",
+        trend:
+          typeof timeSpent30 === "number" && timeSpent30 > 0 ? "up" : "stable",
+      },
+      {
+        title: "Active Days (30d)",
+        value: `${stats?.active_days_30 || 0} days`,
+        description: "Days with at least one session",
+        icon: CalendarDays,
+        color: "text-accent",
+        trend: (stats?.active_days_30 || 0) > 0 ? "up" : "stable",
+      },
+      {
+        title: "Last Activity",
+        value: lastActivityAtForUi
+          ? new Date(lastActivityAtForUi).toLocaleDateString()
+          : "—",
+        description: "Most recent activity recorded",
+        icon: Clock,
+        color: "text-accent",
+        trend: lastActivityAtForUi ? "up" : "stable",
+      },
+    ];
+  }, [
+    activityTracking,
+    formatDuration,
+    lastActivityAtForUi,
+    stats,
+    streakData.current,
+  ]);
 
   const careerInsights = [
     {
@@ -289,16 +468,144 @@ const CareerReadinessPage = () => {
     }
   }, []);
 
+  const fetchMentorData = useCallback(async () => {
+    try {
+      const response = await axiosInstance.get("/career/readiness");
+      setMentorData(response.data);
+    } catch {
+      // Keep page functional if backend endpoint is unavailable.
+      setMentorData(null);
+    }
+  }, []);
+
+  const fetchApplyTracker = useCallback(async (silent = false) => {
+    if (!silent) setApplyTrackerLoading(true);
+    setApplyTrackerError(null);
+
+    try {
+      const response = await axiosInstance.get("/career/apply-tracker");
+      setApplyTrackerItems(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      setApplyTrackerItems([]);
+      if (!silent) {
+        setApplyTrackerError(
+          error?.response?.data?.detail ||
+            error?.message ||
+            "Failed to load apply tracker"
+        );
+      }
+    } finally {
+      if (!silent) setApplyTrackerLoading(false);
+    }
+  }, []);
+
+  const trackJobToApplyTracker = useCallback(
+    async ({ role, source, url, matchTag }) => {
+      if (!role || !source || !url) {
+        toast.error("Missing job info to track");
+        return;
+      }
+
+      setApplyTrackerBusyId("new");
+      try {
+        await axiosInstance.post("/career/apply-tracker", {
+          role,
+          source,
+          url,
+          match_tag: matchTag || null,
+          status: "planned",
+        });
+        await fetchApplyTracker(true);
+        toast.success("Saved to Apply Tracker");
+      } catch (error) {
+        toast.error(
+          error?.response?.data?.detail ||
+            error?.message ||
+            "Failed to save job"
+        );
+      } finally {
+        setApplyTrackerBusyId(null);
+      }
+    },
+    [fetchApplyTracker]
+  );
+
+  const updateApplyTrackerStatus = useCallback(
+    async (itemId, status) => {
+      if (!itemId || !status) return;
+      setApplyTrackerBusyId(itemId);
+      try {
+        await axiosInstance.patch(`/career/apply-tracker/${itemId}`, {
+          status,
+        });
+        await fetchApplyTracker(true);
+        toast.success("Status updated");
+      } catch (error) {
+        toast.error(
+          error?.response?.data?.detail ||
+            error?.message ||
+            "Failed to update status"
+        );
+      } finally {
+        setApplyTrackerBusyId(null);
+      }
+    },
+    [fetchApplyTracker]
+  );
+
+  const deleteApplyTrackerItem = useCallback(
+    async (itemId) => {
+      if (!itemId) return;
+      setApplyTrackerBusyId(itemId);
+      try {
+        await axiosInstance.delete(`/career/apply-tracker/${itemId}`);
+        await fetchApplyTracker(true);
+        toast.success("Removed from Apply Tracker");
+      } catch (error) {
+        toast.error(
+          error?.response?.data?.detail ||
+            error?.message ||
+            "Failed to delete item"
+        );
+      } finally {
+        setApplyTrackerBusyId(null);
+      }
+    },
+    [fetchApplyTracker]
+  );
+
   useEffect(() => {
     fetchStats();
+    fetchMentorData();
+    fetchApplyTracker();
 
     // Set up real-time updates every 30 seconds
     const interval = setInterval(() => {
       fetchStats(true);
+      fetchMentorData();
+      fetchApplyTracker(true);
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [fetchStats]);
+  }, [fetchStats, fetchMentorData, fetchApplyTracker]);
+
+  const topRoles = useMemo(() => {
+    const roles = mentorData?.role_eligibility;
+    if (!Array.isArray(roles)) return [];
+    return roles.slice(0, 6);
+  }, [mentorData]);
+
+  const jobLinks = useMemo(() => {
+    const jobs = mentorData?.job_recommendations;
+    if (!Array.isArray(jobs)) return [];
+    return jobs.slice(0, 9);
+  }, [mentorData]);
+
+  const jobSuggestions = useMemo(() => {
+    const items = mentorData?.job_suggestions;
+    if (!Array.isArray(items)) return [];
+    return items.slice(0, 3);
+  }, [mentorData]);
 
   const getCrsLevel = (score) => {
     if (score >= 90)
@@ -502,6 +809,19 @@ const CareerReadinessPage = () => {
       return twin.bestAction;
     }
   }, [twin.bestAction]);
+
+  const todayBestAction = useMemo(() => {
+    const serverAction = mentorData?.action_plan?.today;
+    if (!serverAction) return bestActionForToday;
+
+    return {
+      title: "🎯 AI Career Mentor – Today’s Best Action",
+      task: serverAction.task,
+      moduleHint: `Priority: ${serverAction.priority} • Est: ${serverAction.estimated_time_minutes} mins`,
+      ctaLabel: serverAction.cta_label || "Start",
+      ctaPath: serverAction.cta_path || "/coding",
+    };
+  }, [mentorData, bestActionForToday]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white">
@@ -1023,6 +1343,198 @@ const CareerReadinessPage = () => {
                 ))}
               </div>
 
+              {/* Per-page + Coding analytics */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <Card className="bg-zinc-900 border-zinc-800">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="w-5 h-5" />
+                      Per-Page Analytics
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-xs text-zinc-500 mb-3">
+                      Most visited pages and time spent (from live tracking).
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-zinc-800/50 rounded-lg border border-zinc-700 p-4">
+                        <div className="text-sm font-semibold text-white mb-2">
+                          Last 7 days
+                        </div>
+                        {pageAnalytics7.length ? (
+                          <div className="space-y-2">
+                            {pageAnalytics7.slice(0, 5).map((p) => (
+                              <div
+                                key={`p7-${p.path}`}
+                                className="flex items-center justify-between gap-3"
+                              >
+                                <div className="text-sm text-zinc-300 line-clamp-1">
+                                  {p.path}
+                                </div>
+                                <div className="text-xs text-zinc-400 flex items-center gap-3 flex-shrink-0">
+                                  <span>{Number(p.views || 0)} views</span>
+                                  <span>
+                                    {formatDuration(
+                                      Number(p.time_spent_seconds || 0)
+                                    )}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-zinc-400">
+                            No page analytics yet.
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="bg-zinc-800/50 rounded-lg border border-zinc-700 p-4">
+                        <div className="text-sm font-semibold text-white mb-2">
+                          Last 30 days
+                        </div>
+                        {pageAnalytics30.length ? (
+                          <div className="space-y-2">
+                            {pageAnalytics30.slice(0, 5).map((p) => (
+                              <div
+                                key={`p30-${p.path}`}
+                                className="flex items-center justify-between gap-3"
+                              >
+                                <div className="text-sm text-zinc-300 line-clamp-1">
+                                  {p.path}
+                                </div>
+                                <div className="text-xs text-zinc-400 flex items-center gap-3 flex-shrink-0">
+                                  <span>{Number(p.views || 0)} views</span>
+                                  <span>
+                                    {formatDuration(
+                                      Number(p.time_spent_seconds || 0)
+                                    )}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-zinc-400">
+                            No page analytics yet.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-zinc-900 border-zinc-800">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Code className="w-5 h-5" />
+                      Coding Analytics
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-zinc-800/50 rounded-lg border border-zinc-700 p-4">
+                        <div className="text-sm font-semibold text-white mb-2">
+                          Difficulty Mix
+                        </div>
+                        {difficultyMix ? (
+                          <div className="space-y-2 text-sm text-zinc-300">
+                            <div className="flex items-center justify-between">
+                              <span className="text-zinc-400">Easy</span>
+                              <span>{Number(difficultyMix.easy || 0)}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-zinc-400">Medium</span>
+                              <span>{Number(difficultyMix.medium || 0)}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-zinc-400">Hard</span>
+                              <span>{Number(difficultyMix.hard || 0)}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-zinc-400">Unknown</span>
+                              <span>{Number(difficultyMix.unknown || 0)}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-sm text-zinc-400">
+                            Complete a few evaluations to unlock this.
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="bg-zinc-800/50 rounded-lg border border-zinc-700 p-4">
+                        <div className="text-sm font-semibold text-white mb-2">
+                          Avg Solve Time
+                        </div>
+                        <div className="text-2xl font-bold text-accent">
+                          {avgSolveTimeSeconds !== null
+                            ? formatDuration(avgSolveTimeSeconds)
+                            : "—"}
+                        </div>
+                        <div className="text-xs text-zinc-500">
+                          Based on tracked submissions (timer).
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 bg-zinc-800/50 rounded-lg border border-zinc-700 p-4">
+                      <div className="flex items-center justify-between gap-3 mb-2">
+                        <div className="text-sm font-semibold text-white">
+                          Weak Topics
+                        </div>
+                        <div className="text-xs text-zinc-500">
+                          Lowest average scores
+                        </div>
+                      </div>
+                      {weakTopics.length ? (
+                        <div className="flex flex-wrap gap-2">
+                          {weakTopics.slice(0, 6).map((t) => (
+                            <Badge
+                              key={t}
+                              className="bg-zinc-800 border-zinc-600 text-zinc-200"
+                            >
+                              {t}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-zinc-400">
+                          Not enough topic data yet.
+                        </div>
+                      )}
+                    </div>
+
+                    {topicPerf.length > 0 && (
+                      <div className="mt-4 bg-zinc-800/50 rounded-lg border border-zinc-700 p-4">
+                        <div className="text-sm font-semibold text-white mb-2">
+                          Topic Performance
+                        </div>
+                        <div className="space-y-2">
+                          {topicPerf.slice(0, 6).map((row) => (
+                            <div
+                              key={row.topic}
+                              className="flex items-center justify-between gap-3"
+                            >
+                              <div className="text-sm text-zinc-300 line-clamp-1">
+                                {row.topic}
+                              </div>
+                              <div className="text-xs text-zinc-400 flex items-center gap-3 flex-shrink-0">
+                                <span>{Number(row.count || 0)}x</span>
+                                <span>
+                                  {Number(row.avg_score || 0).toFixed(1)}%
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
               {showAdvancedMetrics && (
                 <Card className="bg-zinc-900 border-zinc-800">
                   <CardHeader>
@@ -1219,12 +1731,453 @@ const CareerReadinessPage = () => {
               </div>
             </div>
 
+            {/* Role Eligibility + Job Recommendations */}
+            {(topRoles.length > 0 ||
+              jobSuggestions.length > 0 ||
+              jobLinks.length > 0) && (
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                  <Briefcase className="w-6 h-6" />
+                  Role Eligibility & Job Matches
+                </h2>
+
+                {jobSuggestions.length > 0 && (
+                  <Card className="bg-zinc-900 border-zinc-800 mb-6">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Rocket className="w-5 h-5" />
+                        Tracking-Based Job Suggestions
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      <div className="text-sm text-zinc-400 mb-4">
+                        These roles are suggested using your activity, weak
+                        topics, and readiness signals.
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {jobSuggestions.map((sug) => (
+                          <div
+                            key={sug.role}
+                            className="p-4 bg-zinc-800 rounded-lg border border-zinc-700"
+                          >
+                            <div className="flex items-center justify-between gap-3 mb-2">
+                              <div className="text-sm font-semibold text-white line-clamp-1">
+                                {sug.role}
+                              </div>
+                              <Badge className="bg-zinc-800 border-zinc-600 text-white">
+                                {Number(
+                                  sug.eligibility_percentage || 0
+                                ).toFixed(0)}
+                                %
+                              </Badge>
+                            </div>
+
+                            <div className="text-xs text-zinc-400 mb-3">
+                              {sug.rationale}
+                            </div>
+
+                            {Array.isArray(sug.missing_skills) &&
+                              sug.missing_skills.length > 0 && (
+                                <div className="mb-3">
+                                  <div className="text-xs text-zinc-500 mb-1">
+                                    Missing skills
+                                  </div>
+                                  <div className="flex flex-wrap gap-2">
+                                    {sug.missing_skills
+                                      .slice(0, 6)
+                                      .map((sk) => (
+                                        <Badge
+                                          key={sk}
+                                          className="bg-zinc-900 border-zinc-700 text-zinc-300"
+                                        >
+                                          {sk}
+                                        </Badge>
+                                      ))}
+                                  </div>
+                                </div>
+                              )}
+
+                            {Array.isArray(sug.apply_links) &&
+                            sug.apply_links.length > 0 ? (
+                              <div className="grid grid-cols-1 gap-2">
+                                {sug.apply_links.slice(0, 3).map((lnk) => (
+                                  <div
+                                    key={`${sug.role}-${lnk.source}`}
+                                    className="grid grid-cols-2 gap-2"
+                                  >
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="w-full border-zinc-600 text-zinc-300 hover:bg-zinc-900"
+                                      onClick={() =>
+                                        window.open(
+                                          lnk.url,
+                                          "_blank",
+                                          "noopener,noreferrer"
+                                        )
+                                      }
+                                    >
+                                      Apply on {lnk.source}
+                                      <ChevronRight className="w-4 h-4 ml-1" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="w-full border-zinc-600 text-zinc-300 hover:bg-zinc-900"
+                                      disabled={applyTrackerBusyId === "new"}
+                                      onClick={() =>
+                                        trackJobToApplyTracker({
+                                          role: sug.role,
+                                          source: lnk.source,
+                                          url: lnk.url,
+                                          matchTag: "Tracking suggestion",
+                                        })
+                                      }
+                                    >
+                                      Track
+                                      <ChevronRight className="w-4 h-4 ml-1" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-sm text-zinc-400">
+                                Apply links will appear here.
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2 space-y-4">
+                    {topRoles.map((role) => {
+                      const pct = Number(role.eligibility_percentage || 0);
+                      const tag =
+                        pct >= 80
+                          ? "Highly Matched"
+                          : pct >= 60
+                          ? "Medium Match"
+                          : "Stretch Role";
+                      return (
+                        <Card
+                          key={role.role}
+                          className="bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition-colors"
+                        >
+                          <CardContent className="p-6">
+                            <div className="flex items-start justify-between gap-4">
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <div className="text-lg font-semibold text-white">
+                                    {role.role}
+                                  </div>
+                                  <Badge className="bg-accent-20 border border-accent text-accent">
+                                    {tag}
+                                  </Badge>
+                                </div>
+                                <div className="text-sm text-zinc-400">
+                                  Resume match:{" "}
+                                  {Number(role.resume_match_score || 0).toFixed(
+                                    1
+                                  )}
+                                  % • Interview readiness:{" "}
+                                  {Number(
+                                    role.interview_readiness_score || 0
+                                  ).toFixed(1)}
+                                  %
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-2xl font-bold text-accent">
+                                  {pct.toFixed(1)}%
+                                </div>
+                                <div className="text-xs text-zinc-500">
+                                  Eligibility
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="mt-4">
+                              <Progress
+                                value={Math.min(100, Math.max(0, pct))}
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                              <div>
+                                <div className="text-sm font-semibold text-white mb-2">
+                                  Missing skills
+                                </div>
+                                {Array.isArray(role.missing_skills) &&
+                                role.missing_skills.length ? (
+                                  <div className="flex flex-wrap gap-2">
+                                    {role.missing_skills
+                                      .slice(0, 6)
+                                      .map((s) => (
+                                        <Badge
+                                          key={s}
+                                          className="bg-zinc-800 border border-zinc-700 text-zinc-200"
+                                        >
+                                          {s}
+                                        </Badge>
+                                      ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-sm text-zinc-400">
+                                    No major gaps detected.
+                                  </div>
+                                )}
+                              </div>
+                              <div>
+                                <div className="text-sm font-semibold text-white mb-2">
+                                  Next actions
+                                </div>
+                                <div className="space-y-2">
+                                  {(role.required_improvement_actions || [])
+                                    .slice(0, 3)
+                                    .map((a, idx) => (
+                                      <div
+                                        key={idx}
+                                        className="text-sm text-zinc-300 flex items-start gap-2"
+                                      >
+                                        <CheckCircle className="w-4 h-4 text-accent mt-0.5" />
+                                        <span>{a}</span>
+                                      </div>
+                                    ))}
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+
+                  <div className="space-y-6">
+                    <Card className="bg-zinc-900 border-zinc-800">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Briefcase className="w-5 h-5" />
+                          My Apply Tracker
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {applyTrackerError ? (
+                          <div className="text-sm text-zinc-400">
+                            {applyTrackerError}
+                          </div>
+                        ) : applyTrackerLoading ? (
+                          <div className="text-sm text-zinc-400">
+                            Loading apply tracker…
+                          </div>
+                        ) : Array.isArray(applyTrackerItems) &&
+                          applyTrackerItems.length > 0 ? (
+                          <div className="space-y-3">
+                            {applyTrackerItems.slice(0, 12).map((item) => (
+                              <div
+                                key={item.id}
+                                className="p-3 bg-zinc-800 rounded-lg border border-zinc-700"
+                              >
+                                <div className="flex items-center justify-between gap-3 mb-2">
+                                  <div className="min-w-0">
+                                    <div className="text-sm font-semibold text-white line-clamp-1">
+                                      {item.role}
+                                    </div>
+                                    <div className="text-xs text-zinc-400 line-clamp-1">
+                                      {item.source}
+                                    </div>
+                                  </div>
+                                  {item.match_tag ? (
+                                    <Badge className="bg-zinc-800 border-zinc-600 text-white">
+                                      {item.match_tag}
+                                    </Badge>
+                                  ) : null}
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-2">
+                                  <select
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200"
+                                    value={item.status || "planned"}
+                                    disabled={applyTrackerBusyId === item.id}
+                                    onChange={(e) =>
+                                      updateApplyTrackerStatus(
+                                        item.id,
+                                        e.target.value
+                                      )
+                                    }
+                                  >
+                                    <option value="planned">Planned</option>
+                                    <option value="applied">Applied</option>
+                                    <option value="interview">Interview</option>
+                                    <option value="offer">Offer</option>
+                                    <option value="rejected">Rejected</option>
+                                  </select>
+
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="w-full border-zinc-600 text-zinc-300 hover:bg-zinc-900"
+                                      onClick={() =>
+                                        window.open(
+                                          item.url,
+                                          "_blank",
+                                          "noopener,noreferrer"
+                                        )
+                                      }
+                                    >
+                                      Open
+                                      <ChevronRight className="w-4 h-4 ml-1" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="w-full border-zinc-600 text-zinc-300 hover:bg-zinc-900"
+                                      disabled={applyTrackerBusyId === item.id}
+                                      onClick={() =>
+                                        deleteApplyTrackerItem(item.id)
+                                      }
+                                    >
+                                      Delete
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-zinc-400">
+                            Track jobs from suggestions/recommendations to build
+                            your pipeline.
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card className="bg-zinc-900 border-zinc-800">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Rocket className="w-5 h-5" />
+                          Job Recommendations
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {jobLinks.length ? (
+                          <div className="space-y-3">
+                            {jobLinks.map((job, idx) => (
+                              <div
+                                key={`${job.role}-${job.source}-${idx}`}
+                                className="p-3 bg-zinc-800 rounded-lg border border-zinc-700"
+                              >
+                                <div className="flex items-center justify-between gap-3 mb-1">
+                                  <div className="text-sm font-semibold text-white line-clamp-1">
+                                    {job.role}
+                                  </div>
+                                  <Badge className="bg-accent-20 border border-accent text-accent">
+                                    {job.match_tag}
+                                  </Badge>
+                                </div>
+                                <div className="text-xs text-zinc-400 mb-2">
+                                  {job.source}
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="w-full border-zinc-600 text-zinc-300 hover:bg-zinc-900"
+                                    onClick={() =>
+                                      window.open(
+                                        job.url,
+                                        "_blank",
+                                        "noopener,noreferrer"
+                                      )
+                                    }
+                                  >
+                                    Apply
+                                    <ChevronRight className="w-4 h-4 ml-1" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="w-full border-zinc-600 text-zinc-300 hover:bg-zinc-900"
+                                    disabled={applyTrackerBusyId === "new"}
+                                    onClick={() =>
+                                      trackJobToApplyTracker({
+                                        role: job.role,
+                                        source: job.source,
+                                        url: job.url,
+                                        matchTag: job.match_tag,
+                                      })
+                                    }
+                                  >
+                                    Track
+                                    <ChevronRight className="w-4 h-4 ml-1" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-zinc-400">
+                            Job links appear after we compute eligible roles.
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Timeline & History */}
+            {Array.isArray(mentorData?.history) &&
+              mentorData.history.length > 0 && (
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                    <CalendarDays className="w-6 h-6" />
+                    Timeline & History
+                  </h2>
+                  <Card className="bg-zinc-900 border-zinc-800">
+                    <CardContent className="p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {mentorData.history.slice(-8).map((h) => (
+                          <div
+                            key={h.date}
+                            className="p-3 bg-zinc-800 rounded-lg border border-zinc-700"
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="text-sm text-zinc-400">
+                                {h.date}
+                              </div>
+                              <div className="text-sm font-semibold text-white">
+                                {Number(h.readiness_score || 0).toFixed(1)}%
+                              </div>
+                            </div>
+                            <Progress
+                              value={Math.min(
+                                100,
+                                Math.max(0, Number(h.readiness_score || 0))
+                              )}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
             {/* UPGRADE: Single daily recommendation */}
             <Card className="bg-zinc-900 border-zinc-800">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Target className="w-5 h-5" />
-                  {bestActionForToday.title}
+                  {todayBestAction.title}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1251,26 +2204,125 @@ const CareerReadinessPage = () => {
                       Today’s Best Action
                     </h4>
                     <p className="text-sm text-zinc-300 mb-1">
-                      {bestActionForToday.task}
+                      {todayBestAction.task}
                     </p>
                     <p className="text-xs text-zinc-400 mb-3">
-                      {bestActionForToday.moduleHint}
+                      {todayBestAction.moduleHint}
                     </p>
                     <div className="text-xs text-zinc-500 mb-3">
                       Locked for today (updates again tomorrow).
                     </div>
                     <Button
                       size="sm"
-                      onClick={() => navigate(bestActionForToday.ctaPath)}
+                      onClick={() => navigate(todayBestAction.ctaPath)}
                       className="bg-accent hover:bg-accent"
                     >
-                      {bestActionForToday.ctaLabel}
+                      {todayBestAction.ctaLabel}
                       <ChevronRight className="w-4 h-4 ml-1" />
                     </Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
+
+            {/* Weekly plan checklist + completion tracking */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <CalendarDays className="w-6 h-6" />
+                Weekly Plan Checklist
+              </h2>
+              <Card className="bg-zinc-900 border-zinc-800">
+                <CardContent className="p-6">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                    <div>
+                      <div className="text-sm text-zinc-400">Week starting</div>
+                      <div className="text-white font-semibold">
+                        {weekStartKey}
+                      </div>
+                    </div>
+                    <div className="w-full md:w-64">
+                      <div className="flex items-center justify-between text-xs text-zinc-400 mb-2">
+                        <span>
+                          {weeklyCompletedCount}/{weeklyItemsWithIds.length}{" "}
+                          completed
+                        </span>
+                        <span>{weeklyProgressPct}%</span>
+                      </div>
+                      <Progress value={weeklyProgressPct} className="h-2" />
+                    </div>
+                  </div>
+
+                  {weeklyItemsWithIds.length ? (
+                    <div className="space-y-3">
+                      {weeklyItemsWithIds.map((item) => {
+                        const done = !!weeklyDoneMap?.[item.id];
+                        return (
+                          <div
+                            key={item.id}
+                            className={`p-4 rounded-lg border bg-zinc-800/50 ${
+                              done ? "border-accent" : "border-zinc-700"
+                            }`}
+                          >
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                              <button
+                                type="button"
+                                onClick={() => toggleWeeklyDone(item.id)}
+                                className="flex items-start gap-3 text-left"
+                              >
+                                {done ? (
+                                  <CheckCircle className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
+                                ) : (
+                                  <CircleDot className="w-5 h-5 text-zinc-400 mt-0.5 flex-shrink-0" />
+                                )}
+                                <div>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <div className="text-sm font-semibold text-white">
+                                      {item.day}
+                                    </div>
+                                    {item.priority && (
+                                      <Badge className="bg-zinc-800 border-zinc-600 text-zinc-200">
+                                        {item.priority}
+                                      </Badge>
+                                    )}
+                                    {typeof item.minutes === "number" && (
+                                      <span className="text-xs text-zinc-500">
+                                        {item.minutes}m
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-sm text-zinc-300">
+                                    {item.task}
+                                  </div>
+                                  <div className="text-xs text-zinc-500 mt-1">
+                                    Click to {done ? "undo" : "mark as done"}
+                                  </div>
+                                </div>
+                              </button>
+
+                              {item.ctaPath && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-zinc-600 text-zinc-300 hover:bg-zinc-900"
+                                  onClick={() => navigate(item.ctaPath)}
+                                >
+                                  {item.ctaLabel || "Open"}
+                                  <ChevronRight className="w-4 h-4 ml-1" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-zinc-400">
+                      Weekly plan appears after the mentor endpoint loads.
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Career Insights & Recommendations */}
             <div className="mb-8">

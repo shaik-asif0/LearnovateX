@@ -1,6 +1,6 @@
 # 🎓 LearnovateX – AI Learning & Career Readiness Platform
 
-A comprehensive full-stack platform that combines **AI tutoring**, **automated code evaluation**, **resume analysis**, **mock interviews**, and **career tracking** - designed for final year projects and college demonstrations.
+A full-stack platform that combines **AI tutoring**, **automated code evaluation**, **resume analysis**, **mock interviews**, and **career tracking** — designed for final year projects and college demonstrations.
 
 **Repository**: [shaik-asif0/finalyearProject](https://github.com/shaik-asif0/finalyearProject)
 **Author**: Shaik Asif
@@ -28,12 +28,12 @@ A comprehensive full-stack platform that combines **AI tutoring**, **automated c
 - **📉 Analytics**: Track batch performance and placement readiness
 - **👥 Student Management**: View learning sessions and code submissions
 
-## � Offline Functionality
+## 📶 Offline Functionality
 
 The platform is designed to work seamlessly both online and offline:
 
 - **📱 Progressive Web App (PWA)**: Install the app on your device for offline access
-- **🎯 Demo Mode**: When offline, AI features automatically switch to demo mode with sample responses
+- **🎯 Demo Mode**: When AI is not configured (or when you’re offline), AI features use demo/sample responses
 - **💾 Local Data Storage**: All user data, progress, and submissions are stored locally
 - **🔄 Automatic Detection**: The app detects online/offline status and adjusts functionality accordingly
 - **⚡ Fast Loading**: Cached resources ensure quick loading even on slow connections
@@ -47,20 +47,19 @@ The platform is designed to work seamlessly both online and offline:
 - Take mock interviews (sample questions and feedback)
 - All data persists locally and syncs when back online
 
-## �🛠️ Tech Stack
+## 🛠️ Tech Stack
 
 ### Backend
 
 - **FastAPI**: High-performance Python web framework
 - **SQLite**: Lightweight database for data storage
-- **Azure OpenAI**: Microsoft's GPT-4 for real-time AI tutoring, code evaluation, and analysis
-- **AWS Bedrock**: Alternative AI provider with Claude models
+- **Azure OpenAI (optional)**: Real-time AI tutoring, code evaluation, and analysis when configured
 - **PyJWT**: Authentication and authorization
-- **Azure SDK**: Cloud integration for AI services
+- **SMTP (optional)**: Email-based OTP for password reset when configured
 
 ### Frontend
 
-- **React 19**: Modern UI library
+- **React 18**: Modern UI library
 - **React Router**: Client-side routing
 - **Monaco Editor**: VS Code-like code editor
 - **Recharts**: Beautiful data visualizations
@@ -132,7 +131,7 @@ npm install
 
 ```bash
 cd backend
-uvicorn server:app --reload --host 0.0.0.0 --port 8001
+uvicorn server:app --reload --host 0.0.0.0 --port 8000
 ```
 
 **Terminal 2 - Frontend:**
@@ -147,8 +146,8 @@ npm start
 The application will be available at:
 
 - Frontend: `http://localhost:3000`
-- Backend API: `http://localhost:8001`
-- API Docs: `http://localhost:8001/docs`
+- Backend API: `http://localhost:8000`
+- API Docs: `http://localhost:8000/docs`
 
 #### Option 2: Production
 
@@ -156,7 +155,7 @@ The application will be available at:
 
 ```bash
 cd backend
-gunicorn server:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8001
+gunicorn server:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
 ```
 
 **Frontend:**
@@ -178,7 +177,7 @@ The platform supports 4 different user roles:
 
 ## 📚 API Documentation
 
-Once the backend is running, visit `http://localhost:8001/docs` for interactive API documentation powered by Swagger UI.
+Once the backend is running, visit `http://localhost:8000/docs` for interactive API documentation powered by Swagger UI.
 
 ### Key Endpoints
 
@@ -230,18 +229,12 @@ Once the backend is running, visit `http://localhost:8001/docs` for interactive 
 DATABASE_URL=sqlite:///./learnovatex.db
 
 # AI Configuration
-AI_MODE=demo  # or 'azure' for Azure OpenAI, 'bedrock' for AWS Bedrock
+AI_MODE=demo  # or 'azure' for Azure OpenAI
 
 # Azure OpenAI (only needed if AI_MODE=azure)
 AZURE_OPENAI_API_KEY=your_azure_openai_key
 AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
 AZURE_OPENAI_DEPLOYMENT=gpt-4
-
-# AWS Bedrock (only needed if AI_MODE=bedrock)
-AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=your_access_key
-AWS_SECRET_ACCESS_KEY=your_secret_key
-AWS_BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
 
 # Security
 JWT_SECRET=change-this-to-a-random-string-in-production
@@ -250,10 +243,10 @@ JWT_SECRET=change-this-to-a-random-string-in-production
 ### Frontend (.env)
 
 ```env
-REACT_APP_BACKEND_URL=http://localhost:8001
+REACT_APP_API_BASE_URL=http://localhost:8000
 ```
 
-**Note**: For production, update `REACT_APP_BACKEND_URL` to your deployed backend URL.
+**Note**: For production, update `REACT_APP_API_BASE_URL` to your deployed backend URL.
 
 ## 🧪 Features in Detail
 
@@ -310,9 +303,10 @@ REACT_APP_BACKEND_URL=http://localhost:8001
 ## 💻 Code Structure
 
 ```
-/app
+.
 ├── backend/
 │   ├── server.py          # Main FastAPI application
+│   ├── schema.sql         # SQLite schema
 │   ├── requirements.txt   # Python dependencies
 │   └── .env               # Environment variables
 │
@@ -320,11 +314,11 @@ REACT_APP_BACKEND_URL=http://localhost:8001
 │   ├── src/
 │   │   ├── components/    # Reusable UI components
 │   │   ├── pages/         # Page components
-│   │   ├── lib/           # Utility functions
+│   │   ├── lib/           # Axios client + utilities
 │   │   ├── App.js         # Main app component
 │   │   └── index.js       # Entry point
 │   ├── package.json       # Node dependencies
-│   └── .env               # Frontend env variables
+│   └── staticwebapp.config.json
 │
 └── README.md
 ```
@@ -339,12 +333,11 @@ REACT_APP_BACKEND_URL=http://localhost:8001
 
 ## 💡 Key Design Decisions
 
-1. **Azure OpenAI Integration**: Used Microsoft's GPT-4 for real-time AI tutoring, code evaluation, and analysis
-2. **AWS Bedrock Alternative**: Added support for Claude models as a cost-effective alternative
-3. **SQLite Database**: Chose lightweight SQLite for easy deployment and no external dependencies
-4. **Monaco Editor**: Professional code editing experience in the browser
-5. **Shadcn/UI**: Beautiful, accessible components without the bloat
-6. **Role-based Access**: Different experiences for students, companies, and colleges
+1. **Demo vs Azure AI**: `AI_MODE=demo` keeps the app usable without cloud keys; `AI_MODE=azure` enables real responses
+2. **SQLite Database**: Lightweight SQLite for easy local setup and deployments without extra services
+3. **Monaco Editor**: Professional code editing experience in the browser
+4. **Shadcn/UI**: Beautiful, accessible components without the bloat
+5. **Role-based Access**: Different experiences for students, companies, and colleges
 
 ## 🚀 Future Enhancements
 
@@ -415,7 +408,7 @@ DEBUG=false
 In Azure Static Web Apps > Configuration, add:
 
 ```
-REACT_APP_BACKEND_URL=https://learnovatex-backend.azurewebsites.net
+REACT_APP_API_BASE_URL=https://learnovatex-backend.azurewebsites.net
 ```
 
 ### Step 3: Deploy

@@ -149,6 +149,56 @@ const ResumeAnalyzer = () => {
   const scoreIntervalRef = useRef(null);
   const intervalRef = useRef(null);
 
+  const triggerBrowserDownload = (url, filename) => {
+    if (!url) return;
+    try {
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename || "ATS_Resume.pdf";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (e) {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  const fetchAtsResumePdfBlob = async () => {
+    const res = await axiosInstance.get("/profile/resume/ats?format=pdf", {
+      responseType: "blob",
+    });
+    return res.data;
+  };
+
+  const viewAtsResume = async () => {
+    try {
+      const blob = await fetchAtsResumePdfBlob();
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, "_blank", "noopener,noreferrer");
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } catch (e) {
+      toast.error("Could not generate ATS resume", {
+        duration: 2200,
+        position: "bottom-right",
+      });
+    }
+  };
+
+  const downloadAtsResume = async () => {
+    try {
+      const blob = await fetchAtsResumePdfBlob();
+      const blobUrl = URL.createObjectURL(blob);
+      triggerBrowserDownload(blobUrl, "ATS_Resume.pdf");
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } catch (e) {
+      toast.error("Could not download ATS resume", {
+        duration: 2200,
+        position: "bottom-right",
+      });
+    }
+  };
+
   const analysisSteps = [
     { label: "Reading PDF", icon: FileText, duration: 1000 },
     { label: "Extracting Text", icon: Search, duration: 1500 },
@@ -611,6 +661,36 @@ const ResumeAnalyzer = () => {
               </CardContent>
             </Card>
           )}
+
+          {/* ATS Resume Export (from Profile) */}
+          <Card className="bg-zinc-900 border-zinc-700 mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
+                <FileText className="w-5 h-5 text-orange-400" />
+                ATS Resume
+              </CardTitle>
+              <CardDescription className="text-zinc-400">
+                View or download an ATS-friendly resume generated from your
+                Profile
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant="outline"
+                  onClick={viewAtsResume}
+                  className="border-zinc-700 text-white hover:bg-zinc-800"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  View
+                </Button>
+                <Button onClick={downloadAtsResume} className="gap-2">
+                  <Download className="w-4 h-4" />
+                  Download
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Enhanced Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">

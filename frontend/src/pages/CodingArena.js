@@ -343,6 +343,9 @@ const CodingArena = () => {
         language,
         problem_id: problemId,
         user_id: "current",
+        topic: currentProblem?.tags?.[0] || "Coding",
+        difficulty: currentProblem?.difficulty || null,
+        solve_time_seconds: typeof timer === "number" ? timer : null,
       });
 
       setAiStatus("responding");

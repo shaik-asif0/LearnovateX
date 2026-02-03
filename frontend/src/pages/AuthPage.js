@@ -216,6 +216,16 @@ const AuthPage = () => {
                     className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
                   />
                 </div>
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-auto p-0 text-sm text-zinc-400 hover:text-white"
+                    onClick={() => navigate("/forgot-password")}
+                  >
+                    Forgot Password?
+                  </Button>
+                </div>
                 <Button
                   data-testid="login-submit-btn"
                   type="submit"

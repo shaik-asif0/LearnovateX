@@ -23,6 +23,9 @@ email-validator==2.3.0
 # PDF processing
 PyPDF2==3.0.1
 
+# ATS Resume PDF generation
+reportlab==4.4.4
+
 # Async support
 anyio==4.12.0
 aiohttp==3.13.2

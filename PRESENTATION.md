@@ -44,7 +44,7 @@ Education Technology (EdTech) & Career Development
 
 A full-stack EdTech platform for AI-powered learning and career readiness. Features include:
 
-- AI tutoring (Claude 3 via AWS Bedrock)
+- AI tutoring (Azure OpenAI when configured; demo mode fallback)
 - Automated code evaluation (multi-language, real-time feedback)
 - Resume analysis and credibility scoring
 - Mock interviews (technical, HR, behavioral)
@@ -91,7 +91,7 @@ A full-stack EdTech platform for AI-powered learning and career readiness. Featu
 │   └─ Mock Interviews   └─ Rankings         └─ Management   │
 │                                                             │
 │              ╔═══════════════════════════╗                  │
-│              ║   Claude 3 via AWS Bedrock║                  │
+│              ║ Azure OpenAI (GPT-4 class)║                  │
 │              ╚═══════════════════════════╝                  │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -134,8 +134,8 @@ A full-stack EdTech platform for AI-powered learning and career readiness. Featu
 │                    ┌─────────┴─────────┐                         │
 │                    ▼                   ▼                         │
 │             ┌──────────┐       ┌──────────────┐                  │
-│             │  SQLite  │       │ AWS Bedrock  │                  │
-│             │ Database │       │  Claude 3    │                  │
+│             │  SQLite  │       │ Azure OpenAI │                  │
+│             │ Database │       │ (Deployment) │                  │
 │             └──────────┘       └──────────────┘                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -145,7 +145,7 @@ A full-stack EdTech platform for AI-powered learning and career readiness. Featu
 ```
 User Request → Frontend → API Gateway → FastAPI →
     ├── Database (SQLite) → User Data, History
-    └── AWS Bedrock API → AI Response → User
+    └── Azure OpenAI API → AI Response → User
 ```
 
 ---
@@ -157,7 +157,7 @@ User Request → Frontend → API Gateway → FastAPI →
 | Technology        | Purpose               | Version |
 | ----------------- | --------------------- | ------- |
 | **React.js**      | UI Framework          | 18.x    |
-| **React Router**  | Client-side Routing   | 6.x     |
+| **React Router**  | Client-side Routing   | 7.x     |
 | **Tailwind CSS**  | Styling Framework     | 3.x     |
 | **Shadcn/UI**     | Component Library     | Latest  |
 | **Monaco Editor** | Code Editor (VS Code) | Latest  |
@@ -167,22 +167,22 @@ User Request → Frontend → API Gateway → FastAPI →
 
 ### Backend Technologies
 
-| Technology   | Purpose              | Version |
-| ------------ | -------------------- | ------- |
-| **Python**   | Programming Language | 3.11+   |
-| **FastAPI**  | Web Framework        | 0.110+  |
-| **SQLite**   | Database             | 3.x     |
-| **JWT**      | Authentication       | PyJWT   |
-| **Boto3**    | AWS SDK              | 1.34+   |
-| **Pydantic** | Data Validation      | 2.x     |
-| **Uvicorn**  | ASGI Server          | Latest  |
+| Technology     | Purpose              | Version |
+| -------------- | -------------------- | ------- |
+| **Python**     | Programming Language | 3.11+   |
+| **FastAPI**    | Web Framework        | 0.110+  |
+| **SQLite**     | Database             | 3.x     |
+| **JWT**        | Authentication       | PyJWT   |
+| **OpenAI SDK** | Azure OpenAI client  | Latest  |
+| **Pydantic**   | Data Validation      | 2.x     |
+| **Uvicorn**    | ASGI Server          | Latest  |
 
 ### Cloud Services
 
-| Service         | Purpose              |
-| --------------- | -------------------- |
-| **AWS Bedrock** | AI/ML Model Hosting  |
-| **Claude 3**    | Large Language Model |
+| Service                    | Purpose              |
+| -------------------------- | -------------------- |
+| **Azure OpenAI**           | AI/ML Model Hosting  |
+| **GPT-4 class deployment** | Large Language Model |
 
 ---
 
@@ -368,16 +368,11 @@ Structured Response → Save to History
 
 ## 8. AI Integration
 
-### AWS Bedrock Integration
+### Azure OpenAI Integration
 
-**Model Used:** Claude 3 (Anthropic)
+**Mode Selector:** `AI_MODE=demo` (no cloud keys) or `AI_MODE=azure` (real responses)
 
-**Available Models:**
-| Model | Use Case | Performance |
-|-------|----------|-------------|
-| Claude 3 Haiku | Fast responses | ⚡ Fastest |
-| Claude 3 Sonnet | Balanced | ⚖️ Balanced |
-| Claude 3 Opus | Complex tasks | 🧠 Most Capable |
+**Deployment Used:** Azure OpenAI _Chat Completions_ using the deployment name configured in `AZURE_OPENAI_DEPLOYMENT`.
 
 ### AI Integration Architecture
 
@@ -385,10 +380,10 @@ Structured Response → Save to History
 ┌──────────────────────────────────────────────────────────┐
 │                    FastAPI Backend                        │
 │  ┌─────────────────────────────────────────────────────┐ │
-│  │              get_ai_response()                       │ │
+│  │         get_gemini_response() wrapper                │ │
 │  │  ┌─────────────┐     ┌─────────────────────────┐   │ │
-│  │  │ Demo Mode   │ OR  │   AWS Bedrock Mode      │   │ │
-│  │  │ (Free)      │     │   (Production)          │   │ │
+│  │  │ Demo Mode   │ OR  │   Azure OpenAI Mode     │   │ │
+│  │  │ (Offline)   │     │   (Real Responses)      │   │ │
 │  │  └─────────────┘     └─────────────────────────┘   │ │
 │  └─────────────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────┘
@@ -406,7 +401,7 @@ async def tutor_chat(message, topic, difficulty):
 
     Provide step-by-step explanation with examples.
     """
-    return await get_ai_response(prompt)
+    return await get_gemini_response(prompt, session_id)
 
 # Code Evaluation
 async def evaluate_code(code, language):
@@ -417,7 +412,7 @@ async def evaluate_code(code, language):
     Analyze: Correctness, Time/Space Complexity,
     Quality Score, Suggestions
     """
-    return await get_ai_response(prompt)
+    return await get_gemini_response(prompt, session_id)
 
 # Resume Analysis
 async def analyze_resume(text):
@@ -428,7 +423,7 @@ async def analyze_resume(text):
     Provide: Credibility Score, Fake Skills Detection,
     Suggestions for Improvement
     """
-    return await get_ai_response(prompt)
+    return await get_gemini_response(prompt, session_id)
 ```
 
 ---
@@ -643,7 +638,7 @@ The **AI-Powered Learning & Career Readiness Platform** successfully addresses t
 ### Learning Outcomes
 
 - Full-stack web development with React & FastAPI
-- AI/ML integration using AWS Bedrock
+- AI integration using Azure OpenAI (with demo fallback)
 - Database design and management
 - RESTful API design
 - Modern UI/UX with Tailwind CSS
@@ -656,7 +651,7 @@ The **AI-Powered Learning & Career Readiness Platform** successfully addresses t
 
 1. React Documentation - https://react.dev
 2. FastAPI Documentation - https://fastapi.tiangolo.com
-3. AWS Bedrock - https://aws.amazon.com/bedrock
+3. Azure OpenAI Documentation - https://learn.microsoft.com/azure/ai-services/openai/
 4. Tailwind CSS - https://tailwindcss.com
 5. Shadcn/UI - https://ui.shadcn.com
 

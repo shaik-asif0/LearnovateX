@@ -29,6 +29,9 @@ CREATE TABLE IF NOT EXISTS code_evaluations (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
     problem_id TEXT,
+    topic TEXT,
+    difficulty TEXT,
+    solve_time_seconds INTEGER,
     code TEXT,
     language TEXT,
     evaluation TEXT,
@@ -44,6 +47,10 @@ CREATE TABLE IF NOT EXISTS resume_analyses (
     filename TEXT,
     text_content TEXT,
     credibility_score INTEGER,
+    projects_score INTEGER,
+    skills_score INTEGER,
+    experience_score INTEGER,
+    ats_score INTEGER,
     fake_skills TEXT,
     suggestions TEXT,
     analysis TEXT,
@@ -58,8 +65,50 @@ CREATE TABLE IF NOT EXISTS interview_evaluations (
     answers TEXT,
     evaluation TEXT,
     readiness_score INTEGER,
+    confidence_score INTEGER,
+    communication_score INTEGER,
+    technical_depth_score INTEGER,
     strengths TEXT,
     weaknesses TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS career_readiness_snapshots (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    snapshot_date TEXT NOT NULL,
+    readiness_score REAL NOT NULL,
+    breakdown_json TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS daily_action_locks (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    action_date TEXT NOT NULL,
+    action_json TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS apply_tracker (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    role TEXT NOT NULL,
+    source TEXT NOT NULL,
+    url TEXT NOT NULL,
+    match_tag TEXT,
+    status TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS activity_events (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    path TEXT,
+    duration_seconds INTEGER,
+    metadata_json TEXT,
     created_at TEXT NOT NULL
 );
 
@@ -140,3 +189,15 @@ CREATE TABLE IF NOT EXISTS internship_applications (
     experience TEXT,
     screenshot_url TEXT
 );
+
+CREATE TABLE IF NOT EXISTS password_reset_otps (
+    id TEXT PRIMARY KEY,
+    email TEXT NOT NULL,
+    otp_hash TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    used_at TEXT,
+    attempts INTEGER DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_password_reset_otps_email ON password_reset_otps(email);

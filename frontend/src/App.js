@@ -1,5 +1,5 @@
 import CourseLearnPage from "./pages/CourseLearnPage";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -10,6 +10,7 @@ import {
 import { Toaster, toast } from "sonner";
 import "./App.css";
 import { isAuthenticated, getUser } from "./lib/utils";
+import axiosInstance from "./lib/axios";
 import NavigationBar from "./components/NavigationBar";
 import MobileBottomNav from "./components/MobileBottomNav";
 // import SplashCursor from "./components/SplashCursor";
@@ -37,6 +38,7 @@ import PremiumCoursesPage from "./pages/PremiumCoursesPage";
 import PremiumInternshipsPage from "./pages/PremiumInternshipsPage";
 import CourseEnrollmentPage from "./pages/CourseEnrollmentPage";
 import InternshipApplicationPage from "./pages/InternshipApplicationPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 
 const ProtectedRoute = ({ children }) => {
   return isAuthenticated() ? children : <Navigate to="/auth" />;
@@ -60,6 +62,16 @@ const AppContent = () => {
   const [isAuth, setIsAuth] = useState(isAuthenticated());
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const user = getUser();
+  const activityRef = useRef({ path: null, startMs: null });
+
+  const postActivityEvent = useCallback(async (payload) => {
+    if (!isAuthenticated()) return;
+    try {
+      await axiosInstance.post("/activity/event", payload);
+    } catch (e) {
+      // ignore tracking failures
+    }
+  }, []);
 
   // Monitor online/offline status
   useEffect(() => {
@@ -90,6 +102,48 @@ const AppContent = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [location.pathname]);
+
+  // Lightweight automatic tracking (page views + time spent per route)
+  useEffect(() => {
+    const nowMs = Date.now();
+    const prev = activityRef.current;
+
+    if (prev.path && prev.startMs && prev.path !== location.pathname) {
+      const durationSeconds = Math.max(
+        0,
+        Math.round((nowMs - prev.startMs) / 1000)
+      );
+      if (durationSeconds > 0) {
+        postActivityEvent({
+          event_type: "time_spent",
+          path: prev.path,
+          duration_seconds: durationSeconds,
+        });
+      }
+    }
+
+    activityRef.current = { path: location.pathname, startMs: nowMs };
+    postActivityEvent({ event_type: "page_view", path: location.pathname });
+  }, [location.pathname, postActivityEvent]);
+
+  // Flush last route time-spent on unmount
+  useEffect(() => {
+    return () => {
+      const prev = activityRef.current;
+      if (!prev?.path || !prev?.startMs) return;
+      const durationSeconds = Math.max(
+        0,
+        Math.round((Date.now() - prev.startMs) / 1000)
+      );
+      if (durationSeconds > 0) {
+        postActivityEvent({
+          event_type: "time_spent",
+          path: prev.path,
+          duration_seconds: durationSeconds,
+        });
+      }
+    };
+  }, [postActivityEvent]);
 
   const showMobileBottomNav =
     isAuth && user && ["student", "job_seeker"].includes(user.role);
@@ -166,6 +220,12 @@ const AppContent = () => {
           <Route
             path="/auth"
             element={isAuth ? <Navigate to="/dashboard" /> : <AuthPage />}
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              isAuth ? <Navigate to="/dashboard" /> : <ForgotPasswordPage />
+            }
           />
           <Route
             path="/dashboard"

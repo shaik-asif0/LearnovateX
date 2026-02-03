@@ -30,7 +30,14 @@ next-env.d.ts
 dist/
 dist
 
-# Environment files (comprehensive coverage)
+# Environment files
+.env
+.env.*
+!**/.env.example
+
+# Explicit local env files
+backend/.env
+frontend/.env
 
 *token.json*
 *credentials.json*
@@ -64,6 +71,15 @@ chainlit.md
 # Data and databases
 agenthub/agents/youtube/db
 
+# Local databases
+backend/*.db
+backend/*.sqlite
+backend/*.sqlite3
+backend/learnovatex.db
+
+# Uploaded files (user data)
+backend/uploads/
+
 # Archive files and large assets
 **/*.zip
 **/*.tar.gz
@@ -82,12 +98,5 @@ frontend/node_modules/.cache/default-development/5.pack
 frontend/node_modules/.cache/default-development/6.pack
 
 
-# # Frontend environment variables
-# frontend/.env
 
-# # Backend database files
-# backend/*.db
-
-# # Uploaded files (user data)
-# backend/uploads/
 

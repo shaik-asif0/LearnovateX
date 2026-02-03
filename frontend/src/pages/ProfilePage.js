@@ -109,6 +109,38 @@ const ProfilePage = () => {
     github: "",
     linkedin: "",
     portfolio: "",
+
+    // Rich profile sections (stored in users.profile_data)
+    resume_headline: "",
+    profile_summary: "",
+
+    // Resume template header fields
+    roll_no: "",
+    degree: "",
+    branch: "",
+    institute: "",
+
+    // Resume template sections
+    education: "",
+    employment: "",
+    internships: "",
+    projects: "",
+    final_year_project: "",
+    certifications: "",
+    languages: "",
+    languages_known: "",
+    key_skills: "",
+
+    // Screenshot-style skills blocks
+    technical_languages: "",
+    technical_tools: "",
+    technical_cloud: "",
+    soft_skills: "",
+
+    // Screenshot-style extras
+    achievements_text: "",
+    hobbies: "",
+    declaration: "",
   });
 
   const getProfileStorageKey = (currentUser) => {
@@ -119,6 +151,16 @@ const ProfilePage = () => {
   const [profileData, setProfileData] = useState(getBaseProfileData(user));
   const [newSkill, setNewSkill] = useState("");
   const [activityHistory, setActivityHistory] = useState([]);
+
+  // SaaS widgets (DB-backed)
+  const [latestResume, setLatestResume] = useState(null);
+  const [latestResumeLoading, setLatestResumeLoading] = useState(false);
+  const [heatmap, setHeatmap] = useState({ days: 84, items: [] });
+  const [heatmapLoading, setHeatmapLoading] = useState(false);
+
+  // Section-level edit (stored in users.profile_data)
+  const [editingSection, setEditingSection] = useState(null);
+  const [sectionDraft, setSectionDraft] = useState("");
 
   // For true "Cancel" behavior (discard unsaved edits)
   const editSnapshotRef = useRef(null);
@@ -149,6 +191,8 @@ const ProfilePage = () => {
   useEffect(() => {
     fetchStats();
     loadProfile();
+    fetchLatestResume();
+    fetchHeatmap(84);
     generateActivityHistory();
 
     // Load notification settings snapshot (shared with SettingsPage)
@@ -270,6 +314,116 @@ const ProfilePage = () => {
       return maybeRelativeUrl;
     }
     return `${getApiBaseUrl()}${maybeRelativeUrl}`;
+  };
+
+  const triggerBrowserDownload = (url, filename) => {
+    if (!url) return;
+    try {
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename || "resume.pdf";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (e) {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  const fetchAtsResumePdfBlob = async () => {
+    const res = await axiosInstance.get("/profile/resume/ats?format=pdf", {
+      responseType: "blob",
+    });
+    return res.data;
+  };
+
+  const viewAtsResume = async () => {
+    try {
+      const blob = await fetchAtsResumePdfBlob();
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, "_blank", "noopener,noreferrer");
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } catch (e) {
+      toast.error("Could not generate ATS resume", {
+        duration: 2200,
+        position: "bottom-right",
+      });
+    }
+  };
+
+  const downloadAtsResume = async () => {
+    try {
+      const blob = await fetchAtsResumePdfBlob();
+      const blobUrl = URL.createObjectURL(blob);
+      const safeName = (profileData?.name || user?.name || "Resume")
+        .toString()
+        .replace(/[^a-z0-9 _-]/gi, "")
+        .trim()
+        .replace(/\s+/g, "_");
+      triggerBrowserDownload(blobUrl, `${safeName || "Resume"}_ATS_Resume.pdf`);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } catch (e) {
+      toast.error("Could not download ATS resume", {
+        duration: 2200,
+        position: "bottom-right",
+      });
+    }
+  };
+
+  const fetchLatestResume = async () => {
+    setLatestResumeLoading(true);
+    try {
+      const res = await axiosInstance.get("/resume/latest");
+      setLatestResume(res.data);
+    } catch (e) {
+      // 404 => no resume uploaded yet
+      setLatestResume(null);
+    } finally {
+      setLatestResumeLoading(false);
+    }
+  };
+
+  const fetchHeatmap = async (days = 84) => {
+    setHeatmapLoading(true);
+    try {
+      const res = await axiosInstance.get(`/activity/heatmap?days=${days}`);
+      setHeatmap(res.data || { days, items: [] });
+    } catch (e) {
+      setHeatmap({ days, items: [] });
+    } finally {
+      setHeatmapLoading(false);
+    }
+  };
+
+  const buildHeatmapCells = () => {
+    const days = 84;
+    const map = new Map();
+    for (const it of heatmap?.items || []) {
+      if (it?.date) map.set(String(it.date), Number(it.count || 0));
+    }
+
+    const end = new Date();
+    end.setHours(0, 0, 0, 0);
+    const start = new Date(end);
+    start.setDate(end.getDate() - (days - 1));
+
+    const cells = [];
+    for (let i = 0; i < days; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      const key = d.toISOString().slice(0, 10);
+      const count = map.get(key) || 0;
+      const day = d.getDay();
+      cells.push({ key, count, day });
+    }
+
+    // Align to week columns
+    const firstDay = cells[0]?.day ?? 0;
+    const padded = [];
+    for (let i = 0; i < firstDay; i++) padded.push(null);
+    padded.push(...cells);
+    return padded;
   };
 
   // Social link helpers
@@ -398,11 +552,11 @@ const ProfilePage = () => {
     setActivityHistory(activities);
   };
 
-  const handleSaveProfile = async () => {
+  const saveProfile = async (nextProfileData) => {
     try {
-      const { name, email, ...profilePayload } = profileData;
+      const { name, email, ...profilePayload } = nextProfileData;
       const response = await axiosInstance.put("/profile", {
-        name: profileData.name,
+        name: nextProfileData.name,
         profile_data: profilePayload,
       });
 
@@ -411,22 +565,27 @@ const ProfilePage = () => {
 
       const updatedUser = {
         ...user,
-        name: updated?.name || profileData.name,
+        name: updated?.name || nextProfileData.name,
         avatar_url: updated?.avatar_url || user?.avatar_url,
       };
       saveUser(updatedUser);
 
       const perUserKey = getProfileStorageKey(user);
-      localStorage.setItem(perUserKey, JSON.stringify(profileData));
+      localStorage.setItem(perUserKey, JSON.stringify(nextProfileData));
       // Clean up legacy shared key if it exists
       localStorage.removeItem("userProfile");
       setEditing(false);
       editSnapshotRef.current = null;
+      setEditingSection(null);
       window.dispatchEvent(new Event("authChange"));
       toast.success("Profile updated successfully!");
     } catch (error) {
       toast.error("Failed to update profile");
     }
+  };
+
+  const handleSaveProfile = async () => {
+    await saveProfile(profileData);
   };
 
   const toggleEditing = () => {
@@ -644,19 +803,19 @@ const ProfilePage = () => {
   const getRoleBadge = (role) => {
     const badges = {
       student: {
-        color: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+        color: "bg-primary/15 text-primary border-primary/30",
         icon: GraduationCap,
       },
       job_seeker: {
-        color: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+        color: "bg-primary/15 text-primary border-primary/30",
         icon: Briefcase,
       },
       company: {
-        color: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+        color: "bg-primary/15 text-primary border-primary/30",
         icon: Briefcase,
       },
       college_admin: {
-        color: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+        color: "bg-primary/15 text-primary border-primary/30",
         icon: Shield,
       },
     };
@@ -667,21 +826,21 @@ const ProfilePage = () => {
   const RoleIcon = roleBadge.icon;
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <main className="max-w-7xl mx-auto px-4 md:px-6 py-8">
         {/* Profile Header Card */}
-        <Card className="mb-8 bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-800 border-zinc-800 overflow-hidden">
-          <div className="h-32 bg-gradient-to-r from-orange-600 via-orange-600 to-orange-600 relative">
-            <div className="absolute inset-0 bg-black/20" />
-            <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-zinc-900 to-transparent" />
+        <Card className="mb-8 overflow-hidden">
+          <div className="h-32 bg-gradient-to-r from-primary via-primary to-primary relative">
+            <div className="absolute inset-0 bg-background/20" />
+            <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-card to-transparent" />
           </div>
           <CardContent className="relative px-6 pb-6">
             <div className="flex flex-col md:flex-row items-start md:items-end gap-6 -mt-16">
               {/* Avatar */}
               <div className="relative group">
-                <Avatar className="w-32 h-32 border-4 border-zinc-900 shadow-xl">
+                <Avatar className="w-32 h-32 border-4 border-card shadow-xl">
                   <AvatarImage src={toAbsoluteUploadsUrl(avatarUrl)} />
-                  <AvatarFallback className="bg-gradient-to-br from-orange-500 to-orange-500 text-white text-3xl sm:text-4xl font-bold">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-3xl sm:text-4xl font-bold">
                     {profileData.name?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
@@ -693,15 +852,15 @@ const ProfilePage = () => {
                   onChange={handleAvatarSelected}
                 />
                 <div
-                  className="absolute bottom-2 right-2 p-2 bg-zinc-800 rounded-full border border-zinc-700 cursor-pointer hover:bg-zinc-700 transition-colors"
+                  className="absolute bottom-2 right-2 p-2 bg-card rounded-full border border-border cursor-pointer hover:bg-muted transition-colors"
                   onClick={handleAvatarClick}
                   role="button"
                   tabIndex={0}
                 >
-                  <Camera className="w-4 h-4 text-zinc-400" />
+                  <Camera className="w-4 h-4 text-muted-foreground" />
                 </div>
                 {/* Level Badge */}
-                <div className="absolute -top-2 -right-2 px-2 py-1 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full text-xs font-bold text-black flex items-center gap-1">
+                <div className="absolute -top-2 -right-2 px-2 py-1 bg-primary rounded-full text-xs font-bold text-primary-foreground flex items-center gap-1">
                   <Zap className="w-3 h-3" />
                   LVL {levelInfo.level}
                 </div>
@@ -720,7 +879,7 @@ const ProfilePage = () => {
                         {user?.role?.replace("_", " ")}
                       </Badge>
                     </div>
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-400">
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Mail className="w-4 h-4" />
                         {profileData.email}
@@ -741,7 +900,7 @@ const ProfilePage = () => {
                       </span>
                     </div>
                     {profileData.bio && (
-                      <p className="mt-2 text-zinc-300 max-w-xl">
+                      <p className="mt-2 text-muted-foreground max-w-xl">
                         {profileData.bio}
                       </p>
                     )}
@@ -752,8 +911,8 @@ const ProfilePage = () => {
                       variant={editing ? "default" : "outline"}
                       className={
                         editing
-                          ? "bg-white text-black hover:bg-zinc-200"
-                          : "border-zinc-700 text-white hover:bg-zinc-800"
+                          ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                          : ""
                       }
                     >
                       {editing ? (
@@ -765,7 +924,7 @@ const ProfilePage = () => {
                     </Button>
                     <Button
                       variant="outline"
-                      className="border-zinc-700 text-white hover:bg-zinc-800"
+                      className=""
                       onClick={handleLogout}
                     >
                       <LogOut className="w-4 h-4" />
@@ -790,113 +949,6 @@ const ProfilePage = () => {
                 </div>
               </div>
             </div>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6 pt-6 border-t border-zinc-800">
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-1">
-                  <div className="text-2xl font-bold text-white mr-2">
-                    {stats?.code_submissions || 0}
-                  </div>
-                  {/* Progress bars for problems solved */}
-                  <div className="flex space-x-1">
-                    {[...Array(3)].map((_, i) => (
-                      <div
-                        key={i}
-                        className={`w-1 h-3 rounded-sm transition-all duration-300 ${
-                          i <
-                          Math.min(
-                            Math.floor((stats?.code_submissions || 0) / 20),
-                            3
-                          )
-                            ? "bg-gradient-to-t from-orange-400 to-orange-600"
-                            : "bg-zinc-600"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <p className="text-xs text-zinc-400">Problems Solved</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-1">
-                  <div className="text-2xl font-bold text-white mr-2">
-                    {stats?.avg_code_score || 0}%
-                  </div>
-                  {/* Horizontal meter for avg score */}
-                  <div className="flex space-x-1">
-                    {[...Array(5)].map((_, i) => (
-                      <div
-                        key={i}
-                        className={`w-1 h-3 rounded-sm transition-all duration-300 ${
-                          i <
-                          Math.floor(((stats?.avg_code_score || 0) / 100) * 5)
-                            ? "bg-gradient-to-t from-orange-400 to-orange-600"
-                            : "bg-zinc-600"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <p className="text-xs text-zinc-400">Avg Score</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-1">
-                  <div className="text-2xl font-bold text-white mr-2">
-                    {stats?.learning_sessions || 0}
-                  </div>
-                  {/* Progress bars for sessions */}
-                  <div className="flex space-x-1">
-                    {[...Array(3)].map((_, i) => (
-                      <div
-                        key={i}
-                        className={`w-1 h-3 rounded-sm transition-all duration-300 ${
-                          i <
-                          Math.min(
-                            Math.floor((stats?.learning_sessions || 0) / 10),
-                            3
-                          )
-                            ? "bg-gradient-to-t from-orange-400 to-orange-600"
-                            : "bg-zinc-600"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <p className="text-xs text-zinc-400">Sessions</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-1">
-                  <div className="text-2xl font-bold text-white mr-2">
-                    {stats?.interviews_taken || 0}
-                  </div>
-                  {/* Progress bars for interviews */}
-                  <div className="flex space-x-1">
-                    {[...Array(3)].map((_, i) => (
-                      <div
-                        key={i}
-                        className={`w-1 h-3 rounded-sm transition-all duration-300 ${
-                          i <
-                          Math.min(
-                            Math.floor((stats?.interviews_taken || 0) / 2),
-                            3
-                          )
-                            ? "bg-gradient-to-t from-orange-400 to-orange-600"
-                            : "bg-zinc-600"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <p className="text-xs text-zinc-400">Interviews</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-white">
-                  {earnedAchievements.length}
-                </p>
-                <p className="text-xs text-zinc-400">Achievements</p>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
@@ -906,38 +958,38 @@ const ProfilePage = () => {
           onValueChange={setActiveTab}
           className="space-y-6"
         >
-          <TabsList className="bg-zinc-900 border border-zinc-800 p-1 flex-wrap h-auto gap-1">
+          <TabsList className="bg-card border border-border p-1 flex-wrap h-auto gap-1">
             <TabsTrigger
               value="overview"
-              className="data-[state=active]:bg-white data-[state=active]:text-black gap-2"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-2"
             >
               <User className="w-4 h-4" />
               Overview
             </TabsTrigger>
             <TabsTrigger
               value="stats"
-              className="data-[state=active]:bg-white data-[state=active]:text-black gap-2"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-2"
             >
               <BarChart3 className="w-4 h-4" />
               Statistics
             </TabsTrigger>
             <TabsTrigger
               value="achievements"
-              className="data-[state=active]:bg-white data-[state=active]:text-black gap-2"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-2"
             >
               <Trophy className="w-4 h-4" />
               Achievements
             </TabsTrigger>
             <TabsTrigger
               value="activity"
-              className="data-[state=active]:bg-white data-[state=active]:text-black gap-2"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-2"
             >
               <Activity className="w-4 h-4" />
               Activity
             </TabsTrigger>
             <TabsTrigger
               value="settings"
-              className="data-[state=active]:bg-white data-[state=active]:text-black gap-2"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-2"
             >
               <Settings className="w-4 h-4" />
               Settings
@@ -947,179 +999,497 @@ const ProfilePage = () => {
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Personal Info */}
-              <Card className="lg:col-span-2 bg-zinc-900 border-zinc-800">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-white">
-                    <User className="w-5 h-5 text-orange-400" />
-                    Personal Information
-                  </CardTitle>
-                  <CardDescription className="text-zinc-400">
-                    {editing
-                      ? "Update your profile information"
-                      : "Your personal details"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Left: profile sections */}
+              <div className="lg:col-span-2 space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <User className="w-5 h-5 text-primary" />
+                      Personal Details
+                    </CardTitle>
+                    <CardDescription>
+                      {editing
+                        ? "Update your core details"
+                        : "Your account details and contact information"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Full Name</Label>
+                        {editing ? (
+                          <Input
+                            value={profileData.name}
+                            onChange={(e) =>
+                              setProfileData({
+                                ...profileData,
+                                name: e.target.value,
+                              })
+                            }
+                          />
+                        ) : (
+                          <p className="text-sm font-medium">
+                            {profileData.name}
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Email</Label>
+                        <p className="text-sm font-medium flex items-center gap-2">
+                          {profileData.email}
+                          <CheckCircle2 className="w-4 h-4 text-primary" />
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Phone</Label>
+                        {editing ? (
+                          <Input
+                            value={profileData.phone}
+                            onChange={(e) =>
+                              setProfileData({
+                                ...profileData,
+                                phone: e.target.value,
+                              })
+                            }
+                            placeholder="+91 00000 00000"
+                          />
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            {profileData.phone || "Not provided"}
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Location</Label>
+                        {editing ? (
+                          <Input
+                            value={profileData.location}
+                            onChange={(e) =>
+                              setProfileData({
+                                ...profileData,
+                                location: e.target.value,
+                              })
+                            }
+                            placeholder="City, Country"
+                          />
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            {profileData.location || "Not provided"}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
-                      <Label className="text-zinc-300">Full Name</Label>
+                      <Label>Bio</Label>
                       {editing ? (
-                        <Input
-                          value={profileData.name}
+                        <Textarea
+                          value={profileData.bio}
                           onChange={(e) =>
                             setProfileData({
                               ...profileData,
-                              name: e.target.value,
+                              bio: e.target.value,
                             })
                           }
-                          className="bg-zinc-800 border-zinc-700 text-white"
+                          placeholder="A short summary about you"
                         />
                       ) : (
-                        <p className="text-white font-medium p-2">
-                          {user?.name}
+                        <p className="text-sm text-muted-foreground">
+                          {profileData.bio || "No bio added yet"}
                         </p>
                       )}
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-zinc-300">Email</Label>
-                      <p className="text-white font-medium p-2 flex items-center gap-2">
-                        {user?.email}
-                        <CheckCircle2 className="w-4 h-4 text-orange-400" />
-                      </p>
+
+                    {editing && (
+                      <Button onClick={handleSaveProfile} className="w-full">
+                        <Save className="w-4 h-4 mr-2" />
+                        Save Changes
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Section cards (stored in DB in users.profile_data) */}
+                {[
+                  {
+                    key: "profile_summary",
+                    title: "Profile Summary",
+                    icon: FileText,
+                    placeholder: "Write a concise profile summary...",
+                  },
+                  {
+                    key: "roll_no",
+                    title: "Roll No / ID",
+                    icon: Shield,
+                    placeholder: "Ex: 22KP1A44A9",
+                  },
+                  {
+                    key: "degree",
+                    title: "Degree",
+                    icon: GraduationCap,
+                    placeholder: "Ex: Bachelor of Technology",
+                  },
+                  {
+                    key: "branch",
+                    title: "Branch / Department",
+                    icon: Code,
+                    placeholder: "Ex: Computer Science & Engineering",
+                  },
+                  {
+                    key: "institute",
+                    title: "Institute / College",
+                    icon: BookOpen,
+                    placeholder: "Ex: NRI Institute of Technology, Guntur",
+                  },
+
+                  {
+                    key: "technical_tools",
+                    title: "Technical Skills (Tools)",
+                    icon: Settings,
+                    placeholder: "Ex: Power BI, Git",
+                  },
+                  {
+                    key: "soft_skills",
+                    title: "Soft Skills",
+                    icon: Sparkles,
+                    placeholder:
+                      "Ex: Communication, Teamwork, Self-Learning, Critical Thinking",
+                  },
+                  {
+                    key: "education",
+                    title: "Education",
+                    icon: GraduationCap,
+                    placeholder:
+                      "Use one line per education entry.\nOptional: use '|' to align right-side info (CGPA/Score).\n\nExample:\nNRI Institute of Technology, Guntur (2022-2026) | CGPA: 8.4\nSri Karthikeya Junior College (2020-2022) | MPC: 76.9%",
+                  },
+                  {
+                    key: "projects",
+                    title: "Project",
+                    icon: Rocket,
+                    placeholder:
+                      "Tip: use 'Title: description' to match the template.\n\nExample:\nAI System Assistant Chatbot: NLP-based chatbot using LLM to answer technical queries.\nPortfolio Website: Responsive website showcasing projects and skills.\nPower BI Dashboards: Interactive dashboards using Power BI.",
+                  },
+                  {
+                    key: "final_year_project",
+                    title: "Internship",
+                    icon: Briefcase,
+                    placeholder:
+                      "Use one line per internship.\nOptional: use '|' to align dates on the right.\n\nExample:\nSupraja Tech — Ethical Hacking Trainee | May - Jul 2025\nAIMER Society (AI Internship) | Jun 2024\n- Worked on AI projects...",
+                  },
+                  {
+                    key: "certifications",
+                    title: "Certifications",
+                    icon: Award,
+                    placeholder: "Ex: AWS Cloud Practitioner (2025)",
+                  },
+                  {
+                    key: "achievements_text",
+                    title: "Achievements",
+                    icon: Trophy,
+                    placeholder:
+                      "Use one achievement per line.\nExample:\nWinner — Chatbot Hackathon\nParticipant — Cloud AI Training",
+                  },
+                  {
+                    key: "languages",
+                    title: "Languages",
+                    icon: Globe,
+                    placeholder: "Ex: English, Telugu, Hindi",
+                  },
+                  {
+                    key: "hobbies",
+                    title: "Hobbies",
+                    icon: Heart,
+                    placeholder:
+                      "Ex: Exploring AI tools, Blogging, Playing free fire, Traveling",
+                  },
+                  {
+                    key: "declaration",
+                    title: "Declaration",
+                    icon: Lock,
+                    placeholder:
+                      "Ex: I hereby declare that the above information is true to the best of my knowledge...",
+                  },
+                ].map((section) => {
+                  const value = (profileData?.[section.key] || "").trim();
+                  const isEditingThis = editingSection === section.key;
+                  const Icon = section.icon;
+
+                  return (
+                    <Card key={section.key}>
+                      <CardHeader className="flex flex-row items-start justify-between gap-3">
+                        <div>
+                          <CardTitle className="text-base flex items-center gap-2">
+                            {Icon ? (
+                              <Icon className="w-4 h-4 text-primary" />
+                            ) : null}
+                            {section.title}
+                          </CardTitle>
+                          <CardDescription>
+                            Stored in your account (database-backed)
+                          </CardDescription>
+                        </div>
+                        <div className="flex gap-2">
+                          {!isEditingThis ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setEditingSection(section.key);
+                                setSectionDraft(
+                                  profileData?.[section.key] || ""
+                                );
+                              }}
+                            >
+                              <Edit2 className="w-4 h-4 mr-2" />
+                              {value ? "Edit" : "Add"}
+                            </Button>
+                          ) : (
+                            <>
+                              <Button
+                                size="sm"
+                                onClick={async () => {
+                                  const next = {
+                                    ...profileData,
+                                    [section.key]: sectionDraft,
+                                  };
+                                  setProfileData(next);
+                                  await saveProfile(next);
+                                }}
+                              >
+                                <Save className="w-4 h-4 mr-2" />
+                                Save
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingSection(null);
+                                  setSectionDraft("");
+                                }}
+                              >
+                                <X className="w-4 h-4 mr-2" />
+                                Cancel
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        {isEditingThis ? (
+                          <Textarea
+                            value={sectionDraft}
+                            onChange={(e) => setSectionDraft(e.target.value)}
+                            placeholder={section.placeholder}
+                            className="min-h-[120px]"
+                          />
+                        ) : (
+                          <p className="text-sm text-muted-foreground whitespace-pre-line">
+                            {value || "Not added yet"}
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {/* Right: SaaS widgets */}
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <FileText className="w-5 h-5 text-primary" />
+                      ATS Resume
+                    </CardTitle>
+                    <CardDescription>
+                      Generate an ATS-friendly resume from your profile
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={viewAtsResume}
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        View
+                      </Button>
+                      <Button className="flex-1" onClick={downloadAtsResume}>
+                        <Download className="w-4 h-4 mr-2" />
+                        Download
+                      </Button>
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-zinc-300">Phone</Label>
-                      {editing ? (
-                        <Input
-                          value={profileData.phone}
-                          onChange={(e) =>
-                            setProfileData({
-                              ...profileData,
-                              phone: e.target.value,
-                            })
-                          }
-                          placeholder="+1 (555) 000-0000"
-                          className="bg-zinc-800 border-zinc-700 text-white"
-                        />
-                      ) : (
-                        <p className="text-white font-medium p-2">
-                          {profileData.phone || "Not provided"}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-zinc-300">Location</Label>
-                      {editing ? (
-                        <Input
-                          value={profileData.location}
-                          onChange={(e) =>
-                            setProfileData({
-                              ...profileData,
-                              location: e.target.value,
-                            })
-                          }
-                          placeholder="City, Country"
-                          className="bg-zinc-800 border-zinc-700 text-white"
-                        />
-                      ) : (
-                        <p className="text-white font-medium p-2">
-                          {profileData.location || "Not provided"}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-zinc-300">Current Title</Label>
-                      {editing ? (
-                        <Input
-                          value={profileData.title}
-                          onChange={(e) =>
-                            setProfileData({
-                              ...profileData,
-                              title: e.target.value,
-                            })
-                          }
-                          placeholder="Software Engineer"
-                          className="bg-zinc-800 border-zinc-700 text-white"
-                        />
-                      ) : (
-                        <p className="text-white font-medium p-2">
-                          {profileData.title || "Not provided"}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-zinc-300">
-                        Company / University
-                      </Label>
-                      {editing ? (
-                        <Input
-                          value={profileData.company}
-                          onChange={(e) =>
-                            setProfileData({
-                              ...profileData,
-                              company: e.target.value,
-                            })
-                          }
-                          placeholder="Company or University name"
-                          className="bg-zinc-800 border-zinc-700 text-white"
-                        />
-                      ) : (
-                        <p className="text-white font-medium p-2">
-                          {profileData.company || "Not provided"}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-zinc-300">Bio</Label>
-                    {editing ? (
-                      <Textarea
-                        value={profileData.bio}
-                        onChange={(e) =>
-                          setProfileData({
-                            ...profileData,
-                            bio: e.target.value,
-                          })
-                        }
-                        placeholder="Tell us about yourself..."
-                        className="bg-zinc-800 border-zinc-700 text-white min-h-[100px]"
-                      />
+                    <p className="text-xs text-muted-foreground">
+                      Tip: keep your Education, Experience, Projects, and Skills
+                      updated for best results.
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <FileText className="w-5 h-5 text-primary" />
+                      Latest Resume
+                    </CardTitle>
+                    <CardDescription>
+                      View/download your last uploaded resume
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {latestResumeLoading ? (
+                      <p className="text-sm text-muted-foreground">Loading…</p>
+                    ) : latestResume ? (
+                      <>
+                        <div className="text-sm">
+                          <p className="font-medium truncate">
+                            {latestResume.filename || "Resume"}
+                          </p>
+                          <p className="text-muted-foreground">
+                            Credibility: {latestResume.credibility_score ?? "—"}
+                            /100
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            className="flex-1"
+                            disabled={!latestResume.file_url}
+                            onClick={() => {
+                              const url = toAbsoluteUploadsUrl(
+                                latestResume.file_url
+                              );
+                              if (url)
+                                window.open(
+                                  url,
+                                  "_blank",
+                                  "noopener,noreferrer"
+                                );
+                            }}
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            View
+                          </Button>
+                          <Button
+                            className="flex-1"
+                            disabled={!latestResume.file_url}
+                            onClick={() => {
+                              const url = toAbsoluteUploadsUrl(
+                                latestResume.file_url
+                              );
+                              if (url)
+                                triggerBrowserDownload(
+                                  url,
+                                  latestResume.filename
+                                );
+                            }}
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            Download
+                          </Button>
+                        </div>
+                      </>
                     ) : (
-                      <p className="text-zinc-300 p-2">
-                        {profileData.bio || "No bio added yet"}
+                      <p className="text-sm text-muted-foreground">
+                        No resume uploaded yet.
                       </p>
                     )}
-                  </div>
-                  {editing && (
                     <Button
-                      onClick={handleSaveProfile}
-                      className="w-full bg-gradient-to-r from-orange-600 to-orange-600 hover:from-orange-700 hover:to-orange-700 text-white"
+                      variant={latestResume ? "outline" : "default"}
+                      className="w-full"
+                      onClick={() => navigate("/resume")}
                     >
-                      <Save className="w-4 h-4 mr-2" />
-                      Save Changes
+                      <ChevronRight className="w-4 h-4 mr-2" />
+                      {latestResume
+                        ? "Analyze a new resume"
+                        : "Upload & analyze resume"}
                     </Button>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
-              {/* Skills & Links */}
-              <div className="space-y-6">
-                {/* Skills */}
-                <Card className="bg-zinc-900 border-zinc-800">
+                <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-white text-lg">
-                      <Sparkles className="w-5 h-5 text-orange-400" />
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Activity className="w-5 h-5 text-primary" />
+                      Activity Calendar
+                    </CardTitle>
+                    <CardDescription>
+                      Last 12 weeks (auto from DB activity)
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {heatmapLoading ? (
+                      <p className="text-sm text-muted-foreground">Loading…</p>
+                    ) : (
+                      <div className="grid grid-cols-12 gap-1">
+                        {buildHeatmapCells().map((cell, idx) => {
+                          if (!cell) {
+                            return (
+                              <div key={`pad-${idx}`} className="h-3 w-3" />
+                            );
+                          }
+                          const c = cell.count;
+                          const intensity =
+                            c <= 0
+                              ? 0
+                              : c === 1
+                              ? 1
+                              : c <= 3
+                              ? 2
+                              : c <= 6
+                              ? 3
+                              : 4;
+                          const cls =
+                            intensity === 0
+                              ? "bg-muted"
+                              : intensity === 1
+                              ? "bg-primary/20"
+                              : intensity === 2
+                              ? "bg-primary/35"
+                              : intensity === 3
+                              ? "bg-primary/55"
+                              : "bg-primary";
+                          return (
+                            <div
+                              key={cell.key}
+                              title={`${cell.key}: ${c}`}
+                              className={`h-3 w-3 rounded-sm ${cls}`}
+                            />
+                          );
+                        })}
+                      </div>
+                    )}
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => fetchHeatmap(84)}
+                    >
+                      Refresh Activity
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Sparkles className="w-5 h-5 text-primary" />
                       Skills
                     </CardTitle>
+                    <CardDescription>
+                      {editing
+                        ? "Click a skill to remove"
+                        : "Your highlighted skills"}
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-wrap gap-2 mb-4">
-                      {profileData.skills.length > 0 ? (
+                      {profileData.skills?.length > 0 ? (
                         profileData.skills.map((skill, index) => (
                           <Badge
                             key={index}
-                            className="bg-zinc-800 text-white border-zinc-700 hover:bg-zinc-700 cursor-pointer"
+                            className="cursor-pointer"
+                            variant="secondary"
                             onClick={() => editing && handleRemoveSkill(skill)}
                           >
                             {skill}
@@ -1127,7 +1497,7 @@ const ProfilePage = () => {
                           </Badge>
                         ))
                       ) : (
-                        <p className="text-zinc-400 text-sm">
+                        <p className="text-sm text-muted-foreground">
                           No skills added yet
                         </p>
                       )}
@@ -1138,16 +1508,11 @@ const ProfilePage = () => {
                           value={newSkill}
                           onChange={(e) => setNewSkill(e.target.value)}
                           placeholder="Add a skill..."
-                          className="bg-zinc-800 border-zinc-700 text-white"
-                          onKeyPress={(e) =>
+                          onKeyDown={(e) =>
                             e.key === "Enter" && handleAddSkill()
                           }
                         />
-                        <Button
-                          onClick={handleAddSkill}
-                          size="sm"
-                          className="bg-white text-black hover:bg-zinc-200"
-                        >
+                        <Button onClick={handleAddSkill} size="sm">
                           Add
                         </Button>
                       </div>
@@ -1155,19 +1520,21 @@ const ProfilePage = () => {
                   </CardContent>
                 </Card>
 
-                {/* Social Links */}
-                <Card className="bg-zinc-900 border-zinc-800">
+                <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-white text-lg">
-                      <Link2 className="w-5 h-5 text-orange-400" />
-                      Social Links
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Link2 className="w-5 h-5 text-primary" />
+                      Online Profiles
                     </CardTitle>
+                    <CardDescription>
+                      GitHub, LinkedIn and Portfolio links
+                    </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-3">
                     {editing ? (
                       <>
                         <div className="flex items-center gap-2">
-                          <Github className="w-5 h-5 text-orange-400" />
+                          <Github className="w-5 h-5 text-muted-foreground" />
                           <Input
                             value={profileData.github}
                             onChange={(e) =>
@@ -1187,12 +1554,11 @@ const ProfilePage = () => {
                                 });
                               }
                             }}
-                            placeholder="GitHub username (or paste profile URL)"
-                            className="bg-zinc-800 border-zinc-700 text-white"
+                            placeholder="GitHub username or URL"
                           />
                         </div>
                         <div className="flex items-center gap-2">
-                          <Linkedin className="w-5 h-5 text-orange-400" />
+                          <Linkedin className="w-5 h-5 text-muted-foreground" />
                           <Input
                             value={profileData.linkedin}
                             onChange={(e) =>
@@ -1211,11 +1577,10 @@ const ProfilePage = () => {
                               }
                             }}
                             placeholder="LinkedIn profile URL"
-                            className="bg-zinc-800 border-zinc-700 text-white"
                           />
                         </div>
                         <div className="flex items-center gap-2">
-                          <Globe className="w-5 h-5 text-orange-400" />
+                          <Globe className="w-5 h-5 text-muted-foreground" />
                           <Input
                             value={profileData.portfolio}
                             onChange={(e) =>
@@ -1233,61 +1598,70 @@ const ProfilePage = () => {
                                 });
                               }
                             }}
-                            placeholder="Portfolio website"
-                            className="bg-zinc-800 border-zinc-700 text-white"
+                            placeholder="Portfolio URL"
                           />
                         </div>
+                        <Button onClick={handleSaveProfile} className="w-full">
+                          <Save className="w-4 h-4 mr-2" />
+                          Save Links
+                        </Button>
                       </>
                     ) : (
                       <>
-                        {profileData.github && (
+                        {profileData.github ? (
                           <a
                             href={`https://github.com/${normalizeGithubUsername(
                               profileData.github
                             )}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="group flex items-center gap-3 p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+                            className="flex items-center justify-between gap-2 rounded-md border border-border p-3 hover:bg-muted transition-colors"
                           >
-                            <Github className="w-5 h-5 text-zinc-400 group-hover:text-orange-400 transition-colors" />
-                            <span className="text-zinc-300 group-hover:text-white transition-colors">
-                              GitHub Profile
+                            <span className="flex items-center gap-2">
+                              <Github className="w-5 h-5 text-muted-foreground" />
+                              <span className="text-sm">GitHub</span>
                             </span>
+                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
                           </a>
-                        )}
-                        {profileData.linkedin && (
+                        ) : null}
+
+                        {profileData.linkedin ? (
                           <a
                             href={ensureHttpsUrl(profileData.linkedin)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="group flex items-center gap-3 p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+                            className="flex items-center justify-between gap-2 rounded-md border border-border p-3 hover:bg-muted transition-colors"
                           >
-                            <Linkedin className="w-5 h-5 text-zinc-400 group-hover:text-orange-400 transition-colors" />
-                            <span className="text-zinc-300 group-hover:text-white transition-colors">
-                              LinkedIn Profile
+                            <span className="flex items-center gap-2">
+                              <Linkedin className="w-5 h-5 text-muted-foreground" />
+                              <span className="text-sm">LinkedIn</span>
                             </span>
+                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
                           </a>
-                        )}
-                        {profileData.portfolio && (
+                        ) : null}
+
+                        {profileData.portfolio ? (
                           <a
                             href={ensureHttpsUrl(profileData.portfolio)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="group flex items-center gap-3 p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+                            className="flex items-center justify-between gap-2 rounded-md border border-border p-3 hover:bg-muted transition-colors"
                           >
-                            <Globe className="w-5 h-5 text-zinc-400 group-hover:text-orange-400 transition-colors" />
-                            <span className="text-zinc-300 group-hover:text-white transition-colors">
-                              Portfolio
+                            <span className="flex items-center gap-2">
+                              <Globe className="w-5 h-5 text-muted-foreground" />
+                              <span className="text-sm">Portfolio</span>
                             </span>
+                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
                           </a>
-                        )}
+                        ) : null}
+
                         {!profileData.github &&
-                          !profileData.linkedin &&
-                          !profileData.portfolio && (
-                            <p className="text-zinc-400 text-sm">
-                              No links added yet
-                            </p>
-                          )}
+                        !profileData.linkedin &&
+                        !profileData.portfolio ? (
+                          <p className="text-sm text-muted-foreground">
+                            No links added yet
+                          </p>
+                        ) : null}
                       </>
                     )}
                   </CardContent>

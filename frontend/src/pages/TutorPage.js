@@ -528,8 +528,8 @@ const TutorPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-black">
-      <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-3 md:py-6">
+    <div className="bg-black overflow-hidden h-[calc(100dvh-4rem-5rem)] md:h-[calc(100dvh-4rem)]">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-3 md:py-6 h-full flex flex-col overflow-hidden">
         {/* Header */}
         <div className="hidden md:flex md:items-center md:justify-between gap-4 mb-6">
           <div className="flex items-center gap-4">
@@ -589,15 +589,17 @@ const TutorPage = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 flex-1 min-h-0">
           {/* Desktop Sidebar */}
-          <div className="hidden lg:block lg:col-span-1">
-            <OptionsPanel />
+          <div className="hidden lg:block lg:col-span-1 min-h-0">
+            <div className="h-full overflow-y-auto">
+              <OptionsPanel />
+            </div>
           </div>
 
           {/* Chat Area */}
-          <div className="lg:col-span-3">
-            <Card className="h-[calc(100dvh-120px)] md:h-[calc(100dvh-200px)] flex flex-col bg-zinc-900 border-zinc-800">
+          <div className="lg:col-span-3 min-h-0">
+            <Card className="h-full min-h-0 flex flex-col bg-zinc-900 border-zinc-800">
               {/* Chat Header */}
               <div className="p-3 sm:p-4 border-b border-zinc-800 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">

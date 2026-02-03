@@ -1,5 +1,6 @@
 # ==================== IMPORTS ====================
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Form, Query
+from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
@@ -19,6 +20,10 @@ import io
 import sqlite3
 import json
 import httpx
+import secrets
+import smtplib
+from email.message import EmailMessage
+import hashlib
 
 # Azure OpenAI SDK
 from openai import AzureOpenAI
@@ -78,7 +83,9 @@ logger = logging.getLogger(__name__)
 # ==================== ROUTES ====================
 
 ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
+# Load local env file. `override=True` ensures values in `.env` win over any
+# pre-existing OS environment variables (common on Windows).
+load_dotenv(ROOT_DIR / '.env', override=True)
 
 # Database Configuration
 DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///./learnovatex.db')
@@ -124,12 +131,42 @@ LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 LOG_FILE = os.environ.get('LOG_FILE', 'logs/learnovatex.log')
 
 # Email Configuration (optional)
-ENABLE_EMAIL = os.environ.get('ENABLE_EMAIL', 'false').lower() == 'true'
-SMTP_HOST = os.environ.get('SMTP_HOST', '')
+def _env_str(name: str) -> str:
+    val = os.environ.get(name, "")
+    if val is None:
+        return ""
+    # Trim and remove wrapping quotes
+    val = str(val).strip()
+    if (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
+        val = val[1:-1].strip()
+    return val
+
+
+SMTP_HOST = _env_str('SMTP_HOST')
 SMTP_PORT = int(os.environ.get('SMTP_PORT') or 587)
-SMTP_USERNAME = os.environ.get('SMTP_USERNAME', '')
-SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
-EMAIL_FROM = os.environ.get('EMAIL_FROM', '')
+SMTP_USERNAME = _env_str('SMTP_USERNAME')
+SMTP_PASSWORD = _env_str('SMTP_PASSWORD')
+EMAIL_FROM = _env_str('EMAIL_FROM')
+
+# Gmail app passwords are shown with spaces; allow either format.
+if SMTP_HOST.endswith("gmail.com"):
+    SMTP_PASSWORD = SMTP_PASSWORD.replace(" ", "")
+
+# Transport options
+SMTP_USE_SSL = os.environ.get('SMTP_USE_SSL', 'false').lower() == 'true'
+SMTP_USE_STARTTLS = os.environ.get('SMTP_USE_STARTTLS', 'true').lower() == 'true'
+
+SMTP_CONFIGURED = bool(SMTP_HOST and SMTP_USERNAME and SMTP_PASSWORD and EMAIL_FROM)
+
+# If ENABLE_EMAIL isn't explicitly set, auto-enable when SMTP is configured.
+_enable_email_raw = os.environ.get('ENABLE_EMAIL')
+if _enable_email_raw is None:
+    ENABLE_EMAIL = SMTP_CONFIGURED
+else:
+    ENABLE_EMAIL = _enable_email_raw.lower() == 'true'
+
+# Extra safety: allow returning debug OTP only when explicitly enabled.
+RETURN_DEBUG_OTP = os.environ.get('RETURN_DEBUG_OTP', 'false').lower() == 'true'
 
 # App Configuration
 APP_NAME = os.environ.get('APP_NAME', 'LearnovateX')
@@ -162,6 +199,31 @@ class UserRegister(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ForgotPasswordResponse(BaseModel):
+    message: str
+    # Only returned in non-production debug mode when email sending is disabled.
+    debug_otp: Optional[str] = None
+
+
+class VerifyOtpRequest(BaseModel):
+    email: EmailStr
+    otp: str
+
+
+class VerifyOtpResponse(BaseModel):
+    verified: bool
+
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    otp: str
+    new_password: str
 
 class UserResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -210,6 +272,41 @@ class CodeSubmission(BaseModel):
     language: str
     problem_id: str
     user_id: str
+    topic: Optional[str] = None
+    difficulty: Optional[str] = None
+    solve_time_seconds: Optional[int] = None
+
+
+class ActivityEvent(BaseModel):
+    event_type: str
+    path: Optional[str] = None
+    duration_seconds: Optional[int] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class ApplyTrackerCreate(BaseModel):
+    role: str
+    source: str
+    url: str
+    match_tag: Optional[str] = None
+    status: Optional[str] = "planned"  # planned|applied|interview|offer|rejected
+
+
+class ApplyTrackerUpdate(BaseModel):
+    status: Optional[str] = None
+
+
+class ApplyTrackerItem(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    user_id: str
+    role: str
+    source: str
+    url: str
+    match_tag: Optional[str] = None
+    status: str
+    created_at: str
+    updated_at: str
 
 class CodeEvaluation(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -229,8 +326,13 @@ class ResumeAnalysis(BaseModel):
     id: str
     user_id: str
     filename: str
+    file_url: Optional[str] = None
     text_content: str
     credibility_score: int
+    projects_score: Optional[int] = None
+    skills_score: Optional[int] = None
+    experience_score: Optional[int] = None
+    ats_score: Optional[int] = None
     fake_skills: List[str]
     suggestions: List[str]
     analysis: str
@@ -317,6 +419,179 @@ def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
 
+def _validate_password_strength(password: str) -> None:
+    # Requirements:
+    # - Minimum 8 characters
+    # - At least 1 uppercase letter
+    # - At least 1 number
+    # - At least 1 special character
+    if len(password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+
+    has_upper = any(c.isupper() for c in password)
+    has_digit = any(c.isdigit() for c in password)
+    has_special = any(not c.isalnum() for c in password)
+
+    if not has_upper:
+        raise HTTPException(status_code=400, detail="Password must include at least 1 uppercase letter")
+    if not has_digit:
+        raise HTTPException(status_code=400, detail="Password must include at least 1 number")
+    if not has_special:
+        raise HTTPException(status_code=400, detail="Password must include at least 1 special character")
+
+
+def _generate_otp_6() -> str:
+    # 000000 - 999999
+    return f"{secrets.randbelow(1_000_000):06d}"
+
+
+def _hash_otp(otp: str) -> str:
+    return bcrypt.hashpw(otp.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+
+def _verify_otp(otp: str, otp_hash: str) -> bool:
+    return bcrypt.checkpw(otp.encode('utf-8'), otp_hash.encode('utf-8'))
+
+
+def _send_email_smtp(to_email: str, subject: str, body_text: str, body_html: Optional[str] = None) -> None:
+    if not SMTP_CONFIGURED:
+        raise RuntimeError("SMTP is not configured")
+
+    msg = EmailMessage()
+    msg["From"] = EMAIL_FROM
+    msg["To"] = to_email
+    msg["Subject"] = subject
+    msg.set_content(body_text)
+    if body_html:
+        msg.add_alternative(body_html, subtype="html")
+
+    smtp_cls = smtplib.SMTP_SSL if SMTP_USE_SSL else smtplib.SMTP
+    with smtp_cls(SMTP_HOST, SMTP_PORT, timeout=20) as server:
+        server.ehlo()
+        if (not SMTP_USE_SSL) and SMTP_USE_STARTTLS:
+            server.starttls()
+            server.ehlo()
+        server.login(SMTP_USERNAME, SMTP_PASSWORD)
+        server.send_message(msg)
+
+
+def _email_status() -> dict:
+    # Return safe diagnostics only (no passwords)
+    missing = []
+    if not SMTP_HOST:
+        missing.append("SMTP_HOST")
+    if not SMTP_PORT:
+        missing.append("SMTP_PORT")
+    if not SMTP_USERNAME:
+        missing.append("SMTP_USERNAME")
+    if not SMTP_PASSWORD:
+        missing.append("SMTP_PASSWORD")
+    if not EMAIL_FROM:
+        missing.append("EMAIL_FROM")
+
+    configured = len(missing) == 0
+    return {
+        "enabled": bool(ENABLE_EMAIL),
+        "configured": configured,
+        "missing": missing,
+        "password_set": bool(SMTP_PASSWORD),
+        "password_len": len(SMTP_PASSWORD) if SMTP_PASSWORD else 0,
+        "host": SMTP_HOST or None,
+        "port": SMTP_PORT or None,
+        "use_starttls": bool(SMTP_USE_STARTTLS),
+        "use_ssl": bool(SMTP_USE_SSL),
+        "from": EMAIL_FROM or None,
+    }
+
+
+async def send_password_reset_otp_email(to_email: str, otp: str, ttl_minutes: int) -> None:
+    subject = f"{APP_NAME} Password Reset Code"
+    body_text = (
+        f"Your {APP_NAME} password reset code is: {otp}\n\n"
+        f"This code expires in {ttl_minutes} minutes.\n"
+        "If you didn't request a password reset, you can ignore this email."
+    )
+    body_html = f"""
+    <div style=\"font-family: Arial, Helvetica, sans-serif; line-height: 1.5;\">
+      <h2 style=\"margin:0 0 12px 0;\">{APP_NAME} Password Reset</h2>
+      <p style=\"margin:0 0 12px 0;\">Use this code to reset your password:</p>
+      <div style=\"font-size: 28px; font-weight: 700; letter-spacing: 4px; margin: 12px 0 16px 0;\">{otp}</div>
+      <p style=\"margin:0 0 12px 0;\">This code expires in <b>{ttl_minutes} minutes</b>.</p>
+      <p style=\"margin:0; color:#666;\">If you didn't request this, you can ignore this email.</p>
+    </div>
+    """.strip()
+    await asyncio.to_thread(_send_email_smtp, to_email, subject, body_text, body_html)
+
+
+def _get_latest_reset_otp_row(email: str) -> Optional[dict]:
+    with _sqlite_connection() as conn:
+        cursor = conn.execute(
+            """
+            SELECT id, email, otp_hash, expires_at, created_at, used_at, attempts
+            FROM password_reset_otps
+            WHERE email = ?
+            ORDER BY created_at DESC
+            LIMIT 1
+            """,
+            (email,),
+        )
+        return _row_to_dict(cursor.fetchone())
+
+
+def _create_reset_otp(email: str, ttl_minutes: int) -> str:
+    otp = _generate_otp_6()
+    now = datetime.now(timezone.utc)
+    expires_at = now + timedelta(minutes=ttl_minutes)
+
+    with _sqlite_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO password_reset_otps (id, email, otp_hash, expires_at, created_at, used_at, attempts)
+            VALUES (?, ?, ?, ?, ?, NULL, 0)
+            """,
+            (
+                str(uuid.uuid4()),
+                email,
+                _hash_otp(otp),
+                expires_at.isoformat(),
+                now.isoformat(),
+            ),
+        )
+        conn.commit()
+    return otp
+
+
+def _mark_reset_otp_used(email: str) -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    with _sqlite_connection() as conn:
+        conn.execute(
+            "UPDATE password_reset_otps SET used_at = ? WHERE email = ? AND used_at IS NULL",
+            (now, email),
+        )
+        conn.commit()
+
+
+def _increment_reset_otp_attempts(row_id: str) -> None:
+    with _sqlite_connection() as conn:
+        conn.execute(
+            "UPDATE password_reset_otps SET attempts = COALESCE(attempts, 0) + 1 WHERE id = ?",
+            (row_id,),
+        )
+        conn.commit()
+
+
+def _update_user_password(email: str, new_password_hash: str) -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    with _sqlite_connection() as conn:
+        cur = conn.execute(
+            "UPDATE users SET password = ?, updated_at = ? WHERE email = ?",
+            (new_password_hash, now, email),
+        )
+        conn.commit()
+        if cur.rowcount <= 0:
+            raise HTTPException(status_code=404, detail="User not found")
+
+
 def create_token(user_id: str, email: str) -> str:
     payload = {
         'user_id': user_id,
@@ -396,12 +671,29 @@ def _init_sqlite_db():
             );
             """
         )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS activity_events (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                path TEXT,
+                duration_seconds INTEGER,
+                metadata_json TEXT,
+                created_at TEXT NOT NULL
+            );
+            """
+        )
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS code_evaluations (
                 id TEXT PRIMARY KEY,
                 user_id TEXT NOT NULL,
                 problem_id TEXT,
+                topic TEXT,
+                difficulty TEXT,
+                solve_time_seconds INTEGER,
                 code TEXT,
                 language TEXT,
                 evaluation TEXT,
@@ -412,14 +704,30 @@ def _init_sqlite_db():
             );
             """
         )
+
+        # Safe migrations for code_evaluations (older DBs)
+        for statement in [
+            "ALTER TABLE code_evaluations ADD COLUMN topic TEXT",
+            "ALTER TABLE code_evaluations ADD COLUMN difficulty TEXT",
+            "ALTER TABLE code_evaluations ADD COLUMN solve_time_seconds INTEGER",
+        ]:
+            try:
+                conn.execute(statement)
+            except sqlite3.OperationalError:
+                pass
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS resume_analyses (
                 id TEXT PRIMARY KEY,
                 user_id TEXT NOT NULL,
                 filename TEXT,
+                file_url TEXT,
                 text_content TEXT,
                 credibility_score INTEGER,
+                projects_score INTEGER,
+                skills_score INTEGER,
+                experience_score INTEGER,
+                ats_score INTEGER,
                 fake_skills TEXT,
                 suggestions TEXT,
                 analysis TEXT,
@@ -427,6 +735,19 @@ def _init_sqlite_db():
             );
             """
         )
+
+        # Safe migrations for resume_analyses (older DBs)
+        for statement in [
+            "ALTER TABLE resume_analyses ADD COLUMN projects_score INTEGER",
+            "ALTER TABLE resume_analyses ADD COLUMN skills_score INTEGER",
+            "ALTER TABLE resume_analyses ADD COLUMN experience_score INTEGER",
+            "ALTER TABLE resume_analyses ADD COLUMN ats_score INTEGER",
+            "ALTER TABLE resume_analyses ADD COLUMN file_url TEXT",
+        ]:
+            try:
+                conn.execute(statement)
+            except sqlite3.OperationalError:
+                pass
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS interview_evaluations (
@@ -437,9 +758,64 @@ def _init_sqlite_db():
                 answers TEXT,
                 evaluation TEXT,
                 readiness_score INTEGER,
+                confidence_score INTEGER,
+                communication_score INTEGER,
+                technical_depth_score INTEGER,
                 strengths TEXT,
                 weaknesses TEXT,
                 created_at TEXT NOT NULL
+            );
+            """
+        )
+
+        # Safe migrations for interview_evaluations (older DBs)
+        for statement in [
+            "ALTER TABLE interview_evaluations ADD COLUMN confidence_score INTEGER",
+            "ALTER TABLE interview_evaluations ADD COLUMN communication_score INTEGER",
+            "ALTER TABLE interview_evaluations ADD COLUMN technical_depth_score INTEGER",
+        ]:
+            try:
+                conn.execute(statement)
+            except sqlite3.OperationalError:
+                pass
+
+        # Career Readiness Dashboard support tables
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS career_readiness_snapshots (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                snapshot_date TEXT NOT NULL,
+                readiness_score REAL NOT NULL,
+                breakdown_json TEXT,
+                created_at TEXT NOT NULL
+            );
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS daily_action_locks (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                action_date TEXT NOT NULL,
+                action_json TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+            """
+        )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS apply_tracker (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                role TEXT NOT NULL,
+                source TEXT NOT NULL,
+                url TEXT NOT NULL,
+                match_tag TEXT,
+                status TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
             );
             """
         )
@@ -589,6 +965,38 @@ def _init_sqlite_db():
             """
         )
 
+        # Password reset OTPs
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS password_reset_otps (
+                id TEXT PRIMARY KEY,
+                email TEXT NOT NULL,
+                otp_hash TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                used_at TEXT,
+                attempts INTEGER DEFAULT 0
+            );
+            """
+        )
+
+        # Safe migrations for older DBs
+        for statement in [
+            "ALTER TABLE password_reset_otps ADD COLUMN used_at TEXT",
+            "ALTER TABLE password_reset_otps ADD COLUMN attempts INTEGER DEFAULT 0",
+        ]:
+            try:
+                conn.execute(statement)
+            except sqlite3.OperationalError:
+                pass
+
+        try:
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_password_reset_otps_email ON password_reset_otps(email)"
+            )
+        except Exception:
+            pass
+
 
 def _insert_sqlite_user(user_doc: dict) -> bool:
     try:
@@ -706,11 +1114,14 @@ def _insert_learning_history(history_doc: dict):
 def _insert_code_evaluation(eval_doc: dict):
     with _sqlite_connection() as conn:
         conn.execute(
-            "INSERT INTO code_evaluations (id, user_id, problem_id, code, language, evaluation, passed, suggestions, score, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO code_evaluations (id, user_id, problem_id, topic, difficulty, solve_time_seconds, code, language, evaluation, passed, suggestions, score, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 eval_doc['id'],
                 eval_doc['user_id'],
                 eval_doc['problem_id'],
+                eval_doc.get('topic'),
+                eval_doc.get('difficulty'),
+                eval_doc.get('solve_time_seconds'),
                 eval_doc['code'],
                 eval_doc['language'],
                 eval_doc['evaluation'],
@@ -826,7 +1237,7 @@ def _fetch_user_applications(user_id: str) -> List[dict]:
 def _fetch_code_submissions(user_id: str, limit: int = 100) -> List[dict]:
     with _sqlite_connection() as conn:
         cursor = conn.execute(
-            "SELECT id, user_id, problem_id, code, language, evaluation, passed, suggestions, score, created_at FROM code_evaluations WHERE user_id = ? ORDER BY created_at DESC LIMIT ?",
+            "SELECT id, user_id, problem_id, topic, difficulty, solve_time_seconds, code, language, evaluation, passed, suggestions, score, created_at FROM code_evaluations WHERE user_id = ? ORDER BY created_at DESC LIMIT ?",
             (user_id, limit),
         )
         rows = cursor.fetchall()
@@ -1018,13 +1429,18 @@ async def calculate_career_readiness_score(user_id: str) -> float:
 def _insert_resume_analysis(doc: dict):
     with _sqlite_connection() as conn:
         conn.execute(
-            "INSERT INTO resume_analyses (id, user_id, filename, text_content, credibility_score, fake_skills, suggestions, analysis, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO resume_analyses (id, user_id, filename, file_url, text_content, credibility_score, projects_score, skills_score, experience_score, ats_score, fake_skills, suggestions, analysis, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 doc['id'],
                 doc['user_id'],
                 doc.get('filename'),
+                doc.get('file_url'),
                 doc.get('text_content'),
                 doc.get('credibility_score'),
+                doc.get('projects_score'),
+                doc.get('skills_score'),
+                doc.get('experience_score'),
+                doc.get('ats_score'),
                 json.dumps(doc.get('fake_skills', [])),
                 json.dumps(doc.get('suggestions', [])),
                 doc.get('analysis'),
@@ -1043,7 +1459,7 @@ def _row_to_resume(doc: sqlite3.Row) -> dict:
 def _fetch_resume_history(user_id: str, limit: int = 50) -> List[dict]:
     with _sqlite_connection() as conn:
         cursor = conn.execute(
-            "SELECT id, user_id, filename, text_content, credibility_score, fake_skills, suggestions, analysis, created_at FROM resume_analyses WHERE user_id = ? ORDER BY created_at DESC LIMIT ?",
+            "SELECT id, user_id, filename, file_url, text_content, credibility_score, projects_score, skills_score, experience_score, ats_score, fake_skills, suggestions, analysis, created_at FROM resume_analyses WHERE user_id = ? ORDER BY created_at DESC LIMIT ?",
             (user_id, limit),
         )
         rows = cursor.fetchall()
@@ -1053,7 +1469,7 @@ def _fetch_resume_history(user_id: str, limit: int = 50) -> List[dict]:
 def _get_latest_resume(user_id: str) -> Optional[dict]:
     with _sqlite_connection() as conn:
         cursor = conn.execute(
-            "SELECT id, user_id, filename, text_content, credibility_score, fake_skills, suggestions, analysis, created_at FROM resume_analyses WHERE user_id = ? ORDER BY created_at DESC LIMIT 1",
+            "SELECT id, user_id, filename, file_url, text_content, credibility_score, projects_score, skills_score, experience_score, ats_score, fake_skills, suggestions, analysis, created_at FROM resume_analyses WHERE user_id = ? ORDER BY created_at DESC LIMIT 1",
             (user_id,),
         )
         row = cursor.fetchone()
@@ -1086,7 +1502,7 @@ def _row_to_interview(doc: sqlite3.Row) -> dict:
 def _fetch_interview_history(user_id: str, limit: int = 50) -> List[dict]:
     with _sqlite_connection() as conn:
         cursor = conn.execute(
-            "SELECT id, user_id, interview_type, questions, answers, evaluation, readiness_score, strengths, weaknesses, created_at FROM interview_evaluations WHERE user_id = ? ORDER BY created_at DESC LIMIT ?",
+            "SELECT id, user_id, interview_type, questions, answers, evaluation, readiness_score, confidence_score, communication_score, technical_depth_score, strengths, weaknesses, created_at FROM interview_evaluations WHERE user_id = ? ORDER BY created_at DESC LIMIT ?",
             (user_id, limit),
         )
         rows = cursor.fetchall()
@@ -1100,7 +1516,7 @@ async def fetch_interview_history(user_id: str, limit: int = 50) -> List[dict]:
 def _insert_interview_evaluation(eval_doc: dict):
     with _sqlite_connection() as conn:
         conn.execute(
-            "INSERT INTO interview_evaluations (id, user_id, interview_type, questions, answers, evaluation, readiness_score, strengths, weaknesses, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO interview_evaluations (id, user_id, interview_type, questions, answers, evaluation, readiness_score, confidence_score, communication_score, technical_depth_score, strengths, weaknesses, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 eval_doc['id'],
                 eval_doc['user_id'],
@@ -1109,11 +1525,763 @@ def _insert_interview_evaluation(eval_doc: dict):
                 json.dumps(eval_doc.get('answers', [])),
                 eval_doc.get('evaluation'),
                 eval_doc.get('readiness_score'),
+                eval_doc.get('confidence_score'),
+                eval_doc.get('communication_score'),
+                eval_doc.get('technical_depth_score'),
                 json.dumps(eval_doc.get('strengths', [])),
                 json.dumps(eval_doc.get('weaknesses', [])),
                 eval_doc['created_at'],
             ),
         )
+
+
+def _clamp_0_100(value: Any) -> float:
+    try:
+        v = float(value)
+    except Exception:
+        v = 0.0
+    return max(0.0, min(100.0, v))
+
+
+def _normalize_text(value: Optional[str]) -> str:
+    return (value or "").lower()
+
+
+def _infer_resume_section_scores(text_content: Optional[str]) -> dict:
+    text = _normalize_text(text_content)
+    if not text.strip():
+        return {"projects": 0, "skills": 0, "experience": 0, "ats": 0}
+
+    def score_for(section_keywords: List[str], base: int) -> int:
+        hits = sum(1 for k in section_keywords if k in text)
+        return max(0, min(100, base + hits * 15))
+
+    projects = score_for(["project", "github", "portfolio", "demo", "capstone"], 35)
+    skills = score_for(["skills", "python", "java", "react", "sql", "aws", "docker"], 30)
+    experience = score_for(["experience", "intern", "internship", "work", "employment"], 25)
+    ats = score_for(["achievements", "metrics", "%", "impact", "results", "keywords"], 25)
+    return {"projects": projects, "skills": skills, "experience": experience, "ats": ats}
+
+
+def _extract_known_skills(user_profile_data: Optional[str], resume_text: Optional[str], learning_topics: List[str]) -> List[str]:
+    skills = set()
+
+    if user_profile_data:
+        try:
+            pd = json.loads(user_profile_data)
+            for key in ["skills", "tech", "technologies", "stack"]:
+                val = pd.get(key)
+                if isinstance(val, list):
+                    for s in val:
+                        if isinstance(s, str) and s.strip():
+                            skills.add(s.strip().lower())
+                elif isinstance(val, str):
+                    for s in val.split(","):
+                        if s.strip():
+                            skills.add(s.strip().lower())
+        except Exception:
+            pass
+
+    text = _normalize_text(resume_text)
+    keyword_bank = [
+        "python",
+        "java",
+        "javascript",
+        "typescript",
+        "react",
+        "node",
+        "express",
+        "fastapi",
+        "sql",
+        "mongodb",
+        "sqlite",
+        "docker",
+        "kubernetes",
+        "aws",
+        "azure",
+        "git",
+        "dsa",
+        "system design",
+        "ml",
+        "machine learning",
+        "pandas",
+        "numpy",
+        "power bi",
+        "excel",
+    ]
+    for kw in keyword_bank:
+        if kw in text:
+            skills.add(kw)
+
+    for topic in learning_topics:
+        if isinstance(topic, str) and topic.strip():
+            skills.add(topic.strip().lower())
+
+    return sorted(skills)
+
+
+def _role_profiles() -> List[dict]:
+    return [
+        {"role": "Frontend Developer", "required_skills": ["javascript", "react"], "min": {"coding": 60, "resume": 60, "interview": 50, "learning": 40}},
+        {"role": "Backend Developer", "required_skills": ["python", "fastapi", "sql"], "min": {"coding": 60, "resume": 60, "interview": 50, "learning": 40}},
+        {"role": "Full-Stack Developer", "required_skills": ["react", "api", "sql"], "min": {"coding": 65, "resume": 65, "interview": 55, "learning": 45}},
+        {"role": "Data Analyst", "required_skills": ["sql", "excel", "power bi"], "min": {"coding": 45, "resume": 60, "interview": 45, "learning": 40}},
+        {"role": "Data Scientist", "required_skills": ["python", "pandas", "machine learning", "sql"], "min": {"coding": 60, "resume": 65, "interview": 55, "learning": 45}},
+        {"role": "ML Engineer", "required_skills": ["python", "machine learning", "docker"], "min": {"coding": 65, "resume": 65, "interview": 55, "learning": 45}},
+        {"role": "DevOps Engineer", "required_skills": ["docker", "kubernetes", "aws"], "min": {"coding": 50, "resume": 60, "interview": 50, "learning": 45}},
+    ]
+
+
+def _compute_role_eligibility(breakdown: dict, known_skills: List[str]) -> List[dict]:
+    coding = _clamp_0_100(breakdown.get("coding", {}).get("score", 0))
+    resume = _clamp_0_100(breakdown.get("resume", {}).get("score", 0))
+    interview = _clamp_0_100(breakdown.get("interview", {}).get("score", 0))
+    learning = _clamp_0_100(breakdown.get("learning", {}).get("score", 0))
+
+    skills_set = set((s or "").lower() for s in known_skills)
+    results = []
+
+    for profile in _role_profiles():
+        req = [s.lower() for s in profile["required_skills"]]
+        missing = [s for s in req if s not in skills_set]
+        skill_match = 1.0 - (len(missing) / max(1, len(req)))
+
+        mins = profile["min"]
+        component_fit = (
+            min(1.0, coding / max(1, mins["coding"]))
+            * min(1.0, resume / max(1, mins["resume"]))
+            * min(1.0, interview / max(1, mins["interview"]))
+            * min(1.0, learning / max(1, mins["learning"]))
+        )
+
+        eligibility = round(_clamp_0_100((skill_match * 0.55 + component_fit * 0.45) * 100), 1)
+
+        actions = []
+        if coding < mins["coding"]:
+            actions.append("Practice coding daily (2 Medium problems)")
+        if resume < mins["resume"]:
+            actions.append("Improve resume bullets with metrics")
+        if interview < mins["interview"]:
+            actions.append("Complete 2 mock interviews this week")
+        if missing:
+            actions.append(f"Learn missing skills: {', '.join(missing[:4])}")
+        if not actions:
+            actions.append("Maintain momentum and apply to roles")
+
+        results.append(
+            {
+                "role": profile["role"],
+                "eligibility_percentage": eligibility,
+                "missing_skills": missing,
+                "required_improvement_actions": actions[:4],
+                "resume_match_score": round(resume, 1),
+                "interview_readiness_score": round(interview, 1),
+            }
+        )
+
+    results.sort(key=lambda r: r.get("eligibility_percentage", 0), reverse=True)
+    return results
+
+
+def _job_search_links(role: str, location: str) -> List[dict]:
+    from urllib.parse import quote_plus
+
+    q = quote_plus(f"{role} {location} entry level")
+    return [
+        {"source": "LinkedIn", "title": f"{role} jobs on LinkedIn", "url": f"https://www.linkedin.com/jobs/search/?keywords={q}"},
+        {"source": "Indeed", "title": f"{role} jobs on Indeed", "url": f"https://in.indeed.com/jobs?q={q}"},
+        {"source": "Wellfound", "title": f"{role} jobs on Wellfound", "url": f"https://wellfound.com/jobs?search={q}"},
+    ]
+
+
+def _today_iso_date() -> str:
+    return datetime.now(timezone.utc).date().isoformat()
+
+
+def _select_daily_action_lock(user_id: str, action_date: str) -> Optional[dict]:
+    with _sqlite_connection() as conn:
+        row = conn.execute(
+            "SELECT action_json FROM daily_action_locks WHERE user_id = ? AND action_date = ? ORDER BY created_at DESC LIMIT 1",
+            (user_id, action_date),
+        ).fetchone()
+    if not row:
+        return None
+    try:
+        return json.loads(row["action_json"])
+    except Exception:
+        return None
+
+
+def _insert_daily_action_lock(user_id: str, action_date: str, action: dict) -> dict:
+    lock_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    with _sqlite_connection() as conn:
+        conn.execute(
+            "INSERT INTO daily_action_locks (id, user_id, action_date, action_json, created_at) VALUES (?, ?, ?, ?, ?)",
+            (lock_id, user_id, action_date, json.dumps(action), now),
+        )
+        conn.commit()
+    return action
+
+
+def _insert_snapshot_if_missing(user_id: str, snapshot_date: str, readiness_score: float, breakdown: dict) -> None:
+    with _sqlite_connection() as conn:
+        exists = conn.execute(
+            "SELECT 1 FROM career_readiness_snapshots WHERE user_id = ? AND snapshot_date = ? LIMIT 1",
+            (user_id, snapshot_date),
+        ).fetchone()
+        if exists:
+            return
+        snap_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc).isoformat()
+        conn.execute(
+            "INSERT INTO career_readiness_snapshots (id, user_id, snapshot_date, readiness_score, breakdown_json, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (snap_id, user_id, snapshot_date, float(readiness_score), json.dumps(breakdown), now),
+        )
+        conn.commit()
+
+
+def _fetch_snapshots(user_id: str, days: int = 30) -> List[dict]:
+    days = max(1, min(int(days), 365))
+    with _sqlite_connection() as conn:
+        rows = conn.execute(
+            "SELECT snapshot_date, readiness_score, breakdown_json FROM career_readiness_snapshots WHERE user_id = ? ORDER BY snapshot_date DESC LIMIT ?",
+            (user_id, days),
+        ).fetchall()
+    items: List[dict] = []
+    for r in rows:
+        try:
+            breakdown = json.loads(r["breakdown_json"]) if r["breakdown_json"] else None
+        except Exception:
+            breakdown = None
+        items.append({"date": r["snapshot_date"], "readiness_score": float(r["readiness_score"]), "breakdown": breakdown})
+    return list(reversed(items))
+
+
+def _fetch_distinct_learning_topics(user_id: str, limit: int = 200) -> List[str]:
+    with _sqlite_connection() as conn:
+        rows = conn.execute(
+            "SELECT topic FROM learning_history WHERE user_id = ? AND topic IS NOT NULL AND TRIM(topic) != '' ORDER BY created_at DESC LIMIT ?",
+            (user_id, limit),
+        ).fetchall()
+    seen = []
+    for r in rows:
+        t = (r["topic"] or "").strip()
+        if t and t not in seen:
+            seen.append(t)
+    return seen
+
+
+def _fetch_activity_dates(user_id: str, days: int = 120) -> List[datetime]:
+    days = max(7, min(int(days), 365))
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    with _sqlite_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT created_at FROM learning_history WHERE user_id = ? AND created_at >= ?
+            UNION ALL
+            SELECT created_at FROM code_evaluations WHERE user_id = ? AND created_at >= ?
+            UNION ALL
+            SELECT created_at FROM resume_analyses WHERE user_id = ? AND created_at >= ?
+            UNION ALL
+            SELECT created_at FROM interview_evaluations WHERE user_id = ? AND created_at >= ?
+            UNION ALL
+            SELECT created_at FROM activity_events WHERE user_id = ? AND created_at >= ?
+            """,
+            (user_id, cutoff, user_id, cutoff, user_id, cutoff, user_id, cutoff, user_id, cutoff),
+        ).fetchall()
+    dts: List[datetime] = []
+    for r in rows:
+        dt = _parse_iso_datetime(r["created_at"]) if r and r["created_at"] else None
+        if dt:
+            dts.append(dt.astimezone(timezone.utc))
+    return dts
+
+
+def _compute_activity_tracking(dts: List[datetime]) -> dict:
+    if not dts:
+        return {
+            "daily_login_activity": 0,
+            "active_days_7": 0,
+            "active_days_30": 0,
+            "active_days_90": 0,
+            "missed_learning_days_30": 30,
+            "last_activity_at": None,
+        }
+
+    dates = {dt.date() for dt in dts}
+    today = datetime.now(timezone.utc).date()
+    last_activity_at = max(dts).isoformat()
+
+    def active_in(window_days: int) -> int:
+        start = today - timedelta(days=window_days - 1)
+        return sum(1 for d in dates if d >= start)
+
+    active_7 = active_in(7)
+    active_30 = active_in(30)
+    active_90 = active_in(90)
+    missed_30 = max(0, 30 - active_30)
+    # Daily login activity is approximated as "did something today"
+    daily_login = 1 if today in dates else 0
+
+    return {
+        "daily_login_activity": daily_login,
+        "active_days_7": int(active_7),
+        "active_days_30": int(active_30),
+        "active_days_90": int(active_90),
+        "missed_learning_days_30": int(missed_30),
+        "last_activity_at": last_activity_at,
+    }
+
+
+def _insert_activity_event(user_id: str, event: ActivityEvent) -> None:
+    event_type = (event.event_type or "").strip()[:50]
+    if not event_type:
+        raise ValueError("event_type is required")
+
+    path = (event.path or "").strip()[:512] or None
+    duration_seconds = None
+    if event.duration_seconds is not None:
+        try:
+            duration_seconds = int(event.duration_seconds)
+        except Exception:
+            duration_seconds = None
+        if duration_seconds is not None:
+            duration_seconds = max(0, min(duration_seconds, 24 * 60 * 60))
+
+    metadata_json = None
+    if event.metadata is not None:
+        try:
+            metadata_json = json.dumps(event.metadata)
+        except Exception:
+            metadata_json = None
+
+    event_id = str(uuid.uuid4())
+    created_at = datetime.now(timezone.utc).isoformat()
+    with _sqlite_connection() as conn:
+        conn.execute(
+            "INSERT INTO activity_events (id, user_id, event_type, path, duration_seconds, metadata_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (event_id, user_id, event_type, path, duration_seconds, metadata_json, created_at),
+        )
+        conn.commit()
+
+
+def _fetch_time_spent_seconds(user_id: str, days: int = 30) -> int:
+    days = max(1, min(int(days), 365))
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    with _sqlite_connection() as conn:
+        row = conn.execute(
+            """
+            SELECT COALESCE(SUM(COALESCE(duration_seconds, 0)), 0) AS total
+            FROM activity_events
+            WHERE user_id = ? AND event_type = 'time_spent' AND created_at >= ?
+            """,
+            (user_id, cutoff),
+        ).fetchone()
+    try:
+        return int(row["total"]) if row and row["total"] is not None else 0
+    except Exception:
+        return 0
+
+
+def _fetch_page_analytics(user_id: str, days: int = 30, limit: int = 10) -> List[dict]:
+    days = max(1, min(int(days), 365))
+    limit = max(1, min(int(limit), 50))
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+
+    with _sqlite_connection() as conn:
+        view_rows = conn.execute(
+            """
+            SELECT path, COUNT(*) AS views
+            FROM activity_events
+            WHERE user_id = ?
+              AND event_type = 'page_view'
+              AND created_at >= ?
+              AND path IS NOT NULL
+              AND TRIM(path) != ''
+            GROUP BY path
+            """,
+            (user_id, cutoff),
+        ).fetchall()
+
+        time_rows = conn.execute(
+            """
+            SELECT path, COALESCE(SUM(COALESCE(duration_seconds, 0)), 0) AS time_spent_seconds
+            FROM activity_events
+            WHERE user_id = ?
+              AND event_type = 'time_spent'
+              AND created_at >= ?
+              AND path IS NOT NULL
+              AND TRIM(path) != ''
+            GROUP BY path
+            """,
+            (user_id, cutoff),
+        ).fetchall()
+
+    merged: Dict[str, dict] = {}
+    for r in view_rows or []:
+        p = (r["path"] or "").strip()
+        if not p:
+            continue
+        merged.setdefault(p, {"path": p, "views": 0, "time_spent_seconds": 0})
+        try:
+            merged[p]["views"] = int(r["views"] or 0)
+        except Exception:
+            merged[p]["views"] = 0
+
+    for r in time_rows or []:
+        p = (r["path"] or "").strip()
+        if not p:
+            continue
+        merged.setdefault(p, {"path": p, "views": 0, "time_spent_seconds": 0})
+        try:
+            merged[p]["time_spent_seconds"] = int(r["time_spent_seconds"] or 0)
+        except Exception:
+            merged[p]["time_spent_seconds"] = 0
+
+    items = list(merged.values())
+    items.sort(key=lambda x: (int(x.get("views") or 0), int(x.get("time_spent_seconds") or 0)), reverse=True)
+    return items[:limit]
+
+
+def _normalize_apply_status(status: Optional[str]) -> str:
+    s = (status or "planned").strip().lower()
+    allowed = {"planned", "applied", "interview", "offer", "rejected"}
+    return s if s in allowed else "planned"
+
+
+def _upsert_apply_tracker_item(user_id: str, payload: ApplyTrackerCreate) -> dict:
+    role = (payload.role or "").strip()[:120]
+    source = (payload.source or "").strip()[:80]
+    url = (payload.url or "").strip()[:2000]
+    match_tag = (payload.match_tag or "").strip()[:80] or None
+    status = _normalize_apply_status(payload.status)
+
+    if not role or not source or not url:
+        raise ValueError("role, source, and url are required")
+
+    now = datetime.now(timezone.utc).isoformat()
+    with _sqlite_connection() as conn:
+        existing = conn.execute(
+            "SELECT id, user_id, role, source, url, match_tag, status, created_at, updated_at FROM apply_tracker WHERE user_id = ? AND url = ? LIMIT 1",
+            (user_id, url),
+        ).fetchone()
+
+        if existing:
+            # Keep created_at, update status/match_tag/role/source if needed.
+            conn.execute(
+                "UPDATE apply_tracker SET role = ?, source = ?, match_tag = ?, status = ?, updated_at = ? WHERE id = ?",
+                (role, source, match_tag, status, now, existing["id"]),
+            )
+            conn.commit()
+            row = conn.execute(
+                "SELECT id, user_id, role, source, url, match_tag, status, created_at, updated_at FROM apply_tracker WHERE id = ?",
+                (existing["id"],),
+            ).fetchone()
+            return _row_to_dict(row) or {}
+
+        item_id = str(uuid.uuid4())
+        conn.execute(
+            "INSERT INTO apply_tracker (id, user_id, role, source, url, match_tag, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (item_id, user_id, role, source, url, match_tag, status, now, now),
+        )
+        conn.commit()
+        row = conn.execute(
+            "SELECT id, user_id, role, source, url, match_tag, status, created_at, updated_at FROM apply_tracker WHERE id = ?",
+            (item_id,),
+        ).fetchone()
+        return _row_to_dict(row) or {}
+
+
+def _list_apply_tracker_items(user_id: str, limit: int = 100) -> List[dict]:
+    limit = max(1, min(int(limit), 300))
+    with _sqlite_connection() as conn:
+        rows = conn.execute(
+            "SELECT id, user_id, role, source, url, match_tag, status, created_at, updated_at FROM apply_tracker WHERE user_id = ? ORDER BY updated_at DESC LIMIT ?",
+            (user_id, limit),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def _update_apply_tracker_item(user_id: str, item_id: str, payload: ApplyTrackerUpdate) -> dict:
+    item_id = (item_id or "").strip()
+    if not item_id:
+        raise ValueError("id is required")
+    status = _normalize_apply_status(payload.status)
+    now = datetime.now(timezone.utc).isoformat()
+    with _sqlite_connection() as conn:
+        row = conn.execute(
+            "SELECT id FROM apply_tracker WHERE id = ? AND user_id = ? LIMIT 1",
+            (item_id, user_id),
+        ).fetchone()
+        if not row:
+            raise ValueError("Item not found")
+        conn.execute(
+            "UPDATE apply_tracker SET status = ?, updated_at = ? WHERE id = ? AND user_id = ?",
+            (status, now, item_id, user_id),
+        )
+        conn.commit()
+        updated = conn.execute(
+            "SELECT id, user_id, role, source, url, match_tag, status, created_at, updated_at FROM apply_tracker WHERE id = ? AND user_id = ?",
+            (item_id, user_id),
+        ).fetchone()
+    return _row_to_dict(updated) or {}
+
+
+def _delete_apply_tracker_item(user_id: str, item_id: str) -> None:
+    item_id = (item_id or "").strip()
+    if not item_id:
+        raise ValueError("id is required")
+    with _sqlite_connection() as conn:
+        conn.execute(
+            "DELETE FROM apply_tracker WHERE id = ? AND user_id = ?",
+            (item_id, user_id),
+        )
+        conn.commit()
+
+
+def _tracking_based_job_suggestions(
+    roles: List[dict],
+    location: str,
+    prediction: dict,
+    activity_tracking: dict,
+    weak_topics: List[str],
+) -> List[dict]:
+    """Generate job suggestions (role + rationale + apply links) grounded in user tracking."""
+    if not roles:
+        return []
+
+    biggest_blocker = (prediction or {}).get("biggest_blocker") or ""
+    active_7 = None
+    try:
+        active_7 = int(activity_tracking.get("active_days_7"))
+    except Exception:
+        active_7 = None
+
+    suggestions: List[dict] = []
+    for r in roles[:3]:
+        role_name = r.get("role")
+        if not role_name:
+            continue
+        pct = float(r.get("eligibility_percentage") or 0)
+
+        rationale_bits: List[str] = []
+        if active_7 is not None:
+            if active_7 >= 4:
+                rationale_bits.append("Strong recent activity (active days last 7d)")
+            elif active_7 <= 1:
+                rationale_bits.append("Low recent activity — focus on quick wins to improve eligibility")
+
+        if biggest_blocker:
+            rationale_bits.append(f"Current blocker: {biggest_blocker}")
+
+        if weak_topics:
+            rationale_bits.append(f"Improve weak topics: {', '.join(weak_topics[:3])}")
+
+        if not rationale_bits:
+            rationale_bits.append("Based on your profile + readiness signals")
+
+        suggestions.append(
+            {
+                "role": role_name,
+                "eligibility_percentage": pct,
+                "match_tag": "Highly Matched" if pct >= 80 else "Medium Match" if pct >= 60 else "Stretch Role",
+                "rationale": " • ".join(rationale_bits),
+                "apply_links": _job_search_links(str(role_name), str(location)),
+                "missing_skills": r.get("missing_skills") or [],
+                "recommended_actions": r.get("recommended_actions") or [],
+            }
+        )
+
+    return suggestions
+
+
+def _compute_crs_breakdown(coding_score: float, resume_score: float, interview_score: float, learning_score: float) -> dict:
+    coding = _clamp_0_100(coding_score)
+    resume = _clamp_0_100(resume_score)
+    interview = _clamp_0_100(interview_score)
+    learning = _clamp_0_100(learning_score)
+
+    return {
+        "coding": {"score": round(coding, 2), "weight": 30, "contribution": round(coding * 0.30, 2)},
+        "resume": {"score": round(resume, 2), "weight": 25, "contribution": round(resume * 0.25, 2)},
+        "interview": {"score": round(interview, 2), "weight": 25, "contribution": round(interview * 0.25, 2)},
+        "learning": {"score": round(learning, 2), "weight": 20, "contribution": round(learning * 0.20, 2)},
+    }
+
+
+def _crs_level_badge(score: float) -> dict:
+    s = _clamp_0_100(score)
+    if s >= 85:
+        return {"level": "Job-Ready"}
+    if s >= 65:
+        return {"level": "Intermediate"}
+    if s >= 45:
+        return {"level": "Beginner"}
+    return {"level": "Novice"}
+
+
+def _compute_prediction_and_action(readiness_score: float, breakdown: dict, last_activity_at: Optional[str]) -> dict:
+    job_readiness = _clamp_0_100(readiness_score)
+    coding = _clamp_0_100(breakdown.get("coding", {}).get("score", 0))
+    resume = _clamp_0_100(breakdown.get("resume", {}).get("score", 0))
+    interview = _clamp_0_100(breakdown.get("interview", {}).get("score", 0))
+    learning = _clamp_0_100(breakdown.get("learning", {}).get("score", 0))
+
+    inactive_days = None
+    if last_activity_at:
+        dt = _parse_iso_datetime(last_activity_at)
+        if dt:
+            inactive_days = int((datetime.now(timezone.utc) - dt.astimezone(timezone.utc)).total_seconds() // (60 * 60 * 24))
+
+    base_days = round((100 - job_readiness) * 1.15)
+    pace = 1.0
+    if inactive_days is not None and inactive_days > 3:
+        pace = 1.25
+    elif learning >= 70:
+        pace = 0.9
+    elif learning < 40:
+        pace = 1.1
+
+    days_to_job_ready = int(min(180, max(30, round(base_days * pace))))
+
+    biggest_blocker = "Maintain Momentum"
+    if inactive_days is not None and inactive_days > 3:
+        biggest_blocker = "Inactivity"
+    elif resume < 80:
+        biggest_blocker = "Resume Quality"
+    elif interview < 70:
+        biggest_blocker = "Interview Practice"
+    elif coding < 70:
+        biggest_blocker = "Coding Consistency"
+
+    ai_risk_alert = None
+    if inactive_days is not None and inactive_days > 3:
+        ai_risk_alert = {
+            "level": "High",
+            "message": f"AI Risk Alert: inactivity for {inactive_days} days may slow your job-readiness timeline.",
+        }
+
+    if ai_risk_alert:
+        best_action = {
+            "title": "Today's Best Action",
+            "task": "Do a 20-minute comeback session: 1 Easy + 1 Medium DSA problem",
+            "estimated_time_minutes": 20,
+            "priority": "High",
+            "cta_label": "Resume Practice",
+            "cta_path": "/coding",
+        }
+    elif coding < 70:
+        best_action = {
+            "title": "Today's Best Action",
+            "task": "Solve 2 Medium DSA problems",
+            "estimated_time_minutes": 45,
+            "priority": "High",
+            "cta_label": "Start Coding",
+            "cta_path": "/coding",
+        }
+    elif resume < 80:
+        best_action = {
+            "title": "Today's Best Action",
+            "task": "Improve 2 resume bullet points with metrics",
+            "estimated_time_minutes": 25,
+            "priority": "High",
+            "cta_label": "Improve Resume",
+            "cta_path": "/resume",
+        }
+    elif interview < 70:
+        best_action = {
+            "title": "Today's Best Action",
+            "task": "Take 1 mock interview",
+            "estimated_time_minutes": 30,
+            "priority": "High",
+            "cta_label": "Start Mock Interview",
+            "cta_path": "/interview",
+        }
+    else:
+        best_action = {
+            "title": "Today's Best Action",
+            "task": "Apply to 3 jobs and tailor resume keywords",
+            "estimated_time_minutes": 35,
+            "priority": "Medium",
+            "cta_label": "Explore Jobs",
+            "cta_path": "/resources",
+        }
+
+    next_milestone = "Interview-Ready" if resume >= 80 else "Resume-Ready"
+    milestone_days = 10 if resume >= 80 else 15
+
+    risk_level = "Low"
+    if ai_risk_alert:
+        risk_level = "High"
+    elif job_readiness < 35 or learning < 40:
+        risk_level = "Medium"
+
+    confidence = 92
+    if inactive_days is not None and inactive_days > 7:
+        confidence = 82
+    confidence = int(max(70, min(99, confidence)))
+
+    what_if = [
+        {
+            "scenario": "If you practice coding daily for 14 days",
+            "effect": f"Readiness increases to {int(min(100, round(job_readiness + 13.5)))}%",
+        },
+        {
+            "scenario": "If your resume score crosses 85%",
+            "effect": "Eligibility increases for Backend + Full-Stack roles",
+        },
+        {
+            "scenario": "If you complete 5 mock interviews",
+            "effect": "Interview confidence improves and risk level drops",
+        },
+    ]
+
+    return {
+        "estimated_days_to_job_ready": days_to_job_ready,
+        "next_career_milestone": next_milestone,
+        "milestone_days": milestone_days,
+        "biggest_blocker": biggest_blocker,
+        "risk_level": risk_level,
+        "confidence_score": confidence,
+        "ai_risk_alert": ai_risk_alert,
+        "best_action": best_action,
+        "what_if": what_if,
+    }
+
+
+def _weekly_plan_from_blocker(blocker: str) -> List[dict]:
+    # 7-day plan, simple but actionable
+    if blocker == "Resume Quality":
+        return [
+            {"day": "Mon", "task": "Rewrite 3 project bullets with metrics", "minutes": 30, "priority": "High"},
+            {"day": "Tue", "task": "Add ATS keywords for target role", "minutes": 25, "priority": "High"},
+            {"day": "Wed", "task": "Solve 2 Medium DSA problems", "minutes": 45, "priority": "High"},
+            {"day": "Thu", "task": "Mock interview (technical)", "minutes": 30, "priority": "Medium"},
+            {"day": "Fri", "task": "Polish skills section + reorder by relevance", "minutes": 20, "priority": "High"},
+            {"day": "Sat", "task": "Build one small feature in portfolio project", "minutes": 60, "priority": "Medium"},
+            {"day": "Sun", "task": "Apply to 3 jobs and tailor resume", "minutes": 35, "priority": "Medium"},
+        ]
+    if blocker == "Interview Practice":
+        return [
+            {"day": "Mon", "task": "Mock interview (HR)", "minutes": 25, "priority": "High"},
+            {"day": "Tue", "task": "Solve 2 Medium DSA problems", "minutes": 45, "priority": "High"},
+            {"day": "Wed", "task": "Mock interview (technical)", "minutes": 30, "priority": "High"},
+            {"day": "Thu", "task": "System design basics (30 mins)", "minutes": 30, "priority": "Medium"},
+            {"day": "Fri", "task": "Mock interview (technical)", "minutes": 30, "priority": "High"},
+            {"day": "Sat", "task": "Review mistakes + create flashcards", "minutes": 30, "priority": "Medium"},
+            {"day": "Sun", "task": "Apply to 3 jobs and book one referral ask", "minutes": 35, "priority": "Medium"},
+        ]
+    # Default = coding/inactivity/maintain
+    return [
+        {"day": "Mon", "task": "Solve 2 Medium DSA problems", "minutes": 45, "priority": "High"},
+        {"day": "Tue", "task": "Solve 1 Medium SQL + 1 Medium DSA", "minutes": 50, "priority": "High"},
+        {"day": "Wed", "task": "Resume: add 2 quantified achievements", "minutes": 25, "priority": "Medium"},
+        {"day": "Thu", "task": "Mock interview (technical)", "minutes": 30, "priority": "Medium"},
+        {"day": "Fri", "task": "Solve 2 Medium problems + review solutions", "minutes": 55, "priority": "High"},
+        {"day": "Sat", "task": "Build portfolio project feature", "minutes": 60, "priority": "Medium"},
+        {"day": "Sun", "task": "Apply to 3 jobs", "minutes": 35, "priority": "Medium"},
+    ]
 
 
 async def store_interview_evaluation(eval_doc: dict):
@@ -1537,7 +2705,8 @@ async def get_status():
         "database": {
             "type": "SQLite",
             "path": str(SQLITE_DB_PATH)
-        }
+        },
+        "email": _email_status(),
     }
 
 
@@ -1602,8 +2771,138 @@ async def login(credentials: UserLogin):
         role=sqlite_user['role'],
         created_at=sqlite_user['created_at']
     )
-    
+
     return AuthResponse(token=token, user=user_response)
+
+
+@api_router.post("/auth/forgot-password", response_model=ForgotPasswordResponse)
+async def forgot_password(payload: ForgotPasswordRequest):
+    user = await fetch_sqlite_user(payload.email)
+    if not user:
+        # Per product requirement: explicitly confirm whether email exists.
+        raise HTTPException(status_code=404, detail="Email is not registered")
+
+    email_status = _email_status()
+    if (not email_status["configured"]) or (not email_status["enabled"]):
+        # Email sending is required for this flow.
+        detail = "Email service is not configured. Set SMTP_HOST/SMTP_PORT/SMTP_USERNAME/SMTP_PASSWORD/EMAIL_FROM in backend/.env"
+        if DEBUG and ENVIRONMENT != "production":
+            detail = f"Email service is not configured. Missing: {', '.join(email_status['missing']) or 'unknown'}"
+        raise HTTPException(status_code=500, detail=detail)
+
+    # Simple cooldown: prevent spamming OTP requests (60s between latest requests).
+    latest = await asyncio.to_thread(_get_latest_reset_otp_row, payload.email)
+    if latest and latest.get("created_at"):
+        try:
+            created_at = datetime.fromisoformat(latest["created_at"])
+            if created_at.tzinfo is None:
+                created_at = created_at.replace(tzinfo=timezone.utc)
+            if datetime.now(timezone.utc) - created_at < timedelta(seconds=60):
+                raise HTTPException(
+                    status_code=429,
+                    detail="Please wait 60 seconds before requesting another OTP",
+                )
+        except HTTPException:
+            raise
+        except Exception:
+            # If parsing fails, ignore cooldown.
+            pass
+
+    ttl_minutes = int(os.environ.get("RESET_OTP_TTL_MINUTES") or 10)
+    ttl_minutes = max(5, min(10, ttl_minutes))
+
+    otp = await asyncio.to_thread(_create_reset_otp, payload.email, ttl_minutes)
+
+    try:
+        await send_password_reset_otp_email(payload.email, otp, ttl_minutes)
+    except Exception as e:
+        logger.exception("Failed to send OTP email")
+        detail = "Failed to send OTP email. Please check SMTP settings"
+        if DEBUG and ENVIRONMENT != "production":
+            detail = f"Failed to send OTP email: {str(e)}"
+        raise HTTPException(status_code=500, detail=detail)
+
+    # Optional debug OTP (off by default). Never enable this in production.
+    debug_otp = None
+    if RETURN_DEBUG_OTP and DEBUG and ENVIRONMENT != "production":
+        debug_otp = otp
+    return ForgotPasswordResponse(message="OTP sent to your email", debug_otp=debug_otp)
+
+
+@api_router.post("/auth/verify-otp", response_model=VerifyOtpResponse)
+async def verify_otp(payload: VerifyOtpRequest):
+    # Normalize input
+    otp = (payload.otp or "").strip()
+    if len(otp) != 6 or not otp.isdigit():
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+
+    row = await asyncio.to_thread(_get_latest_reset_otp_row, payload.email)
+    if not row:
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+    if row.get("used_at"):
+        raise HTTPException(status_code=400, detail="OTP already used")
+
+    attempts = int(row.get("attempts") or 0)
+    if attempts >= 5:
+        raise HTTPException(status_code=429, detail="Too many attempts. Please request a new OTP")
+
+    try:
+        expires_at = datetime.fromisoformat(row["expires_at"])
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+    except Exception:
+        raise HTTPException(status_code=400, detail="OTP expired")
+
+    if datetime.now(timezone.utc) > expires_at:
+        raise HTTPException(status_code=400, detail="OTP expired")
+
+    if not _verify_otp(otp, row["otp_hash"]):
+        await asyncio.to_thread(_increment_reset_otp_attempts, row["id"])
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+
+    return VerifyOtpResponse(verified=True)
+
+
+@api_router.post("/auth/reset-password")
+async def reset_password(payload: ResetPasswordRequest):
+    otp = (payload.otp or "").strip()
+    if len(otp) != 6 or not otp.isdigit():
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+
+    # Validate user exists
+    user = await fetch_sqlite_user(payload.email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    row = await asyncio.to_thread(_get_latest_reset_otp_row, payload.email)
+    if not row or row.get("used_at"):
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+
+    attempts = int(row.get("attempts") or 0)
+    if attempts >= 5:
+        raise HTTPException(status_code=429, detail="Too many attempts. Please request a new OTP")
+
+    try:
+        expires_at = datetime.fromisoformat(row["expires_at"])
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+
+    if datetime.now(timezone.utc) > expires_at:
+        raise HTTPException(status_code=400, detail="OTP expired")
+
+    if not _verify_otp(otp, row["otp_hash"]):
+        await asyncio.to_thread(_increment_reset_otp_attempts, row["id"])
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+
+    _validate_password_strength(payload.new_password)
+
+    new_hash = hash_password(payload.new_password)
+    await asyncio.to_thread(_update_user_password, payload.email, new_hash)
+    await asyncio.to_thread(_mark_reset_otp_used, payload.email)
+
+    return {"message": "Password updated successfully"}
 
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(current_user: dict = Depends(get_current_user)):
@@ -1690,6 +2989,524 @@ async def upload_avatar(file: UploadFile = File(...), current_user: dict = Depen
     await update_sqlite_user_avatar(current_user["id"], avatar_url)
     return AvatarUploadResponse(avatar_url=avatar_url)
 
+
+def _safe_filename(value: str) -> str:
+    if not value:
+        return "resume"
+    cleaned = "".join(ch for ch in str(value) if ch.isalnum() or ch in (" ", "-", "_"))
+    cleaned = cleaned.strip().replace(" ", "_")
+    return cleaned or "resume"
+
+
+def _split_lines(text: Optional[str]) -> List[str]:
+    if not text:
+        return []
+    lines: List[str] = []
+    for raw in str(text).splitlines():
+        s = raw.strip()
+        if s:
+            lines.append(s)
+    return lines
+
+
+def _as_bullets(lines: List[str]) -> List[str]:
+    bullets: List[str] = []
+    for ln in lines:
+        s = ln.strip()
+        if not s:
+            continue
+        if s.startswith("-") or s.startswith("•"):
+            s = s.lstrip("-•").strip()
+        bullets.append(s)
+    return bullets
+
+
+def _build_ats_resume_pdf_bytes(name: str, email: str, profile: dict) -> bytes:
+    try:
+        import re
+        from reportlab.platypus import (
+            SimpleDocTemplate,
+            Paragraph,
+            Spacer,
+            ListFlowable,
+            ListItem,
+            Table,
+            TableStyle,
+            HRFlowable,
+        )
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import inch
+        from reportlab.lib import colors
+    except Exception:
+        raise RuntimeError("PDF generator dependency missing. Install 'reportlab'.")
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buf,
+        pagesize=A4,
+        leftMargin=0.65 * inch,
+        rightMargin=0.65 * inch,
+        topMargin=0.30 * inch,
+        bottomMargin=0.35 * inch,
+        title="Resume",
+        author=name or "",
+    )
+
+    styles = getSampleStyleSheet()
+    base = styles["BodyText"]
+    # Match screenshot-like resume style: serif font + slightly smaller text.
+    base.fontName = "Times-Roman"
+    base.fontSize = 9.5
+    base.leading = 12
+    base.spaceAfter = 0
+
+    name_style = ParagraphStyle(
+        "Name",
+        parent=base,
+        fontName="Times-Bold",
+        fontSize=18,
+        leading=21,
+        textColor=colors.black,
+        spaceAfter=2,
+    )
+    headline_style = ParagraphStyle(
+        "Headline",
+        parent=base,
+        fontName="Times-Bold",
+        fontSize=10.5,
+        leading=13,
+        textColor=colors.black,
+        spaceAfter=2,
+    )
+    small_style = ParagraphStyle(
+        "Small",
+        parent=base,
+        fontSize=9,
+        leading=11,
+        textColor=colors.black,
+    )
+    small_right_style = ParagraphStyle(
+        "SmallRight",
+        parent=small_style,
+        alignment=2,  # right
+    )
+    section_title_style = ParagraphStyle(
+        "SectionTitle",
+        parent=base,
+        fontName="Times-Bold",
+        fontSize=10.5,
+        leading=13,
+        spaceBefore=5,
+        spaceAfter=2,
+        textColor=colors.black,
+    )
+    entry_bold_style = ParagraphStyle(
+        "EntryBold",
+        parent=base,
+        fontName="Times-Bold",
+        fontSize=9.5,
+        leading=12,
+        textColor=colors.black,
+    )
+
+    def _esc(txt: str) -> str:
+        return (txt or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    def p(txt: str, st=base):
+        return Paragraph(_esc(txt), st)
+
+    def p_html(txt: str, st=base):
+        return Paragraph(txt, st)
+
+    def section_header(title: str):
+        story.append(p(title, section_title_style))
+        story.append(
+            HRFlowable(
+                width="100%",
+                thickness=1,
+                color=colors.black,
+                spaceBefore=1,
+                spaceAfter=4,
+            )
+        )
+
+    def two_col_table(rows: List[List[Paragraph]], col_widths: List[float], *, bottom_padding: int = 1):
+        tbl = Table(rows, colWidths=col_widths, hAlign="LEFT")
+        tbl.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), bottom_padding),
+                ]
+            )
+        )
+        return tbl
+
+    story = []
+
+    # Header (two columns)
+    # Intentionally do NOT render a "Resume Headline" / title line.
+    roll_no = (profile or {}).get("roll_no") or ""
+    degree = (profile or {}).get("degree") or ""
+    institute = (profile or {}).get("institute") or (profile or {}).get("university") or ""
+    branch = (profile or {}).get("branch") or ""
+
+    phone = (profile or {}).get("phone") or ""
+    location = (profile or {}).get("location") or ""
+    github = (profile or {}).get("github")
+    linkedin = (profile or {}).get("linkedin")
+    portfolio = (profile or {}).get("portfolio")
+
+    # Contact block (right). No side labels; values only.
+    contact_lines: List[str] = []
+    if phone:
+        contact_lines.append(_esc(str(phone)))
+    if email:
+        contact_lines.append(_esc(str(email)))
+    # Intentionally do not render location in the ATS resume.
+    if github:
+        gh = str(github).strip()
+        if gh:
+            contact_lines.append(_esc(gh))
+    if linkedin:
+        li = str(linkedin).strip()
+        if li:
+            contact_lines.append(_esc(li))
+    if portfolio:
+        pf = str(portfolio).strip()
+        if pf:
+            contact_lines.append(_esc(pf))
+
+    left_lines: List[str] = []
+    if roll_no:
+        left_lines.append(f"Roll No.: {roll_no}")
+    if degree:
+        left_lines.append(str(degree))
+    if branch:
+        left_lines.append(str(branch))
+    if institute:
+        left_lines.append(str(institute))
+
+    left_cell: List = [p(name or "", name_style)]
+    if left_lines:
+        # Use HTML line breaks; content is escaped via _esc
+        left_cell.append(p_html("<br/>".join(_esc(x) for x in left_lines), small_style))
+
+    # Use HTML line breaks; contact_lines is already escaped via _esc
+    right_cell = p_html("<br/>".join(contact_lines), small_right_style)
+
+    story.append(
+        two_col_table(
+            [[left_cell, right_cell]],
+            [doc.width * 0.65, doc.width * 0.35],
+        )
+    )
+    story.append(Spacer(1, 4))
+
+    # Professional Summary
+    summary = (profile or {}).get("profile_summary") or (profile or {}).get("bio")
+    if summary:
+        section_header("Professional Summary")
+        story.append(p(str(summary), base))
+
+    # Education
+    education_text = (profile or {}).get("education")
+    if education_text:
+        section_header("Education")
+        edu_rows: List[List[Paragraph]] = []
+        for ln in _split_lines(str(education_text)):
+            parts = [p.strip() for p in ln.split("|") if p.strip()]
+            if len(parts) >= 2:
+                left = " | ".join(parts[:-1])
+                right = parts[-1]
+                edu_rows.append([p(left, entry_bold_style), p(right, small_right_style)])
+            else:
+                edu_rows.append([p(ln, base), p("", small_right_style)])
+        story.append(two_col_table(edu_rows, [doc.width * 0.78, doc.width * 0.22]))
+
+    # Technical Skills
+    # Match screenshot format with labeled lines.
+    tech_langs = (profile or {}).get("technical_languages") or ""
+    tech_tools = (profile or {}).get("technical_tools") or ""
+    tech_cloud = (profile or {}).get("technical_cloud") or ""
+
+    skills_field = (profile or {}).get("skills")
+    skills_list: List[str] = []
+    if isinstance(skills_field, list):
+        skills_list.extend([str(s).strip() for s in skills_field if str(s).strip()])
+    seen = set()
+    skills_dedup: List[str] = []
+    for s in skills_list:
+        k = s.lower()
+        if k and k not in seen:
+            seen.add(k)
+            skills_dedup.append(s)
+
+    if tech_langs or tech_tools or tech_cloud or skills_dedup:
+        section_header("Technical Skills")
+        if tech_langs:
+            story.append(p_html(f"<b>Languages:</b> {_esc(str(tech_langs))}", base))
+        if tech_tools:
+            story.append(p_html(f"<b>Tools:</b> {_esc(str(tech_tools))}", base))
+        if tech_cloud:
+            story.append(p_html(f"<b>Cloud:</b> {_esc(str(tech_cloud))}", base))
+        if (not tech_langs and not tech_cloud) and skills_dedup:
+            story.append(p_html(f"<b>Skills:</b> {_esc(', '.join(skills_dedup))}", base))
+
+    # Soft Skills
+    soft_skills = (profile or {}).get("soft_skills") or ""
+    if soft_skills:
+        section_header("Soft Skills")
+        story.append(p(str(soft_skills), base))
+
+    def add_bullets_section(title: str, text: Optional[str], *, compact: bool = False):
+        lines = _split_lines(text)
+        if not lines:
+            return
+        section_header(title)
+        bullets = _as_bullets(lines)
+        flow = ListFlowable(
+            [ListItem(p(b, base), leftIndent=12) for b in bullets],
+            bulletType="bullet",
+            leftIndent=12,
+        )
+        if compact:
+            # Make bullet sections closer to Education density.
+            flow.spaceBefore = 0
+            flow.spaceAfter = 0
+        story.append(flow)
+
+    def add_projects_like_section(title: str, text: Optional[str]):
+        lines = _split_lines(text)
+        if not lines:
+            return
+        section_header(title)
+        for ln in lines:
+            if ln.startswith("-") or ln.startswith("•"):
+                continue
+            if ":" in ln:
+                t, d = ln.split(":", 1)
+                story.append(p_html(f"<b>{_esc(t.strip())}</b>: {_esc(d.strip())}", base))
+            else:
+                story.append(p(ln, entry_bold_style))
+
+        # If user provided bullets, render them after entries
+        bullet_lines = [x for x in lines if x.startswith(("-", "•"))]
+        if bullet_lines:
+            bullets = _as_bullets(bullet_lines)
+            flow = ListFlowable(
+                [ListItem(p(b, base), leftIndent=12) for b in bullets],
+                bulletType="bullet",
+                leftIndent=12,
+            )
+            story.append(flow)
+
+    # Projects
+    add_projects_like_section("Projects", (profile or {}).get("projects"))
+
+    # Internships / Experience
+    # Do not fallback to the removed "employment" field.
+    internships = (profile or {}).get("final_year_project")
+    if not internships:
+        internships = (profile or {}).get("internships")
+    if internships:
+        section_header("Internships")
+
+        intern_detail_style = ParagraphStyle(
+            "InternDetail",
+            parent=base,
+            leading=12,
+            spaceBefore=0,
+            spaceAfter=1,
+        )
+
+        month_re = r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)"
+
+        def split_left_right_date(line: str):
+            # Preferred explicit format: "Left | Right"
+            if "|" in line:
+                parts = [p.strip() for p in line.split("|") if p.strip()]
+                if len(parts) >= 2:
+                    return " | ".join(parts[:-1]), parts[-1]
+
+            # Heuristic: detect a date-ish suffix like "May - July 2025" or "Jun 2024".
+            m = re.search(
+                rf"^(.*?)(\b{month_re}\b.*?\b(19|20)\d{{2}}\b)\s*$",
+                line,
+                flags=re.IGNORECASE,
+            )
+            if m:
+                left = (m.group(1) or "").strip(" -–—:\t")
+                right = (m.group(2) or "").strip()
+                if left and right:
+                    return left, right
+
+            return line, None
+
+        def format_company_bold(left_text: str) -> str:
+            # Bold only the company/organization part.
+            # Common separators: ":", "—", "-".
+            raw = (left_text or "").strip()
+            if not raw:
+                return ""
+
+            for sep in (":", "—", "-"):
+                if sep in raw:
+                    company, rest = raw.split(sep, 1)
+                    company = company.strip()
+                    rest = rest.strip()
+                    if company and rest:
+                        return f"<b>{_esc(company)}</b> { _esc(sep) } {_esc(rest)}"
+                    break
+
+            return f"<b>{_esc(raw)}</b>"
+
+        def looks_like_new_entry(line: str) -> bool:
+            if not line:
+                return False
+            if "|" in line:
+                return True
+            if re.search(rf"\b{month_re}\b.*\b(19|20)\d{{2}}\b", line, flags=re.IGNORECASE):
+                return True
+            if re.search(r"\b(19|20)\d{2}\b", line) and (":" in line or "—" in line or "-" in line):
+                return True
+            return False
+
+        # Render with blocks separated by blank lines.
+        # - First non-bullet line of a block is bold (or a two-column row if it has '|')
+        # - Subsequent non-bullet lines are normal text
+        # - Bullet lines render as bullets under the current block
+        in_block = False
+        pending_bullets: List[str] = []
+
+        def flush_bullets():
+            nonlocal pending_bullets
+            if not pending_bullets:
+                return
+            bullets = _as_bullets(pending_bullets)
+            flow = ListFlowable(
+                [ListItem(p(b, intern_detail_style), leftIndent=12) for b in bullets],
+                bulletType="bullet",
+                leftIndent=12,
+            )
+            # Keep modest whitespace like other sections.
+            flow.spaceBefore = 1
+            flow.spaceAfter = 2
+            story.append(flow)
+            pending_bullets = []
+
+        for raw in str(internships).splitlines():
+            ln = raw.strip()
+            if not ln:
+                flush_bullets()
+                in_block = False
+                continue
+
+            if ln.startswith(("-", "•")):
+                pending_bullets.append(ln)
+                continue
+
+            # New entry header
+            # If we're already in a block, start a new block when a header-like line appears.
+            if not in_block or looks_like_new_entry(ln):
+                flush_bullets()
+                if in_block:
+                    # Add a small gap between entries when there isn't a blank line.
+                    story.append(Spacer(1, 2))
+                left, right = split_left_right_date(ln)
+
+                left_html = format_company_bold(left)
+                if right:
+                    story.append(
+                        two_col_table(
+                            [[p_html(left_html, intern_detail_style), p(str(right), small_right_style)]],
+                            [doc.width * 0.78, doc.width * 0.22],
+                            bottom_padding=1,
+                        )
+                    )
+                else:
+                    story.append(p_html(left_html, intern_detail_style))
+
+                in_block = True
+            else:
+                # Detail line
+                story.append(p(ln, intern_detail_style))
+
+        flush_bullets()
+
+    # Certifications / Achievements
+    add_bullets_section("Certifications", (profile or {}).get("certifications"), compact=True)
+    add_bullets_section(
+        "Achievements",
+        (profile or {}).get("achievements_text") or (profile or {}).get("achievements"),
+        compact=True,
+    )
+
+    # Languages / Hobbies
+    # Do not fallback to the removed "languages_known" field.
+    langs = (profile or {}).get("languages")
+    hobbies = (profile or {}).get("hobbies")
+    if langs or hobbies:
+        section_header("Languages / Hobbies")
+        if langs:
+            story.append(p_html(f"<b>Languages:</b> {_esc(str(langs))}", base))
+        if hobbies:
+            story.append(p_html(f"<b>Hobbies:</b> {_esc(str(hobbies))}", base))
+
+    # Declaration
+    declaration = (profile or {}).get("declaration")
+    if declaration:
+        section_header("Declaration")
+        story.append(p(str(declaration), base))
+
+    doc.build(story)
+    return buf.getvalue()
+
+
+@api_router.get("/profile/resume/ats")
+async def download_ats_resume(format: str = Query("pdf"), current_user: dict = Depends(get_current_user)):
+    fmt = (format or "pdf").strip().lower()
+    if fmt != "pdf":
+        raise HTTPException(status_code=400, detail="Only PDF format is supported")
+
+    user = await fetch_sqlite_user_public_by_id(current_user["id"])
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    profile_data: dict = {}
+    if user.get("profile_data"):
+        try:
+            profile_data = json.loads(user["profile_data"]) or {}
+        except Exception:
+            profile_data = {}
+
+    # Ensure hidden/removed Profile UI fields never appear in the generated PDF.
+    # (These keys may still exist in stored profile_data from earlier versions.)
+    for k in (
+        "resume_headline",
+        "key_skills",
+        "employment",
+        "languages_known",
+    ):
+        profile_data.pop(k, None)
+
+    name = user.get("name") or ""
+    email = user.get("email") or ""
+    try:
+        pdf_bytes = await asyncio.to_thread(_build_ats_resume_pdf_bytes, name, email, profile_data)
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate resume: {str(e)}")
+
+    filename = f"{_safe_filename(name)}_ATS_Resume.pdf"
+    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf", headers=headers)
+
 # AI Tutor Routes
 @api_router.post("/tutor/chat", response_model=TutorResponse)
 async def tutor_chat(message: TutorMessage, current_user: dict = Depends(get_current_user)):
@@ -1772,6 +3589,9 @@ SUGGESTIONS: [detailed suggestions]
         "id": eval_id,
         "user_id": current_user['id'],
         "problem_id": submission.problem_id,
+        "topic": submission.topic,
+        "difficulty": submission.difficulty,
+        "solve_time_seconds": submission.solve_time_seconds,
         "code": submission.code,
         "language": submission.language,
         "evaluation": response,
@@ -1794,6 +3614,44 @@ async def get_submissions(current_user: dict = Depends(get_current_user)):
 async def analyze_resume(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     # Read PDF
     contents = await file.read()
+    if not contents:
+        raise HTTPException(status_code=400, detail="Empty file")
+
+    max_bytes = int(MAX_FILE_SIZE_MB) * 1024 * 1024
+    if len(contents) > max_bytes:
+        raise HTTPException(status_code=413, detail=f"File too large. Max {MAX_FILE_SIZE_MB}MB")
+
+    original_name = (file.filename or "resume.pdf").strip()
+    ext = os.path.splitext(original_name)[1].lstrip(".").lower() or "pdf"
+    allowed_exts = [e.strip().lower() for e in (ALLOWED_RESUME_FORMATS or []) if e and e.strip()]
+    if allowed_exts and ext not in allowed_exts:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type: .{ext}")
+
+    analysis_id = str(uuid.uuid4())
+
+    # Persist uploaded file for later download/view
+    try:
+        resume_dir_path = (ROOT_DIR / RESUME_UPLOAD_DIR).resolve()
+        uploads_root_path = UPLOADS_ROOT.resolve()
+        if uploads_root_path not in resume_dir_path.parents and resume_dir_path != uploads_root_path:
+            # Ensure resumes are under the served /uploads mount
+            resume_dir_path = (uploads_root_path / "resumes").resolve()
+            resume_dir_path.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        resume_dir_path = (UPLOADS_ROOT / "resumes")
+        resume_dir_path.mkdir(parents=True, exist_ok=True)
+
+    stored_name = f"{current_user['id']}_{analysis_id}.{ext}"
+    stored_path = resume_dir_path / stored_name
+    await asyncio.to_thread(stored_path.write_bytes, contents)
+
+    # Compute served URL under /uploads
+    try:
+        relative_under_uploads = stored_path.resolve().relative_to(UPLOADS_ROOT.resolve()).as_posix()
+        file_url = f"/uploads/{relative_under_uploads}"
+    except Exception:
+        file_url = None
+
     pdf_file = io.BytesIO(contents)
     
     try:
@@ -1846,15 +3704,21 @@ ANALYSIS: [detailed analysis]
             for j in range(i+1, min(i+5, len(lines))):
                 if lines[j].strip().startswith('-') or lines[j].strip().startswith('•'):
                     suggestions.append(lines[j].strip())
+
+    section_scores = _infer_resume_section_scores(text_content)
     
     # Save analysis
-    analysis_id = str(uuid.uuid4())
     analysis_doc = {
         "id": analysis_id,
         "user_id": current_user['id'],
         "filename": file.filename,
+        "file_url": file_url,
         "text_content": text_content[:1000],  # Store first 1000 chars
         "credibility_score": credibility_score,
+        "projects_score": section_scores.get("projects"),
+        "skills_score": section_scores.get("skills"),
+        "experience_score": section_scores.get("experience"),
+        "ats_score": section_scores.get("ats"),
         "fake_skills": fake_skills,
         "suggestions": suggestions if suggestions else ["Improve technical skills section", "Add measurable achievements"],
         "analysis": response,
@@ -1868,6 +3732,30 @@ ANALYSIS: [detailed analysis]
 async def get_resume_history(current_user: dict = Depends(get_current_user)):
     analyses = await fetch_resume_history(current_user['id'])
     return analyses
+
+
+@api_router.get("/resume/latest", response_model=ResumeAnalysis)
+async def get_latest_resume(current_user: dict = Depends(get_current_user)):
+    latest = await fetch_latest_resume(current_user["id"])
+    if not latest:
+        raise HTTPException(status_code=404, detail="No resume analysis found")
+    return ResumeAnalysis(**latest)
+
+
+@api_router.get("/activity/heatmap")
+async def get_activity_heatmap(days: int = 180, current_user: dict = Depends(get_current_user)):
+    days = max(7, min(int(days), 365))
+    dts = await asyncio.to_thread(_fetch_activity_dates, current_user["id"], days)
+    counts: Dict[str, int] = {}
+    for dt in dts:
+        try:
+            k = dt.astimezone(timezone.utc).date().isoformat()
+        except Exception:
+            continue
+        counts[k] = counts.get(k, 0) + 1
+    # Return as list for stable ordering in clients
+    items = [{"date": k, "count": counts[k]} for k in sorted(counts.keys())]
+    return {"days": days, "items": items}
 
 # Mock Interview Routes
 @api_router.post("/interview/start")
@@ -2000,6 +3888,328 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
         "active_days_30": streak.get("active_days_30", 0),
         "last_activity_at": streak.get("last_activity_at"),
     }
+
+
+@api_router.get("/career/readiness")
+async def get_career_readiness_dashboard(current_user: dict = Depends(get_current_user)):
+    """SaaS-style Career Readiness aggregation endpoint.
+
+    Returns a single payload for the Career Readiness page:
+    - tracking (activity/coding/resume/interview/learning)
+    - readiness score + breakdown
+    - role eligibility + job links
+    - prediction + what-if + daily/weekly plan
+    - history timeline snapshots
+    """
+
+    user_id = current_user["id"]
+
+    # Base metrics
+    code_submissions = await count_code_submissions(user_id)
+    avg_code_score = await get_avg_code_score(user_id)
+    learning_sessions = await count_learning_sessions(user_id)
+    learning_consistency = await calculate_learning_consistency(user_id)
+    interviews_taken = await count_interview_evaluations(user_id)
+    avg_interview = await get_avg_interview_readiness(user_id)
+    resume_analyses = await count_resume_analyses(user_id)
+    avg_resume = await get_avg_resume_credibility(user_id)
+
+    # Prefer latest resume for section scores + recency
+    latest_resume = await fetch_latest_resume(user_id)
+    resume_score = float(latest_resume.get("credibility_score")) if latest_resume and latest_resume.get("credibility_score") is not None else float(avg_resume)
+
+    streak = await get_learning_streak_stats(user_id)
+
+    breakdown = _compute_crs_breakdown(avg_code_score, resume_score, avg_interview, learning_consistency)
+    readiness_score = round(
+        (breakdown["coding"]["score"] * 0.30)
+        + (breakdown["resume"]["score"] * 0.25)
+        + (breakdown["interview"]["score"] * 0.25)
+        + (breakdown["learning"]["score"] * 0.20),
+        2,
+    )
+
+    # Activity tracking derived from timestamps
+    activity_dts = await asyncio.to_thread(_fetch_activity_dates, user_id, 120)
+    activity_tracking = _compute_activity_tracking(activity_dts)
+    time_spent_seconds_7 = await asyncio.to_thread(_fetch_time_spent_seconds, user_id, 7)
+    time_spent_seconds_30 = await asyncio.to_thread(_fetch_time_spent_seconds, user_id, 30)
+    activity_tracking["time_spent_seconds_7"] = int(time_spent_seconds_7)
+    activity_tracking["time_spent_seconds_30"] = int(time_spent_seconds_30)
+    last_activity_at = activity_tracking.get("last_activity_at") or streak.get("last_activity_at")
+
+    pages_7d = await asyncio.to_thread(_fetch_page_analytics, user_id, 7, 10)
+    pages_30d = await asyncio.to_thread(_fetch_page_analytics, user_id, 30, 10)
+
+    # Coding stats (from stored evaluations)
+    submissions = await fetch_code_submissions(user_id, 500)
+    total = len(submissions)
+    passed_count = sum(1 for s in submissions if s.get("passed"))
+    accuracy = round((passed_count / total) * 100, 2) if total else 0.0
+    solve_times = [s.get("solve_time_seconds") for s in submissions if isinstance(s.get("solve_time_seconds"), int)]
+    avg_solve_time = int(sum(solve_times) / len(solve_times)) if solve_times else None
+
+    diff_counts = {"easy": 0, "medium": 0, "hard": 0, "unknown": 0}
+    topic_scores: dict = {}
+    for s in submissions:
+        diff = (s.get("difficulty") or "").strip().lower()
+        if diff in diff_counts:
+            diff_counts[diff] += 1
+        else:
+            diff_counts["unknown"] += 1
+
+        t = (s.get("topic") or "").strip()
+        if t:
+            topic_scores.setdefault(t, []).append(float(s.get("score") or 0))
+
+    topic_performance = [
+        {"topic": t, "avg_score": round(sum(vals) / len(vals), 2), "count": len(vals)}
+        for t, vals in topic_scores.items()
+        if vals
+    ]
+    topic_performance.sort(key=lambda x: (x["avg_score"], x["count"]))
+    weak_topics = [x["topic"] for x in topic_performance[:3]]
+
+    # Resume section scores
+    if latest_resume:
+        projects_score = latest_resume.get("projects_score")
+        skills_score = latest_resume.get("skills_score")
+        experience_score = latest_resume.get("experience_score")
+        ats_score = latest_resume.get("ats_score")
+        if any(v is None for v in [projects_score, skills_score, experience_score, ats_score]):
+            inferred = _infer_resume_section_scores(latest_resume.get("text_content"))
+            projects_score = inferred.get("projects") if projects_score is None else projects_score
+            skills_score = inferred.get("skills") if skills_score is None else skills_score
+            experience_score = inferred.get("experience") if experience_score is None else experience_score
+            ats_score = inferred.get("ats") if ats_score is None else ats_score
+    else:
+        inferred = _infer_resume_section_scores(None)
+        projects_score = inferred.get("projects")
+        skills_score = inferred.get("skills")
+        experience_score = inferred.get("experience")
+        ats_score = inferred.get("ats")
+
+    # Interview breakdown
+    interview_history = await fetch_interview_history(user_id, 200)
+    interview_type_counts: dict = {}
+    for ev in interview_history:
+        it = (ev.get("interview_type") or "general").strip().lower()
+        interview_type_counts[it] = interview_type_counts.get(it, 0) + 1
+    last_interview_at = interview_history[0]["created_at"] if interview_history else None
+
+    # Skills + role eligibility
+    learning_topics = await asyncio.to_thread(_fetch_distinct_learning_topics, user_id, 200)
+    known_skills = _extract_known_skills(
+        current_user.get("profile_data") if isinstance(current_user.get("profile_data"), str) else json.dumps(current_user.get("profile_data") or {}),
+        (latest_resume or {}).get("text_content") if latest_resume else None,
+        learning_topics,
+    )
+    roles = _compute_role_eligibility(breakdown, known_skills)
+
+    # Job links: generate search URLs per role
+    # Location preference (optional)
+    location_pref = "India"
+    try:
+        pd = current_user.get("profile_data")
+        if isinstance(pd, str):
+            pd = json.loads(pd)
+        if isinstance(pd, dict):
+            location_pref = (pd.get("location") or pd.get("preferred_location") or location_pref)
+    except Exception:
+        pass
+
+    job_recommendations = []
+    for r in roles[:5]:
+        pct = float(r.get("eligibility_percentage") or 0)
+        tag = "Stretch Role"
+        if pct >= 80:
+            tag = "Highly Matched"
+        elif pct >= 60:
+            tag = "Medium Match"
+
+        for link in _job_search_links(r["role"], str(location_pref)):
+            job_recommendations.append(
+                {
+                    "role": r["role"],
+                    "match_tag": tag,
+                    "source": link["source"],
+                    "title": link["title"],
+                    "url": link["url"],
+                }
+            )
+
+    # Prediction + daily action lock + weekly plan
+    prediction = _compute_prediction_and_action(readiness_score, breakdown, last_activity_at)
+    action_date = _today_iso_date()
+    locked = await asyncio.to_thread(_select_daily_action_lock, user_id, action_date)
+    if not locked:
+        locked = await asyncio.to_thread(_insert_daily_action_lock, user_id, action_date, prediction["best_action"])
+    weekly_plan = _weekly_plan_from_blocker(prediction.get("biggest_blocker") or "")
+
+    # Timeline snapshots (1/day)
+    await asyncio.to_thread(_insert_snapshot_if_missing, user_id, action_date, readiness_score, breakdown)
+    history = await asyncio.to_thread(_fetch_snapshots, user_id, 30)
+
+    # Confidence indicator
+    confidence = prediction.get("confidence_score", 80)
+    confidence_indicator = "High" if confidence >= 90 else "Medium" if confidence >= 80 else "Low"
+
+    # Skill gaps / insights derived from top role
+    top_role = roles[0] if roles else None
+    skill_gaps = (top_role or {}).get("missing_skills", []) if top_role else []
+
+    job_suggestions = _tracking_based_job_suggestions(
+        roles=roles,
+        location=str(location_pref),
+        prediction=prediction,
+        activity_tracking=activity_tracking,
+        weak_topics=weak_topics,
+    )
+
+    return {
+        "career_readiness_score": readiness_score,
+        "level_badge": _crs_level_badge(readiness_score),
+        "confidence": {"score": confidence, "indicator": confidence_indicator},
+        "breakdown": breakdown,
+        "tracking": {
+            "activity": {
+                "daily_login_activity": activity_tracking.get("daily_login_activity"),
+                "active_days": {
+                    "7": activity_tracking.get("active_days_7"),
+                    "30": activity_tracking.get("active_days_30"),
+                    "90": activity_tracking.get("active_days_90"),
+                },
+                "missed_learning_days_30": activity_tracking.get("missed_learning_days_30"),
+                "last_activity_at": last_activity_at,
+                "time_spent_seconds_7": activity_tracking.get("time_spent_seconds_7"),
+                "time_spent_seconds_30": activity_tracking.get("time_spent_seconds_30"),
+                "pages_7d": pages_7d,
+                "pages_30d": pages_30d,
+            },
+            "learning": {
+                "daily_login_activity": activity_tracking.get("daily_login_activity"),
+                "active_days": {
+                    "7": activity_tracking.get("active_days_7"),
+                    "30": activity_tracking.get("active_days_30"),
+                    "90": activity_tracking.get("active_days_90"),
+                },
+                "learning_streak": {
+                    "current": streak.get("current_streak", 0),
+                    "longest": streak.get("longest_streak", 0),
+                },
+                "learning_sessions": learning_sessions,
+                "learning_consistency_score": round(float(learning_consistency), 2),
+                "missed_learning_days_30": activity_tracking.get("missed_learning_days_30"),
+                "last_activity_at": last_activity_at,
+            },
+            "coding": {
+                "total_problems_solved": code_submissions,
+                "easy_medium_hard": diff_counts,
+                "topic_wise_performance": topic_performance,
+                "accuracy_rate": accuracy,
+                "average_solve_time_seconds": avg_solve_time,
+                "consistency_score": round(float(learning_consistency), 2),
+                "weak_topics": weak_topics,
+            },
+            "resume": {
+                "resume_score": _clamp_0_100(resume_score),
+                "sections": {
+                    "projects": projects_score,
+                    "skills": skills_score,
+                    "experience": experience_score,
+                    "ats_optimization": ats_score,
+                },
+                "resume_improvement_history_count": resume_analyses,
+                "last_resume_review_date": (latest_resume or {}).get("created_at"),
+            },
+            "mock_interview": {
+                "number_of_mock_interviews": interviews_taken,
+                "types": interview_type_counts,
+                "avg_readiness_score": round(float(avg_interview), 2),
+                "last_mock_interview_date": last_interview_at,
+            },
+        },
+        "role_eligibility": roles,
+        "job_suggestions": job_suggestions,
+        "job_recommendations": job_recommendations,
+        "prediction": {
+            "estimated_days_to_job_ready": prediction.get("estimated_days_to_job_ready"),
+            "next_career_milestone": prediction.get("next_career_milestone"),
+            "milestone_days": prediction.get("milestone_days"),
+            "biggest_blocker": prediction.get("biggest_blocker"),
+            "risk_level": prediction.get("risk_level"),
+        },
+        "what_if": prediction.get("what_if"),
+        "action_plan": {
+            "today": locked,
+            "weekly": weekly_plan,
+        },
+        "insights": {
+            "skill_gaps": skill_gaps,
+            "high_demand_skills": ["System Design", "Cloud (AWS/Azure)", "SQL", "DSA", "Docker"],
+            "suggested_certifications": ["AWS Cloud Practitioner", "Azure Fundamentals", "Google Data Analytics"],
+            "suggested_portfolio_projects": ["Full-stack CRUD app", "Resume ATS checker", "Coding tracker dashboard"],
+            "networking_suggestions": ["Ask for 2 referrals", "Connect with 5 engineers on LinkedIn", "Join one local tech community"],
+        },
+        "history": history,
+    }
+
+
+
+@api_router.post("/activity/event")
+async def post_activity_event(event: ActivityEvent, current_user: dict = Depends(get_current_user)):
+    """Record lightweight activity events (page_view, time_spent, etc)."""
+    user_id = current_user["id"]
+    try:
+        await asyncio.to_thread(_insert_activity_event, user_id, event)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to record activity event")
+    return {"ok": True}
+
+
+@api_router.get("/career/apply-tracker", response_model=List[ApplyTrackerItem])
+async def get_apply_tracker(limit: int = Query(100, ge=1, le=300), current_user: dict = Depends(get_current_user)):
+    user_id = current_user["id"]
+    items = await asyncio.to_thread(_list_apply_tracker_items, user_id, limit)
+    return [ApplyTrackerItem(**i) for i in items]
+
+
+@api_router.post("/career/apply-tracker", response_model=ApplyTrackerItem)
+async def add_apply_tracker_item(payload: ApplyTrackerCreate, current_user: dict = Depends(get_current_user)):
+    user_id = current_user["id"]
+    try:
+        item = await asyncio.to_thread(_upsert_apply_tracker_item, user_id, payload)
+        return ApplyTrackerItem(**item)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to save apply tracker item")
+
+
+@api_router.patch("/career/apply-tracker/{item_id}", response_model=ApplyTrackerItem)
+async def update_apply_tracker_item(item_id: str, payload: ApplyTrackerUpdate, current_user: dict = Depends(get_current_user)):
+    user_id = current_user["id"]
+    try:
+        item = await asyncio.to_thread(_update_apply_tracker_item, user_id, item_id, payload)
+        return ApplyTrackerItem(**item)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to update apply tracker item")
+
+
+@api_router.delete("/career/apply-tracker/{item_id}")
+async def delete_apply_tracker_item(item_id: str, current_user: dict = Depends(get_current_user)):
+    user_id = current_user["id"]
+    try:
+        await asyncio.to_thread(_delete_apply_tracker_item, user_id, item_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to delete apply tracker item")
+    return {"ok": True}
 
 @api_router.get("/achievements", response_model=List[AchievementCategory])
 async def get_achievements(current_user: dict = Depends(get_current_user)):
