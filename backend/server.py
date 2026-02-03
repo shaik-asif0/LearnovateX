@@ -48,9 +48,9 @@ class AchievementCategory(BaseModel):
 app = FastAPI()
 
 default_cors_origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "https://purple-river-029d38c00.2.azurestaticapps.net",
+    # "http://localhost:3000",
+    # "http://127.0.0.1:3000",
+    "https://purple-river-029d38c00.2.azurestaticapps.net"
 ]
 
 cors_origins_env = os.environ.get("CORS_ORIGINS")
