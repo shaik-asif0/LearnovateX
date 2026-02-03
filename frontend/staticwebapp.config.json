@@ -15,18 +15,16 @@
     "rewrite": "/index.html",
     "exclude": [
       "/Courses/*",
-      "/Courses/**",
       "/videos/*",
       "/assets/*",
       "/static/*",
+      "/static/media/*",
       "/*.css",
       "/*.js",
       "/*.png",
       "/*.jpg",
       "/*.jpeg",
       "/*.svg",
-      "/**/*.mp4",
-      "/**/*.webm",
       "/LearnovateX.mp4"
     ]
   },
