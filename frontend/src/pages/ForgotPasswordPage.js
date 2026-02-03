@@ -53,6 +53,12 @@ const ForgotPasswordPage = () => {
       toast.success(
         res.data?.message || "If the email is registered, an OTP has been sent."
       );
+
+      const debugOtp = res.data?.debug_otp;
+      if (debugOtp) {
+        setOtp(String(debugOtp));
+        toast.message("Debug OTP", { description: String(debugOtp) });
+      }
       setStep("otp");
     } catch (err) {
       const msg =

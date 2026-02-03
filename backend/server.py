@@ -2785,11 +2785,21 @@ async def forgot_password(payload: ForgotPasswordRequest):
 
     email_status = _email_status()
     if (not email_status["configured"]) or (not email_status["enabled"]):
-        # Email sending is required for this flow.
-        detail = "Email service is not configured. Set SMTP_HOST/SMTP_PORT/SMTP_USERNAME/SMTP_PASSWORD/EMAIL_FROM in backend/.env"
+        # Email sending is required for this flow in production.
+        # For non-production demo/testing, allow an explicit debug OTP fallback.
+        if RETURN_DEBUG_OTP and DEBUG and ENVIRONMENT != "production":
+            ttl_minutes = int(os.environ.get("RESET_OTP_TTL_MINUTES") or 10)
+            ttl_minutes = max(5, min(10, ttl_minutes))
+            otp = await asyncio.to_thread(_create_reset_otp, payload.email, ttl_minutes)
+            return ForgotPasswordResponse(
+                message="Email service is not configured. Using debug OTP (non-production only).",
+                debug_otp=otp,
+            )
+
+        detail = "Email service is not configured. Configure SMTP in Azure App Service settings (SMTP_HOST/SMTP_PORT/SMTP_USERNAME/SMTP_PASSWORD/EMAIL_FROM)"
         if DEBUG and ENVIRONMENT != "production":
             detail = f"Email service is not configured. Missing: {', '.join(email_status['missing']) or 'unknown'}"
-        raise HTTPException(status_code=500, detail=detail)
+        raise HTTPException(status_code=503, detail=detail)
 
     # Simple cooldown: prevent spamming OTP requests (60s between latest requests).
     latest = await asyncio.to_thread(_get_latest_reset_otp_row, payload.email)
