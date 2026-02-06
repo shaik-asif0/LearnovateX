@@ -58,15 +58,14 @@ import { toast } from "sonner";
 import { useI18n } from "../i18n/I18nProvider";
 
 const buildYouTubeEmbedUrl = (youtubeId) => {
-  const base = `https://www.youtube-nocookie.com/embed/${youtubeId}`;
+  const base = `https://www.youtube.com/embed/${youtubeId}`;
   const params = new URLSearchParams({
     rel: "0",
     modestbranding: "1",
     playsinline: "1",
+    autoplay: "0",
+    enablejsapi: "1",
   });
-  if (typeof window !== "undefined" && window.location?.origin) {
-    params.set("origin", window.location.origin);
-  }
   return `${base}?${params.toString()}`;
 };
 
@@ -2176,6 +2175,9 @@ const LearningPathPage = () => {
                     title={currentLesson.title}
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    referrerPolicy="origin"
+                    sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox"
+                    loading="lazy"
                     allowFullScreen
                     className="w-full h-full"
                   />

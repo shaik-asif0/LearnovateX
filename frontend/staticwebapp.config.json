@@ -29,7 +29,10 @@
     ]
   },
   "globalHeaders": {
-    "Cache-Control": "no-cache"
+    "Cache-Control": "no-cache",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "accelerometer=*, autoplay=*, clipboard-write=*, encrypted-media=*, gyroscope=*, picture-in-picture=*",
+    "X-Content-Type-Options": "nosniff"
   },
   "mimeTypes": {
     ".json": "application/json",

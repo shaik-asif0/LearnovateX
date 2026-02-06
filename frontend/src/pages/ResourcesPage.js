@@ -3431,6 +3431,8 @@ const ResourcesPage = () => {
           rel: "0",
           modestbranding: "1",
           playsinline: "1",
+          autoplay: "0",
+          enablejsapi: "1",
         });
         return `${base}?${params.toString()}`;
       };
@@ -4149,6 +4151,9 @@ const ResourcesPage = () => {
                 title={videoModal.title}
                 className="w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="origin"
+                sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox"
+                loading="lazy"
                 allowFullScreen
               />
             )}
