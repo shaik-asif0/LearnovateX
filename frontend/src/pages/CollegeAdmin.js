@@ -404,7 +404,12 @@ const CollegeAdmin = () => {
         department: student.department || "Computer Science",
         year: student.year || ["1st", "2nd", "3rd", "4th"][index % 4],
         last_active: student.learning_sessions > 0 ? "Recently" : "Inactive",
-        streak: student.streak || Math.floor(Math.random() * 15),
+        streak:
+          typeof student.login_display_current_streak === "number"
+            ? student.login_display_current_streak
+            : typeof student.streak === "number"
+            ? student.streak
+            : 0,
         badges:
           student.code_submissions > 20
             ? ["Code Master"]

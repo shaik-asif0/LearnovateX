@@ -75,238 +75,299 @@ uvicorn server:app --reload --port 8001
 
 2. **"Region not supported" error**
 
-   - Make sure your Azure region supports Azure OpenAI
-   - Try different regions like East US, West Europe, or Australia East
+   # LearnovateX AI Provider Setup Guide (OpenAI or Azure OpenAI)
 
-3. **"Deployment not found" error**
+   This guide explains how to configure **either**:
 
-   - Verify the deployment name matches exactly what you created in Azure
-   - Check that the model is deployed and active
+   - **OpenAI Platform (openai.com)** API key (recommended if you can’t deploy models in Azure), or
+   - **Azure OpenAI** (requires creating a deployment in Azure)
 
-4. **Rate limiting**
-   - Azure OpenAI has rate limits based on your pricing tier
-   - Consider upgrading if you hit limits frequently
+   So that the AI features use **real responses** instead of demo/sample responses.
 
-## Cost Estimation
+   ## Option A (Recommended): Use OpenAI Platform (openai.com)
 
-- **GPT-4**: ~$0.03 per 1K tokens (input) / $0.06 per 1K tokens (output)
-- Typical conversation: 500-2000 tokens
-- Monitor usage in Azure Portal under your OpenAI resource
+   If Azure won’t let you deploy a model in your region/subscription, OpenAI Platform is the simplest option.
 
-## Security Notes
+   ### Step A1: Create an OpenAI API key
 
-- Never commit API keys to version control
-- Rotate keys regularly
-- Use Azure Key Vault for production deployments
-- Set up proper access controls in Azure
+   1. Create an OpenAI Platform account
+   2. Create an API key in the OpenAI developer dashboard
+   3. Copy the key (you will not be able to view it again later)
 
-## AWS Bedrock Setup (For Full AI Capabilities)
+   ### Step A2: Configure the backend
 
-### Prerequisites
+   Start from the template:
 
-1. An AWS Account (Free Tier eligible for some services)
-2. AWS CLI installed (optional, for testing)
+   ```bash
+   cp backend/.env.example backend/.env
+   ```
 
-### Important: AWS Bedrock Pricing
+   Then set:
 
-> ⚠️ **Note**: AWS Bedrock is NOT included in AWS Free Tier. It charges per token:
+   ```env
+   AI_MODE=openai
+   OPENAI_API_KEY=YOUR_OPENAI_API_KEY
+   OPENAI_MODEL=gpt-4o-mini
+   ```
 
-| Model           | Input (per 1M tokens) | Output (per 1M tokens) |
-| --------------- | --------------------- | ---------------------- |
-| Claude 3 Haiku  | $0.25                 | $1.25                  |
-| Claude 3 Sonnet | $3.00                 | $15.00                 |
-| Claude 3 Opus   | $15.00                | $75.00                 |
+   ### Step A3: Run the backend
 
-**Estimated monthly costs:**
+   ```bash
+   cd backend
+   pip install -r requirements.txt
+   uvicorn server:app --reload --host 0.0.0.0 --port 8000
+   ```
 
-- Light usage (50 requests/day): ~$0.50-2/month with Haiku
-- Medium usage (200 requests/day): ~$2-10/month with Haiku
-- Heavy usage: Consider using demo mode for testing
+   Check:
 
-### Step 1: Create IAM User
+   - `GET http://localhost:8000/api/status`
 
-1. Go to [AWS Console](https://console.aws.amazon.com/) → IAM → Users
-2. Click **Create User**
-3. User name: `learning-platform-bedrock`
-4. Click **Next**
-5. Select **Attach policies directly**
-6. Search and select: `AmazonBedrockFullAccess`
-7. Click **Next** → **Create user**
+   It should show `ai_mode: openai` and `ai_service.mode: OpenAI`.
 
-### Step 2: Create Access Keys
+   ***
 
-1. Click on the created user
-2. Go to **Security credentials** tab
-3. Click **Create access key**
-4. Select **Application running outside AWS**
-5. Click **Next** → **Create access key**
-6. **SAVE** the Access Key ID and Secret Access Key (you won't see the secret again!)
+   ## Option B: Use Azure OpenAI
 
-### Step 3: Enable Bedrock Model Access
+   ## What you need from Azure (3 values)
 
-1. Go to [Amazon Bedrock Console](https://console.aws.amazon.com/bedrock/)
-2. Select region: **US East (N. Virginia)** `us-east-1` (recommended)
-3. Click **Model access** in the left sidebar
-4. Click **Manage model access**
-5. Enable these models:
-   - ✅ **Anthropic Claude 3 Haiku** (recommended - cheapest)
-   - ✅ **Anthropic Claude 3 Sonnet** (optional - better quality)
-6. Click **Request model access**
-7. Wait for approval (usually instant)
+   You must obtain and configure **all three**:
 
-### Step 4: Configure Environment
+   1. **AZURE_OPENAI_API_KEY** (Key 1 or Key 2)
+   2. **AZURE_OPENAI_ENDPOINT** (base endpoint URL)
+   3. **AZURE_OPENAI_DEPLOYMENT** (your _deployment name_ in Azure AI Foundry / OpenAI Studio)
 
-Update `backend/.env` file:
+   In this repo, these are read from environment variables in the backend and used by the Azure OpenAI SDK (`AzureOpenAI`).
 
-```env
-# Switch from demo to bedrock mode
-AI_MODE=bedrock
+   ## How this API key affects features in this project
 
-# Your AWS credentials
-AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=AKIA...your-access-key...
-AWS_SECRET_ACCESS_KEY=your-secret-key-here
+   When `AI_MODE=azure` and the Azure values are configured, the backend uses Azure OpenAI for:
 
-# Use Haiku for lowest cost
-AWS_BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
-```
+   - **AI Tutor**: `POST /api/tutor/chat`
+   - **Code analysis / evaluation**: `POST /api/code/evaluate`
+   - **Resume analysis**: `POST /api/resume/analyze`
+   - **Mock interviews**:
+     - `POST /api/interview/start`
+     - `POST /api/interview/evaluate`
 
-### Step 5: Test the Setup
+   When Azure is not configured (or you’re offline), the backend automatically falls back to **demo mode** responses.
 
-```bash
-cd backend
-uvicorn server:app --reload --port 8000
-```
+   ### Important: “Tracking student information” is NOT done by the API key
 
-Check the console output:
+   The **Azure OpenAI API key does not identify or track your students** by itself.
 
-- ✅ `✓ AWS Bedrock client initialized successfully` - AWS is working
-- ⚠️ `ℹ AWS credentials not configured - running in demo mode` - Still in demo mode
+   What actually tracks student progress in this project:
 
-Test the health endpoint:
+   - Users authenticate and the backend uses a **JWT** that contains the logged-in user identity.
+   - Each AI request is handled for the current user and results are stored in the backend database (**SQLite**, `backend/learnovatex.db`).
+   - The **Career Readiness** page is computed mainly from stored activity metrics (code scores, resume score, interview readiness, learning consistency). It’s not “tracked by the API key”.
 
-```bash
-curl http://localhost:8000/api/health
-```
+   If you ever want to associate Azure OpenAI usage to a student in Azure logs, you typically add a user identifier to your app-level logs (recommended) and/or pass user metadata where supported. This repo currently tracks users in its own DB.
 
----
+   ***
 
-## Available Model IDs
+   ## Step-by-step: Get an Azure OpenAI API key
 
-| Model           | ID                                        | Best For                 | Cost |
-| --------------- | ----------------------------------------- | ------------------------ | ---- |
-| Claude 3 Haiku  | `anthropic.claude-3-haiku-20240307-v1:0`  | Fast responses, low cost | $    |
-| Claude 3 Sonnet | `anthropic.claude-3-sonnet-20240229-v1:0` | Balanced quality/cost    | $$   |
-| Claude 3 Opus   | `anthropic.claude-3-opus-20240229-v1:0`   | Highest quality          | $$$  |
-| Amazon Titan    | `amazon.titan-text-express-v1`            | AWS native option        | $    |
+   > Note: Azure UI labels change sometimes (Azure OpenAI Studio vs Azure AI Foundry). The steps below match the common 2025/2026 Azure flow.
 
----
+   ### Step 0 (only if required): Get Azure OpenAI access
 
-## Features Using AI
+   Depending on your subscription/tenant, you may need approval to use Azure OpenAI models.
 
-All these features work in both Demo and Bedrock modes:
+   - If you can’t create an Azure OpenAI resource or can’t deploy models, check your organization policy or request access from your Azure admin.
 
-| Feature         | Endpoint              | Description                     |
-| --------------- | --------------------- | ------------------------------- |
-| AI Tutor        | `/api/tutor/chat`     | Interactive learning assistance |
-| Code Evaluation | `/api/code/evaluate`  | Code review and scoring         |
-| Resume Analyzer | `/api/resume/analyze` | Resume credibility scoring      |
-| Mock Interviews | `/api/interview/*`    | Interview practice              |
+   ### Step 1: Create an Azure OpenAI resource
 
----
+   1. Open Azure Portal: https://portal.azure.com
+   2. Click **Create a resource**
+   3. Search for **Azure OpenAI** (sometimes listed under **Azure AI services**)
+   4. Click **Create**
+   5. Fill in:
+      - **Subscription**: your subscription
+      - **Resource group**: create new or select existing
+      - **Region**: choose one that supports Azure OpenAI for your subscription
+      - **Name**: any unique name (example: `learnovatex-openai`)
+      - **Pricing tier**: typically `Standard S0`
+   6. Click **Review + create** → **Create**
 
-## Environment Configuration Reference
+   ### Step 2: Copy the Endpoint and API Key
 
-```env
-# =============================================
-# AI MODE: 'demo' (free) or 'bedrock' (AWS)
-# =============================================
-AI_MODE=demo
+   1. Open your Azure OpenAI resource
+   2. Go to **Keys and Endpoint**
+   3. Copy:
+      - **Key 1** (or **Key 2**) → this becomes `AZURE_OPENAI_API_KEY`
+      - **Endpoint** → this becomes `AZURE_OPENAI_ENDPOINT`
 
-# =============================================
-# AWS CREDENTIALS (only needed if AI_MODE=bedrock)
-# =============================================
-AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=your_access_key
-AWS_SECRET_ACCESS_KEY=your_secret_key
-AWS_BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
+   The endpoint looks like:
 
-# =============================================
-# SECURITY
-# =============================================
-JWT_SECRET=change-this-to-a-random-string
-```
+   `https://<your-resource-name>.openai.azure.com/`
 
----
+   ✅ Use the **base endpoint** only (do not add `/openai/deployments/...`).
 
-## Troubleshooting
+   ### Step 3: Create a model deployment (this becomes AZURE_OPENAI_DEPLOYMENT)
 
-### Server won't start
+   In Azure, you do **not** call the model by raw name (like `gpt-4o-mini`) from this repo.
+   This project passes the deployment name as `model=...`.
 
-```bash
-# Install dependencies first
-pip install -r requirements.txt
+   1. From your Azure OpenAI resource, open **Azure AI Foundry portal** / **Azure OpenAI Studio**
+   2. Go to **Deployments** (sometimes: **Model deployments**)
+   3. Click **Create new deployment**
+   4. Choose a model you have access to (examples):
+      - `gpt-4o-mini` (often good cost/performance)
+      - `gpt-4o`
+      - `gpt-35-turbo` (older, cheaper)
+   5. Set **Deployment name** (example: `learnovatex-gpt4o-mini`)
+   6. Create the deployment
 
-# Check Python version (needs 3.8+)
-python --version
-```
+   That deployment name is what you put into:
 
-### "Access Denied" Error
+   `AZURE_OPENAI_DEPLOYMENT=learnovatex-gpt4o-mini`
 
-- Verify IAM user has `AmazonBedrockFullAccess` policy
-- Check model access is enabled in Bedrock console
-- Verify credentials in `.env` are correct (no quotes around values)
+   ***
 
-### "Model not found" Error
+   ## Configure this project (Local Development)
 
-- Check the model ID is correct
-- Ensure model access is approved
-- Try region `us-east-1` (has most models)
+   ### Step 4: Set backend environment variables
 
-### "Throttling" Error
+   Start from the template:
 
-- You've hit rate limits
-- The code has automatic retry logic
-- Consider using demo mode for testing
+   ```bash
+   # From repo root
+   cp backend/.env.example backend/.env
+   ```
 
-### AI Responses say "Demo Mode"
+   Then edit the file:
 
-- Check `AI_MODE=bedrock` in `.env`
-- Verify AWS credentials are set correctly
-- Check server console for initialization messages
+   - `backend/.env`
 
----
+   Add these values:
 
-## Security Best Practices
+   ```env
+   # Use Azure OpenAI for real responses
+   AI_MODE=azure
 
-1. **Never commit `.env` to Git** - It's in `.gitignore`
-2. **Rotate access keys** regularly
-3. **Use IAM roles** in production instead of access keys
-4. **Change JWT_SECRET** in production
-5. **Enable CloudTrail** for API auditing
+   # Azure OpenAI credentials
+   AZURE_OPENAI_API_KEY=YOUR_KEY_1_OR_KEY_2
+   AZURE_OPENAI_ENDPOINT=https://YOUR-RESOURCE-NAME.openai.azure.com/
 
----
+   # IMPORTANT: this is the *deployment name* you created in Azure AI Foundry
+   AZURE_OPENAI_DEPLOYMENT=YOUR_DEPLOYMENT_NAME
+   ```
 
-## Cost Optimization Tips
+   Common mistakes:
 
-1. **Start with Demo Mode** for development
-2. **Use Claude 3 Haiku** - 10x cheaper than Sonnet
-3. **Implement caching** for repeated queries
-4. **Set billing alerts** in AWS Console
-5. **Monitor usage** in CloudWatch
+   - `AZURE_OPENAI_DEPLOYMENT` must match your deployment name **exactly** (case-sensitive).
+   - `AZURE_OPENAI_ENDPOINT` must be the base endpoint and should start with `https://`.
+   - Don’t use an OpenAI.com API key here; it must be an **Azure** key.
 
----
+   ### Step 5: Install backend dependencies
 
-## API Health Check
+   ```bash
+   cd backend
+   pip install -r requirements.txt
+   ```
 
-Check system status anytime:
+   ### Step 6: Run a direct Azure test (recommended)
 
-```bash
-# Health check
-curl http://localhost:8000/api/health
+   This repo includes a test script:
 
-# Detailed status
-curl http://localhost:8000/api/status
-```
+   ```bash
+   cd backend
+   python test_azure_openai.py
+   ```
 
-Response shows current AI mode and configuration status.
+   If it passes, you’ll see a successful message and a real response.
+
+   ### Step 7: Run the backend and verify health
+
+   Start the backend:
+
+   ```bash
+   cd backend
+   uvicorn server:app --reload --host 0.0.0.0 --port 8000
+   ```
+
+   Then check:
+
+   - `GET http://localhost:8000/api/health`
+   - `GET http://localhost:8000/api/status`
+
+   If Azure is configured, `/api/status` will show the deployment name.
+
+   ***
+
+   ## Configure in Azure Hosting (App Service)
+
+   If you deploy the backend to **Azure App Service**, do **not** rely on `backend/.env`.
+
+   This project intentionally avoids overriding App Service settings by default.
+
+   ### Step 1: Add App Settings
+
+   1. Azure Portal → your **App Service** → **Configuration** → **Application settings**
+   2. Add these keys:
+      - `AI_MODE` = `azure`
+      - `AZURE_OPENAI_API_KEY` = your key
+      - `AZURE_OPENAI_ENDPOINT` = your endpoint
+      - `AZURE_OPENAI_DEPLOYMENT` = your deployment name
+   3. Save and restart the App Service
+
+   ### Optional: DOTENV_OVERRIDE
+
+   The backend loads `backend/.env` only for local development by default.
+   In App Service, environment variables from Azure should take priority.
+
+   Only if you _really_ want `.env` to override App Service settings, set:
+
+   `DOTENV_OVERRIDE=true`
+
+   (Not recommended for production.)
+
+   ***
+
+   ## Troubleshooting
+
+   ### 1) AI still returns “demo mode” responses
+
+   Check:
+
+   - `AI_MODE=azure`
+   - `AZURE_OPENAI_API_KEY` is set (not empty)
+   - `AZURE_OPENAI_ENDPOINT` is set (not empty)
+   - You have internet access (the backend falls back to demo mode if offline)
+
+   ### 2) 401 / “Invalid API key”
+
+   - Ensure you copied the key from **Keys and Endpoint** of your **Azure OpenAI resource**.
+   - If you rotated keys, update `AZURE_OPENAI_API_KEY`.
+
+   ### 3) “Deployment not found” / “The API deployment for this resource does not exist”
+
+   - Verify the deployment exists in Azure AI Foundry / OpenAI Studio.
+   - Ensure `AZURE_OPENAI_DEPLOYMENT` matches the deployment name exactly.
+
+   ### 4) 403 / “Access denied”
+
+   - Your subscription/tenant may not have model access in that region.
+   - Try another region or request access from your Azure admin.
+
+   ### 5) Rate limit / quota errors
+
+   - Check Azure OpenAI quotas for your resource/region.
+   - Use a smaller/cheaper model (like `gpt-4o-mini`) if available.
+   - Reduce `max_tokens` or request rate (this backend retries up to 3 times).
+
+   ***
+
+   ## Security & privacy notes (important for resumes/interviews)
+
+   - Never commit `backend/.env` (keep keys out of Git).
+   - Treat resumes/interview answers as sensitive data.
+   - For production, prefer storing secrets in **App Service Configuration** or **Azure Key Vault**.
+   - Rotate keys regularly.
+
+   ***
+
+   ## Cost notes
+
+   Azure OpenAI is billed by tokens and varies by model/region.
+   Use Azure Portal billing/metrics to monitor usage and set budget alerts.

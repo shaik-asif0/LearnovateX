@@ -76,6 +76,28 @@ h6 {
     --accent-color: #ff7a00; /* default accent (orange) */
     --accent-rgb: 255, 122, 0; /* default rgb for opacity helpers */
   }
+
+  :root[data-theme="light"] {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+    --card: 0 0% 98%;
+    --card-foreground: 0 0% 0%;
+    --popover: 0 0% 98%;
+    --popover-foreground: 0 0% 0%;
+    --primary: 25 100% 50%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 94%;
+    --secondary-foreground: 0 0% 0%;
+    --muted: 0 0% 92%;
+    --muted-foreground: 0 0% 35%;
+    --accent: 35 100% 50%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 25 100% 50%;
+    --destructive-foreground: 0 0% 0%;
+    --border: 0 0% 85%;
+    --input: 0 0% 92%;
+    --ring: 25 100% 50%;
+  }
 }
 
 @layer base {
@@ -84,6 +106,34 @@ h6 {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  @keyframes support-jelly {
+    0% {
+      transform: translateY(0) scale(1);
+    }
+    18% {
+      transform: translateY(-4px) scale(1.05, 0.96);
+    }
+    36% {
+      transform: translateY(0) scale(0.98, 1.03);
+    }
+    54% {
+      transform: translateY(-2px) scale(1.02, 0.99);
+    }
+    72% {
+      transform: translateY(0) scale(1);
+    }
+    100% {
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .support-jelly {
+    animation: support-jelly 2.6s ease-in-out infinite;
+    will-change: transform;
   }
 }
 

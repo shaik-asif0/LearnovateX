@@ -2,7 +2,10 @@
 
 ## Your AI Learning Platform is Ready!
 
-All 13 features have been implemented and are working with **real Azure OpenAI responses** (not demo mode).
+All 13 features have been implemented and work in:
+
+- **Demo mode** (no API key; sample responses)
+- **Real AI mode** using **OpenAI Platform (openai.com)** _or_ **Azure OpenAI** (when configured)
 
 ### ✅ Completed Features
 
@@ -24,16 +27,19 @@ All 13 features have been implemented and are working with **real Azure OpenAI r
 
 ### 1. Configure Azure OpenAI
 
-**CRITICAL**: For real AI responses, you MUST configure Azure OpenAI:
+### 1. Configure Real AI (OpenAI or Azure)
+
+**CRITICAL**: For real AI responses, configure **either OpenAI** or **Azure OpenAI**:
 
 ```bash
-# 1. Follow AZURE_SETUP.md for detailed instructions
-# 2. Get your Azure OpenAI credentials
-# 3. Update backend/.env with your API key and endpoint
-# 4. Test with: python test_azure_openai.py
+# 1) Follow AZURE_SETUP.md for detailed instructions
+# 2) Copy the env template
+cp backend/.env.example backend/.env
+# 3) In backend/.env choose ONE:
+#    - AI_MODE=openai  (set OPENAI_API_KEY)
+#    - AI_MODE=azure   (set AZURE_OPENAI_* including deployment)
+# 4) Start backend and check /api/status
 ```
-
-**Alternative**: Use AWS Bedrock (see AZURE_SETUP.md for setup instructions)
 
 ### 2. Start the Application
 
@@ -152,34 +158,31 @@ sudo supervisorctl status
 
 ## 🔑 API Key Information
 
-**Azure OpenAI**: Already configured in `backend/.env` (update with your credentials)
-**AWS Bedrock**: Alternative AI provider (see AZURE_SETUP.md)
+This project supports:
+
+- **OpenAI Platform (openai.com)** via `AI_MODE=openai`
+- **Azure OpenAI** via `AI_MODE=azure`
 
 ```
-# AI Configuration (choose one)
-AI_MODE=azure  # or 'bedrock' for AWS Bedrock
+# AI Configuration
+AI_MODE=demo  # or 'openai' or 'azure'
+
+# OpenAI Platform (if using AI_MODE=openai)
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL=gpt-4o-mini
 
 # Azure OpenAI (if using AI_MODE=azure)
 AZURE_OPENAI_API_KEY=your_azure_api_key
 AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
-AZURE_OPENAI_DEPLOYMENT=gpt-4
-
-# AWS Bedrock (if using AI_MODE=bedrock)
-AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=your_access_key
-AWS_SECRET_ACCESS_KEY=your_secret_key
-AWS_BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
+AZURE_OPENAI_DEPLOYMENT=your_deployment_name
 
 # Security
 JWT_SECRET=your-secret-key-change-in-production
 ```
 
-This key is provided and working. For production, get your own from:
-https://makersuite.google.com/app/apikey
-
 ## 📊 Database
 
-**MongoDB** is running locally with these collections:
+**SQLite** is used for local storage (file: `backend/learnovatex.db`).
 
 - `users` - User accounts and profiles
 - `learning_history` - AI tutor conversations

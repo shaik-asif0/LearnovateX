@@ -224,17 +224,27 @@ Once the backend is running, visit `http://localhost:8000/docs` for interactive 
 
 ### Backend (.env)
 
+Copy the template and edit it:
+
+```bash
+cp backend/.env.example backend/.env
+```
+
 ```env
 # Database Configuration (SQLite - no additional setup required)
 DATABASE_URL=sqlite:///./learnovatex.db
 
 # AI Configuration
-AI_MODE=demo  # or 'azure' for Azure OpenAI
+AI_MODE=demo  # or 'azure' (Azure OpenAI) or 'openai' (OpenAI Platform)
 
 # Azure OpenAI (only needed if AI_MODE=azure)
 AZURE_OPENAI_API_KEY=your_azure_openai_key
 AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
-AZURE_OPENAI_DEPLOYMENT=gpt-4
+AZURE_OPENAI_DEPLOYMENT=your_deployment_name
+
+# OpenAI Platform (non-Azure) (only needed if AI_MODE=openai)
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL=gpt-4o-mini
 
 # Security
 JWT_SECRET=change-this-to-a-random-string-in-production

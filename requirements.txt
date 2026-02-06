@@ -21,6 +21,16 @@ pydantic-core
 PyPDF2
 reportlab==4.4.4
 
+# DOCX
+python-docx==1.1.2
+
+# YouTube transcript
+youtube-transcript-api==0.6.2
+
+# Optional OCR for images (requires system Tesseract)
+Pillow==10.4.0
+pytesseract==0.3.10
+
 # Async & HTTP
 anyio
 aiohttp

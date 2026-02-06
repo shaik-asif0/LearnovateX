@@ -55,9 +55,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { getUser } from "../lib/utils";
+import { useI18n } from "../i18n/I18nProvider";
 
 const ResourcesPage = () => {
   const user = getUser();
+  const { t } = useI18n();
   const resourceBookmarksKey =
     user?.id || user?._id || user?.email
       ? `resourceBookmarks:${user.id || user._id || user.email}`
@@ -3276,7 +3278,9 @@ const ResourcesPage = () => {
     setBookmarks(newBookmarks);
     localStorage.setItem(resourceBookmarksKey, JSON.stringify(newBookmarks));
     toast.success(
-      bookmarks.includes(id) ? "Removed from bookmarks" : "Added to bookmarks"
+      bookmarks.includes(id)
+        ? t("resources.toasts.removedFromBookmarks", "Removed from bookmarks")
+        : t("resources.toasts.addedToBookmarks", "Added to bookmarks")
     );
   };
 
@@ -3288,8 +3292,8 @@ const ResourcesPage = () => {
     localStorage.setItem(completedResourcesKey, JSON.stringify(newCompleted));
     toast.success(
       completedResources.includes(id)
-        ? "Marked as incomplete"
-        : "Marked as completed! 🎉"
+        ? t("resources.toasts.markedIncomplete", "Marked as incomplete")
+        : t("resources.toasts.markedCompleted", "Marked as completed! 🎉")
     );
   };
 
@@ -3307,21 +3311,29 @@ const ResourcesPage = () => {
         url: resource.url,
         title: resource.title,
       });
-      toast.success(`Playing: ${resource.title}`);
+      toast.success(
+        `${t("resources.toasts.playing", "Playing")}: ${resource.title}`
+      );
     } else if (resource.type === "pdf") {
       // Handle PDF download
       handleDownload(resource);
     } else {
       // Open external link in new tab
       window.open(resource.url, "_blank", "noopener,noreferrer");
-      toast.success(`Opening: ${resource.title}`);
+      toast.success(
+        `${t("resources.toasts.opening", "Opening")}: ${resource.title}`
+      );
     }
   };
 
   // Handle PDF/file downloads
   const handleDownload = async (resource) => {
     setDownloading(resource.id);
-    toast.info(`Preparing download: ${resource.title}...`);
+    toast.info(
+      `${t("resources.toasts.preparingDownload", "Preparing download")}: ${
+        resource.title
+      }...`
+    );
 
     try {
       // For external PDFs, open in new tab (browsers handle PDF viewing/download)
@@ -3332,11 +3344,18 @@ const ResourcesPage = () => {
         if (!completedResources.includes(resource.id)) {
           toggleCompleted(resource.id);
         }
-        toast.success(`Downloaded: ${resource.title}`);
+        toast.success(
+          `${t("resources.toasts.downloaded", "Downloaded")}: ${resource.title}`
+        );
         setDownloading(null);
       }, 1000);
     } catch (error) {
-      toast.error("Download failed. Please try again.");
+      toast.error(
+        t(
+          "resources.toasts.downloadFailedTryAgain",
+          "Download failed. Please try again."
+        )
+      );
       setDownloading(null);
     }
   };
@@ -3349,12 +3368,20 @@ const ResourcesPage = () => {
         url: resource.url,
         title: resource.title,
       });
-      toast.success(`Playing: ${resource.title}`);
+      toast.success(
+        `${t("resources.toasts.playing", "Playing")}: ${resource.title}`
+      );
     } else if (resource.url && resource.url !== "#") {
       window.open(resource.url, "_blank", "noopener,noreferrer");
-      toast.success(`Opening video: ${resource.title}`);
+      toast.success(
+        `${t("resources.toasts.openingVideo", "Opening video")}: ${
+          resource.title
+        }`
+      );
     } else {
-      toast.error("Video not available");
+      toast.error(
+        t("resources.toasts.videoNotAvailable", "Video not available")
+      );
     }
   };
 
@@ -3371,7 +3398,9 @@ const ResourcesPage = () => {
           text: resource.desc,
           url: shareUrl,
         });
-        toast.success("Shared successfully!");
+        toast.success(
+          t("resources.toasts.sharedSuccessfully", "Shared successfully!")
+        );
       } catch (error) {
         if (error.name !== "AbortError") {
           copyToClipboard(shareUrl);
@@ -3384,7 +3413,9 @@ const ResourcesPage = () => {
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
-    toast.success("Link copied to clipboard!");
+    toast.success(
+      t("resources.toasts.linkCopied", "Link copied to clipboard!")
+    );
   };
 
   const buildVideoEmbedSrc = (rawUrl) => {
@@ -3562,12 +3593,15 @@ const ResourcesPage = () => {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                Learning Resources
+                {t("resources.title", "Learning Resources")}
                 <Sparkles className="w-5 h-5 text-white" />
               </h1>
               <p className="text-zinc-400 text-sm">
-                {resources.length}+ curated resources to accelerate your
-                learning
+                {resources.length}+{" "}
+                {t(
+                  "resources.subtitleTail",
+                  "curated resources to accelerate your learning"
+                )}
               </p>
             </div>
           </div>
@@ -3576,14 +3610,16 @@ const ResourcesPage = () => {
           <Card className="hidden md:block bg-zinc-900 border-zinc-800 w-64">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-zinc-400">Your Progress</span>
+                <span className="text-sm text-zinc-400">
+                  {t("resources.progress", "Your Progress")}
+                </span>
                 <span className="text-sm font-bold text-white">
                   {completedResources.length}/{resources.length}
                 </span>
               </div>
               <Progress value={completionProgress} className="h-2" />
               <p className="text-xs text-zinc-500 mt-2">
-                {completionProgress}% completed
+                {completionProgress}% {t("resources.completed", "completed")}
               </p>
             </CardContent>
           </Card>
@@ -3593,14 +3629,16 @@ const ResourcesPage = () => {
         <Card className="md:hidden bg-zinc-900 border-zinc-800 mb-6">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-zinc-400">Your Progress</span>
+              <span className="text-sm text-zinc-400">
+                {t("resources.progress", "Your Progress")}
+              </span>
               <span className="text-sm font-bold text-white">
                 {completedResources.length}/{resources.length}
               </span>
             </div>
             <Progress value={completionProgress} className="h-2" />
             <p className="text-xs text-zinc-500 mt-2">
-              {completionProgress}% completed
+              {completionProgress}% {t("resources.completed", "completed")}
             </p>
           </CardContent>
         </Card>
@@ -3613,7 +3651,9 @@ const ResourcesPage = () => {
                 <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400" />
               </div>
               <div>
-                <p className="text-xs text-zinc-400">Total Resources</p>
+                <p className="text-xs text-zinc-400">
+                  {t("resources.stats.totalResources", "Total Resources")}
+                </p>
                 <p className="text-lg sm:text-xl font-bold text-white">
                   {resources.length}
                 </p>
@@ -3626,7 +3666,9 @@ const ResourcesPage = () => {
                 <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400" />
               </div>
               <div>
-                <p className="text-xs text-zinc-400">Completed</p>
+                <p className="text-xs text-zinc-400">
+                  {t("resources.stats.completed", "Completed")}
+                </p>
                 <p className="text-lg sm:text-xl font-bold text-white">
                   {completedResources.length}
                 </p>
@@ -3639,7 +3681,9 @@ const ResourcesPage = () => {
                 <Bookmark className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400" />
               </div>
               <div>
-                <p className="text-xs text-zinc-400">Bookmarked</p>
+                <p className="text-xs text-zinc-400">
+                  {t("resources.stats.bookmarked", "Bookmarked")}
+                </p>
                 <p className="text-lg sm:text-xl font-bold text-white">
                   {bookmarks.length}
                 </p>
@@ -3654,7 +3698,7 @@ const ResourcesPage = () => {
             <Card className="bg-zinc-900 border-zinc-800 sticky top-4">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-zinc-400">
-                  Categories
+                  {t("resources.categories", "Categories")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-1 max-h-[calc(100vh-140px)] overflow-y-auto pr-1">
@@ -3726,7 +3770,10 @@ const ResourcesPage = () => {
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-zinc-400" />
                 <Input
-                  placeholder="Search resources, topics, tags..."
+                  placeholder={t(
+                    "resources.searchPlaceholder",
+                    "Search resources, topics, tags..."
+                  )}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
@@ -3780,7 +3827,7 @@ const ResourcesPage = () => {
                 }`}
               >
                 <Filter className="w-4 h-4 mr-2" />
-                All Types
+                {t("resources.filters.allTypes", "All Types")}
               </Button>
               <Button
                 size="sm"
@@ -3800,7 +3847,8 @@ const ResourcesPage = () => {
                 }`}
               >
                 <Video className="w-4 h-4 mr-2" />
-                Videos ({resources.filter((r) => r.type === "video").length})
+                {t("resources.filters.videos", "Videos")} (
+                {resources.filter((r) => r.type === "video").length})
               </Button>
               <Button
                 size="sm"
@@ -3820,7 +3868,8 @@ const ResourcesPage = () => {
                 }`}
               >
                 <FileText className="w-4 h-4 mr-2" />
-                Docs ({resources.filter((r) => r.type === "docs").length})
+                {t("resources.filters.docs", "Docs")} (
+                {resources.filter((r) => r.type === "docs").length})
               </Button>
               <Button
                 size="sm"
@@ -3838,7 +3887,8 @@ const ResourcesPage = () => {
                 }`}
               >
                 <Bookmark className="w-4 h-4 mr-2" />
-                Bookmarked ({bookmarks.length})
+                {t("resources.filters.bookmarked", "Bookmarked")} (
+                {bookmarks.length})
               </Button>
               <Button
                 size="sm"
@@ -3856,15 +3906,23 @@ const ResourcesPage = () => {
                 }`}
               >
                 <CheckCircle2 className="w-4 h-4 mr-2" />
-                Completed ({completedResources.length})
+                {t("resources.filters.completed", "Completed")} (
+                {completedResources.length})
               </Button>
             </div>
 
             {/* Results Count */}
             <p className="text-sm text-zinc-400">
-              Showing {filteredResources.length} resources
-              {activeCategory !== "all" &&
-                ` in ${categories.find((c) => c.id === activeCategory)?.name}`}
+              {t("resources.results.showing", "Showing")}{" "}
+              {filteredResources.length}{" "}
+              {t("resources.results.resources", "resources")}
+              {activeCategory !== "all" && (
+                <>
+                  {" "}
+                  {t("resources.results.in", "in")}{" "}
+                  {categories.find((c) => c.id === activeCategory)?.name}
+                </>
+              )}
             </p>
 
             {/* Resource Grid/List */}

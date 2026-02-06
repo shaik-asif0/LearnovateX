@@ -47,6 +47,7 @@ import {
 import axiosInstance from "../lib/axios";
 import { toast } from "sonner";
 import { getUser } from "../lib/utils";
+import { useI18n } from "../i18n/I18nProvider";
 
 // ------------------------------
 // Demo / viva-friendly mock data
@@ -74,6 +75,7 @@ const MOCK_TWIN_SNAPSHOT = {
 const CareerReadinessPage = () => {
   const navigate = useNavigate();
   const user = getUser();
+  const { t } = useI18n();
   const userKey =
     user?.id || user?._id || user?.email
       ? String(user.id || user._id || user.email)
@@ -141,10 +143,12 @@ const CareerReadinessPage = () => {
 
   const weekStartKey = useMemo(() => {
     const now = new Date();
-    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const day = d.getDay(); // 0=Sun
+    const d = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+    );
+    const day = d.getUTCDay(); // 0=Sun
     const diffToMonday = (day + 6) % 7;
-    d.setDate(d.getDate() - diffToMonday);
+    d.setUTCDate(d.getUTCDate() - diffToMonday);
     return d.toISOString().slice(0, 10);
   }, []);
 
@@ -153,25 +157,20 @@ const CareerReadinessPage = () => {
     return Array.isArray(plan) ? plan : [];
   }, [mentorData]);
 
-  const weeklyChecklistStorageKey = useMemo(() => {
-    return `careerReadiness.weeklyPlan.${userKey}.${weekStartKey}`;
-  }, [userKey, weekStartKey]);
-
   const [weeklyDoneMap, setWeeklyDoneMap] = useState({});
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(weeklyChecklistStorageKey);
-      if (!raw) {
-        setWeeklyDoneMap({});
-        return;
-      }
-      const parsed = JSON.parse(raw);
-      setWeeklyDoneMap(parsed && typeof parsed === "object" ? parsed : {});
-    } catch {
-      setWeeklyDoneMap({});
-    }
-  }, [weeklyChecklistStorageKey]);
+    // Reset on week change; server state will repopulate.
+    setWeeklyDoneMap({});
+  }, [weekStartKey]);
+
+  useEffect(() => {
+    const serverWeekStart = mentorData?.action_plan?.weekly_state?.week_start;
+    const serverDoneMap = mentorData?.action_plan?.weekly_state?.done_map;
+    if (!serverWeekStart || serverWeekStart !== weekStartKey) return;
+    if (!serverDoneMap || typeof serverDoneMap !== "object") return;
+    setWeeklyDoneMap(serverDoneMap);
+  }, [mentorData, weekStartKey]);
 
   const weeklyItemsWithIds = useMemo(() => {
     return weeklyPlan.map((item, idx) => {
@@ -222,30 +221,32 @@ const CareerReadinessPage = () => {
   }, [weeklyCompletedCount, weeklyItemsWithIds.length]);
 
   const toggleWeeklyDone = useCallback(
-    (id) => {
-      setWeeklyDoneMap((prev) => {
-        const next = { ...(prev || {}) };
-        next[id] = !next[id];
-        try {
-          localStorage.setItem(weeklyChecklistStorageKey, JSON.stringify(next));
-        } catch {
-          // ignore
-        }
-        return next;
-      });
+    async (id) => {
+      const nextDone = !weeklyDoneMap?.[id];
+      setWeeklyDoneMap((prev) => ({ ...(prev || {}), [id]: nextDone }));
+
+      try {
+        await axiosInstance.patch("/career/weekly-checklist", {
+          week_start: weekStartKey,
+          item_id: id,
+          done: nextDone,
+        });
+      } catch (e) {
+        setWeeklyDoneMap((prev) => ({ ...(prev || {}), [id]: !nextDone }));
+        toast.error("Failed to update weekly checklist. Please retry.");
+      }
     },
-    [weeklyChecklistStorageKey]
+    [weekStartKey, weeklyDoneMap]
   );
 
   const advancedMetrics = useMemo(() => {
-    const timeSpent7 = activityTracking?.time_spent_seconds_7;
     const timeSpent30 = activityTracking?.time_spent_seconds_30;
 
     return [
       {
-        title: "Learning Streak",
+        title: "Login Streak",
         value: `${streakData.current} days`,
-        description: "Current consecutive learning days",
+        description: "Current consecutive login days (24h cadence)",
         icon: Flame,
         color: "text-accent",
         trend: streakData.current > 0 ? "up" : "stable",
@@ -259,15 +260,6 @@ const CareerReadinessPage = () => {
         trend: (stats?.learning_consistency_score || 0) > 0 ? "up" : "stable",
       },
       {
-        title: "Time Spent (7d)",
-        value: formatDuration(timeSpent7),
-        description: "Estimated time spent across the app",
-        icon: Clock,
-        color: "text-accent",
-        trend:
-          typeof timeSpent7 === "number" && timeSpent7 > 0 ? "up" : "stable",
-      },
-      {
         title: "Time Spent (30d)",
         value: formatDuration(timeSpent30),
         description: "Engagement over the last 30 days",
@@ -275,14 +267,6 @@ const CareerReadinessPage = () => {
         color: "text-accent",
         trend:
           typeof timeSpent30 === "number" && timeSpent30 > 0 ? "up" : "stable",
-      },
-      {
-        title: "Active Days (30d)",
-        value: `${stats?.active_days_30 || 0} days`,
-        description: "Days with at least one session",
-        icon: CalendarDays,
-        color: "text-accent",
-        trend: (stats?.active_days_30 || 0) > 0 ? "up" : "stable",
       },
       {
         title: "Last Activity",
@@ -380,30 +364,58 @@ const CareerReadinessPage = () => {
       setCrsBreakdown(breakdown);
       setLastUpdated(new Date());
 
-      // Real streak data from backend (learning_history)
-      setStreakData({
-        current: stats.current_streak || 0,
-        longest: stats.longest_streak || 0,
-      });
+      // Prefer login-based streak (server-side, cross-device). Fallback to learning streak.
+      const loginDisplayCurrent =
+        typeof stats.login_display_current_streak === "number"
+          ? stats.login_display_current_streak
+          : null;
+      const loginLongest =
+        typeof stats.login_longest_streak === "number"
+          ? stats.login_longest_streak
+          : null;
+      const loginLastLoginAt = stats.login_last_login_at || null;
+
+      if (loginDisplayCurrent !== null || loginLongest !== null) {
+        setStreakData({
+          current: loginDisplayCurrent || 0,
+          longest: loginLongest || 0,
+          lastLoginAt: loginLastLoginAt,
+        });
+      } else {
+        setStreakData({
+          current: stats.current_streak || 0,
+          longest: stats.longest_streak || 0,
+          lastLoginAt: null,
+        });
+      }
 
       setPersonalGoals([
         {
           id: 1,
-          title: "Complete 50 coding problems",
+          title: t(
+            "careerReadiness.goals.completeCodingProblems",
+            "Complete 50 coding problems"
+          ),
           progress: 32,
           target: 50,
           deadline: "2024-02-15",
         },
         {
           id: 2,
-          title: "Get resume score above 85%",
+          title: t(
+            "careerReadiness.goals.improveResumeScore",
+            "Get resume score above 85%"
+          ),
           progress: 78,
           target: 85,
           deadline: "2024-02-01",
         },
         {
           id: 3,
-          title: "Practice 10 mock interviews",
+          title: t(
+            "careerReadiness.goals.practiceMockInterviews",
+            "Practice 10 mock interviews"
+          ),
           progress: 6,
           target: 10,
           deadline: "2024-02-28",
@@ -411,7 +423,7 @@ const CareerReadinessPage = () => {
       ]);
 
       if (silent) {
-        toast.success("Data updated");
+        toast.success(t("careerReadiness.toasts.dataUpdated", "Data updated"));
       }
     } catch (error) {
       // Fallback to demo data to keep the dashboard usable for demos/viva.
@@ -460,7 +472,10 @@ const CareerReadinessPage = () => {
       });
 
       toast.error(
-        "Failed to load career readiness data (showing demo snapshot)"
+        t(
+          "careerReadiness.toasts.loadFailedShowingDemo",
+          "Failed to load career readiness data (showing demo snapshot)"
+        )
       );
     } finally {
       setLoading(false);
@@ -468,10 +483,61 @@ const CareerReadinessPage = () => {
     }
   }, []);
 
+  // Real-time: if last login was >24h ago, auto-show streak=0 without waiting for a refresh.
+  useEffect(() => {
+    const lastLoginAt = streakData?.lastLoginAt;
+    if (!lastLoginAt) return;
+
+    const interval = setInterval(() => {
+      try {
+        const last = new Date(lastLoginAt);
+        if (Number.isNaN(last.getTime())) return;
+        const diffMs = Date.now() - last.getTime();
+        const over24h = diffMs > 24 * 60 * 60 * 1000;
+        setStreakData((prev) => {
+          if (!prev) return prev;
+          const nextCurrent = over24h ? 0 : prev.current;
+          if (nextCurrent === prev.current) return prev;
+          return { ...prev, current: nextCurrent };
+        });
+      } catch {
+        // ignore
+      }
+    }, 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [streakData?.lastLoginAt]);
+
   const fetchMentorData = useCallback(async () => {
     try {
       const response = await axiosInstance.get("/career/readiness");
-      setMentorData(response.data);
+      const data = response.data;
+      setMentorData(data);
+
+      // Keep the main UI consistent with the authoritative mentor payload.
+      // This prevents mismatches between /dashboard/stats (summary) and /career/readiness (full aggregation).
+      if (data && typeof data === "object") {
+        if (typeof data.career_readiness_score === "number") {
+          setStats((prev) => ({
+            ...(prev || {}),
+            career_readiness_score: data.career_readiness_score,
+            last_activity_at:
+              data?.tracking?.activity?.last_activity_at ||
+              prev?.last_activity_at,
+            total_problems_solved:
+              data?.tracking?.coding?.total_problems_solved ??
+              prev?.total_problems_solved,
+            code_submissions:
+              data?.tracking?.coding?.total_problems_solved ??
+              prev?.code_submissions,
+          }));
+          setLastUpdated(new Date());
+        }
+
+        if (data.breakdown && typeof data.breakdown === "object") {
+          setCrsBreakdown(data.breakdown);
+        }
+      }
     } catch {
       // Keep page functional if backend endpoint is unavailable.
       setMentorData(null);
@@ -491,7 +557,10 @@ const CareerReadinessPage = () => {
         setApplyTrackerError(
           error?.response?.data?.detail ||
             error?.message ||
-            "Failed to load apply tracker"
+            t(
+              "careerReadiness.applyTracker.errors.loadFailed",
+              "Failed to load apply tracker"
+            )
         );
       }
     } finally {
@@ -502,7 +571,12 @@ const CareerReadinessPage = () => {
   const trackJobToApplyTracker = useCallback(
     async ({ role, source, url, matchTag }) => {
       if (!role || !source || !url) {
-        toast.error("Missing job info to track");
+        toast.error(
+          t(
+            "careerReadiness.applyTracker.toasts.missingJobInfo",
+            "Missing job info to track"
+          )
+        );
         return;
       }
 
@@ -516,12 +590,20 @@ const CareerReadinessPage = () => {
           status: "planned",
         });
         await fetchApplyTracker(true);
-        toast.success("Saved to Apply Tracker");
+        toast.success(
+          t(
+            "careerReadiness.applyTracker.toasts.saved",
+            "Saved to Apply Tracker"
+          )
+        );
       } catch (error) {
         toast.error(
           error?.response?.data?.detail ||
             error?.message ||
-            "Failed to save job"
+            t(
+              "careerReadiness.applyTracker.errors.saveFailed",
+              "Failed to save job"
+            )
         );
       } finally {
         setApplyTrackerBusyId(null);
@@ -539,12 +621,20 @@ const CareerReadinessPage = () => {
           status,
         });
         await fetchApplyTracker(true);
-        toast.success("Status updated");
+        toast.success(
+          t(
+            "careerReadiness.applyTracker.toasts.statusUpdated",
+            "Status updated"
+          )
+        );
       } catch (error) {
         toast.error(
           error?.response?.data?.detail ||
             error?.message ||
-            "Failed to update status"
+            t(
+              "careerReadiness.applyTracker.errors.updateStatusFailed",
+              "Failed to update status"
+            )
         );
       } finally {
         setApplyTrackerBusyId(null);
@@ -560,12 +650,20 @@ const CareerReadinessPage = () => {
       try {
         await axiosInstance.delete(`/career/apply-tracker/${itemId}`);
         await fetchApplyTracker(true);
-        toast.success("Removed from Apply Tracker");
+        toast.success(
+          t(
+            "careerReadiness.applyTracker.toasts.removed",
+            "Removed from Apply Tracker"
+          )
+        );
       } catch (error) {
         toast.error(
           error?.response?.data?.detail ||
             error?.message ||
-            "Failed to delete item"
+            t(
+              "careerReadiness.applyTracker.errors.deleteFailed",
+              "Failed to delete item"
+            )
         );
       } finally {
         setApplyTrackerBusyId(null);
@@ -794,34 +892,25 @@ const CareerReadinessPage = () => {
     };
   }, [stats, crsBreakdown]);
 
-  // Advanced feature (demo impact): lock "Today’s Best Action" for the whole day.
-  // This ensures the UI always shows ONE task per day, even as live stats refresh.
-  const bestActionForToday = useMemo(() => {
-    const dayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-    const storageKey = `careerTwin.bestAction.${dayKey}`;
-
-    try {
-      const existing = localStorage.getItem(storageKey);
-      if (existing) return JSON.parse(existing);
-      localStorage.setItem(storageKey, JSON.stringify(twin.bestAction));
-      return twin.bestAction;
-    } catch {
-      return twin.bestAction;
-    }
-  }, [twin.bestAction]);
-
   const todayBestAction = useMemo(() => {
     const serverAction = mentorData?.action_plan?.today;
-    if (!serverAction) return bestActionForToday;
+    if (!serverAction) return twin.bestAction;
 
     return {
-      title: "🎯 AI Career Mentor – Today’s Best Action",
+      title: t(
+        "careerReadiness.todayBestActionTitle",
+        "🎯 AI Career Mentor – Today’s Best Action"
+      ),
       task: serverAction.task,
-      moduleHint: `Priority: ${serverAction.priority} • Est: ${serverAction.estimated_time_minutes} mins`,
-      ctaLabel: serverAction.cta_label || "Start",
+      moduleHint: `${t("careerReadiness.priority", "Priority")}: ${
+        serverAction.priority
+      } • ${t("careerReadiness.est", "Est")}: ${
+        serverAction.estimated_time_minutes
+      } ${t("common.mins", "mins")}`,
+      ctaLabel: serverAction.cta_label || t("common.start", "Start"),
       ctaPath: serverAction.cta_path || "/coding",
     };
-  }, [mentorData, bestActionForToday]);
+  }, [mentorData, twin.bestAction, t]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white">
@@ -840,25 +929,33 @@ const CareerReadinessPage = () => {
               </div>
               <div>
                 <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white to-zinc-300 bg-clip-text text-transparent">
-                  AI Career Digital Twin Dashboard
+                  {t(
+                    "careerReadiness.title",
+                    "AI Career Digital Twin Dashboard"
+                  )}
                 </h1>
                 <p className="text-zinc-400 text-lg">
-                  Simulating your future career growth using AI
+                  {t(
+                    "careerReadiness.subtitle",
+                    "Simulating your future career growth using AI"
+                  )}
                 </p>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-400">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
-                Last updated: {lastUpdated.toLocaleTimeString()}
+                {t("careerReadiness.lastUpdated", "Last updated")}:{" "}
+                {lastUpdated.toLocaleTimeString()}
               </div>
               <div className="flex items-center gap-2">
                 <Activity className="w-4 h-4" />
-                Live tracking active
+                {t("careerReadiness.liveTracking", "Live tracking active")}
               </div>
               <div className="flex items-center gap-2">
                 <Flame className="w-4 h-4 text-accent" />
-                {streakData.current} day streak
+                {streakData.current}{" "}
+                {t("careerReadiness.dayStreak", "day streak")}
               </div>
             </div>
           </div>
@@ -878,7 +975,10 @@ const CareerReadinessPage = () => {
                       : "border-zinc-700 text-zinc-300 hover:bg-zinc-800"
                   }
                 >
-                  {timeframe.charAt(0).toUpperCase() + timeframe.slice(1)}
+                  {t(
+                    `careerReadiness.timeframe.${timeframe}`,
+                    timeframe.charAt(0).toUpperCase() + timeframe.slice(1)
+                  )}
                 </Button>
               ))}
             </div>
@@ -889,19 +989,23 @@ const CareerReadinessPage = () => {
               className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 w-full sm:w-auto"
             >
               <Lightbulb className="w-4 h-4 mr-2" />
-              How AI Works
+              {t("careerReadiness.howAiWorks", "How AI Works")}
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => fetchStats(true)}
+              onClick={() => {
+                fetchStats(true);
+                fetchMentorData();
+                fetchApplyTracker(true);
+              }}
               disabled={isRefreshing}
               className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 w-full sm:w-auto"
             >
               <RefreshCw
                 className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
               />
-              Refresh
+              {t("common.refresh", "Refresh")}
             </Button>
           </div>
         </div>
@@ -916,7 +1020,12 @@ const CareerReadinessPage = () => {
                   borderBottomColor: "var(--accent-color)",
                 }}
               ></div>
-              <p className="text-zinc-400">Loading your career insights...</p>
+              <p className="text-zinc-400">
+                {t(
+                  "careerReadiness.loading",
+                  "Loading your career insights..."
+                )}
+              </p>
             </div>
           </div>
         ) : stats && crsBreakdown ? (
@@ -934,7 +1043,7 @@ const CareerReadinessPage = () => {
                       <div className="relative">
                         <div className="text-xs uppercase tracking-wide text-zinc-400 mb-2 flex items-center gap-2">
                           <Shield className="w-4 h-4 text-accent" />
-                          Job Readiness
+                          {t("careerReadiness.jobReadiness", "Job Readiness")}
                         </div>
                         <div
                           className="text-5xl sm:text-6xl lg:text-7xl font-bold"
@@ -965,10 +1074,6 @@ const CareerReadinessPage = () => {
                           {crsLevel.level} Level
                         </Badge>
                         <div className="flex items-center gap-2 text-sm text-zinc-400">
-                          <Star className="w-4 h-4 text-accent" />
-                          Active days (30d): {stats?.active_days_30 || 0}
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-zinc-400">
                           <Flame className="w-4 h-4 text-accent" />
                           {streakData.longest} day best streak
                         </div>
@@ -991,7 +1096,7 @@ const CareerReadinessPage = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 lg:gap-6">
                     <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
                       <div className="flex items-center justify-between mb-2">
                         <div className="text-2xl font-bold text-zinc-300 mb-1">
@@ -2133,44 +2238,6 @@ const CareerReadinessPage = () => {
                 </div>
               </div>
             )}
-
-            {/* Timeline & History */}
-            {Array.isArray(mentorData?.history) &&
-              mentorData.history.length > 0 && (
-                <div className="mb-8">
-                  <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                    <CalendarDays className="w-6 h-6" />
-                    Timeline & History
-                  </h2>
-                  <Card className="bg-zinc-900 border-zinc-800">
-                    <CardContent className="p-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {mentorData.history.slice(-8).map((h) => (
-                          <div
-                            key={h.date}
-                            className="p-3 bg-zinc-800 rounded-lg border border-zinc-700"
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="text-sm text-zinc-400">
-                                {h.date}
-                              </div>
-                              <div className="text-sm font-semibold text-white">
-                                {Number(h.readiness_score || 0).toFixed(1)}%
-                              </div>
-                            </div>
-                            <Progress
-                              value={Math.min(
-                                100,
-                                Math.max(0, Number(h.readiness_score || 0))
-                              )}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
 
             {/* UPGRADE: Single daily recommendation */}
             <Card className="bg-zinc-900 border-zinc-800">

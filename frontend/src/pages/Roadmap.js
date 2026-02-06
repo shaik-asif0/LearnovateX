@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useI18n } from "../i18n/I18nProvider";
 import {
   Card,
   CardContent,
@@ -5816,6 +5817,7 @@ const ROADMAP_TRACKS = [
 
 const Roadmap = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [selectedTrackId, setSelectedTrackId] = useState("frontend");
   const [isRoadmapOpen, setIsRoadmapOpen] = useState(false);
   const [viewingTrackId, setViewingTrackId] = useState(null);
@@ -5871,15 +5873,15 @@ const Roadmap = () => {
         onClick={() => setSelectedTrackId(track.id)}
         className={`cursor-pointer transition-all duration-300 border ${
           isActive
-            ? "border-[var(--accent-color)] bg-gradient-to-br from-[rgba(var(--accent-rgb),0.25)] via-[rgba(var(--accent-rgb),0.12)] to-zinc-900 shadow-sm hover:shadow-md scale-105"
+            ? "border-[var(--accent-color)] bg-gradient-to-br from-[rgba(var(--accent-rgb),0.25)] via-[rgba(var(--accent-rgb),0.12)] to-zinc-900 shadow-sm hover:shadow-md sm:scale-105"
             : "border-zinc-800 bg-gradient-to-br from-zinc-950 to-zinc-900 hover:border-[rgba(var(--accent-rgb),0.5)] hover:bg-zinc-900/80 hover:shadow-sm"
         }`}
       >
-        <CardContent className="p-6 flex flex-col h-full">
+        <CardContent className="p-4 sm:p-5 md:p-6 flex flex-col h-full">
           <div className="flex items-center justify-between gap-2 mb-4">
             <div className="flex items-center gap-3">
               <div
-                className={`p-3 rounded-xl border transition-all duration-300 ${
+                className={`p-2.5 sm:p-3 rounded-xl border transition-all duration-300 [&_svg]:w-5 [&_svg]:h-5 sm:[&_svg]:w-6 sm:[&_svg]:h-6 ${
                   isActive
                     ? "bg-gradient-to-br from-[rgba(var(--accent-rgb),0.3)] to-[rgba(var(--accent-rgb),0.2)] border-[rgba(var(--accent-rgb),0.5)] shadow-sm"
                     : "bg-zinc-900 border-zinc-700 group-hover:border-[rgba(var(--accent-rgb),0.5)]"
@@ -5887,7 +5889,9 @@ const Roadmap = () => {
               >
                 {track.icon}
               </div>
-              <div className="text-sm md:text-base font-bold">{track.name}</div>
+              <div className="text-[13px] sm:text-sm md:text-base font-bold">
+                {track.name}
+              </div>
             </div>
             <span
               className={`text-[10px] md:text-xs px-2.5 py-1 rounded-full border font-medium ${
@@ -5921,7 +5925,7 @@ const Roadmap = () => {
                 e.stopPropagation();
                 handleViewRoadmap(track.id);
               }}
-              className={`w-full inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-xs font-bold transition-all duration-300 ${
+              className={`w-full inline-flex items-center justify-center rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-xs font-bold transition-all duration-300 ${
                 isActive
                   ? "bg-gradient-to-r from-[rgb(var(--accent-rgb))] to-[rgba(var(--accent-rgb),0.85)] text-white hover:opacity-90 shadow-sm hover:shadow-md hover:scale-105"
                   : "bg-gradient-to-r from-zinc-800 to-zinc-700 text-zinc-100 hover:from-zinc-700 hover:to-zinc-600 border border-zinc-700 hover:border-[rgba(var(--accent-rgb),0.5)]"
@@ -5960,7 +5964,18 @@ const Roadmap = () => {
     const nodeId = `${path}-${node.id || node.label || node.name}`;
     const isExpanded = expandedNodes.has(nodeId);
     const hasChildren = node.levels || node.modules || node.courses;
-    const indent = level * 28;
+    const indentMax = level * 28;
+    const indentMin = level * 12;
+    const indentCss = `clamp(${indentMin}px, ${level * 3}vw, ${indentMax}px)`;
+    const childIndentCss = `clamp(${indentMin + 24}px, ${level * 3 + 8}vw, ${
+      indentMax + 32
+    }px)`;
+    const childLineIndentCss = `clamp(${indentMin + 8}px, ${level * 3 + 4}vw, ${
+      indentMax + 12
+    }px)`;
+    const connectorIndentCss = `clamp(${Math.max(0, indentMin - 6)}px, ${
+      level * 3
+    }vw, ${Math.max(0, indentMax - 14)}px)`;
 
     return (
       <div className="relative">
@@ -5968,14 +5983,14 @@ const Roadmap = () => {
         {level > 0 && (
           <div
             className="absolute left-0 top-0 bottom-0 w-px bg-zinc-800"
-            style={{ marginLeft: `${indent - 14}px` }}
+            style={{ marginLeft: connectorIndentCss }}
           />
         )}
 
         {/* Node */}
         <div
-          className="flex items-start gap-3 py-2.5 px-3 rounded-lg hover:bg-zinc-900/50 transition-all duration-200 group"
-          style={{ marginLeft: `${indent}px` }}
+          className="flex items-start gap-3 py-2 px-2.5 sm:py-2.5 sm:px-3 rounded-lg hover:bg-zinc-900/50 transition-all duration-200 group"
+          style={{ marginLeft: indentCss }}
         >
           {/* Expand/Collapse Button */}
           {hasChildren ? (
@@ -5984,23 +5999,23 @@ const Roadmap = () => {
                 e.stopPropagation();
                 toggleNode(nodeId);
               }}
-              className="w-6 h-6 flex items-center justify-center rounded-md border border-zinc-700 hover:border-[rgba(var(--accent-rgb),0.5)] bg-zinc-900 hover:bg-zinc-800 transition-all duration-200 flex-shrink-0 mt-0.5"
+              className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-md border border-zinc-700 hover:border-[rgba(var(--accent-rgb),0.5)] bg-zinc-900 hover:bg-zinc-800 transition-all duration-200 flex-shrink-0 mt-0.5"
             >
               {isExpanded ? (
-                <Minus className="w-3.5 h-3.5 text-[var(--accent-color)]" />
+                <Minus className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[var(--accent-color)]" />
               ) : (
-                <Plus className="w-3.5 h-3.5 text-[var(--accent-color)]" />
+                <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[var(--accent-color)]" />
               )}
             </button>
           ) : (
-            <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center flex-shrink-0">
               <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-color)]" />
             </div>
           )}
 
           {/* Node Icon */}
           {node.icon && (
-            <div className="p-2 rounded-lg bg-zinc-900 border border-zinc-700 group-hover:border-[rgba(var(--accent-rgb),0.5)] transition-colors flex-shrink-0">
+            <div className="p-1.5 sm:p-2 rounded-lg bg-zinc-900 border border-zinc-700 group-hover:border-[rgba(var(--accent-rgb),0.5)] transition-colors flex-shrink-0 [&_svg]:w-4 [&_svg]:h-4 sm:[&_svg]:w-5 sm:[&_svg]:h-5">
               {node.icon}
             </div>
           )}
@@ -6047,9 +6062,12 @@ const Roadmap = () => {
             {/* Vertical line for children */}
             <div
               className="absolute left-0 top-0 bottom-0 w-px bg-zinc-800"
-              style={{ marginLeft: `${indent + 12}px` }}
+              style={{ marginLeft: childLineIndentCss }}
             />
-            <div className="ml-8" style={{ marginLeft: `${indent + 32}px` }}>
+            <div
+              className="ml-6 sm:ml-8"
+              style={{ marginLeft: childIndentCss }}
+            >
               {node.levels?.map((levelItem, idx) => (
                 <div key={levelItem.id} className="relative">
                   <TreeNode
@@ -6066,8 +6084,12 @@ const Roadmap = () => {
               {node.courses?.map((courseItem) => (
                 <div
                   key={courseItem.id}
-                  className="flex items-center gap-2 py-2 px-3 rounded hover:bg-zinc-900/30 transition-colors group"
-                  style={{ marginLeft: `${(level + 1) * 28}px` }}
+                  className="flex items-center gap-2 py-1.5 px-2.5 sm:py-2 sm:px-3 rounded hover:bg-zinc-900/30 transition-colors group"
+                  style={{
+                    marginLeft: `clamp(${(level + 1) * 12}px, ${
+                      (level + 1) * 3
+                    }vw, ${(level + 1) * 28}px)`,
+                  }}
                 >
                   {courseItem.icon ? (
                     <div className="text-[var(--accent-color)]">
@@ -6091,8 +6113,12 @@ const Roadmap = () => {
                 node.modules?.map((module, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center gap-2 py-2 px-3 rounded hover:bg-zinc-900/30 transition-colors group"
-                    style={{ marginLeft: `${(level + 1) * 28}px` }}
+                    className="flex items-center gap-2 py-1.5 px-2.5 sm:py-2 sm:px-3 rounded hover:bg-zinc-900/30 transition-colors group"
+                    style={{
+                      marginLeft: `clamp(${(level + 1) * 12}px, ${
+                        (level + 1) * 3
+                      }vw, ${(level + 1) * 28}px)`,
+                    }}
                   >
                     <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-color)] group-hover:bg-[rgba(var(--accent-rgb),0.85)] transition-colors" />
                     <span className="text-xs text-zinc-400 group-hover:text-zinc-300 transition-colors">
@@ -6111,20 +6137,20 @@ const Roadmap = () => {
     <div className="min-h-screen bg-black text-white">
       {/* Track selector: big interactive cards */}
       <section className="border-b border-gray-900 bg-gradient-to-br from-zinc-950 via-black to-zinc-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 md:py-10">
           <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
             <div>
               <p className="text-xs uppercase tracking-wide text-zinc-500">
-                Choose your course roadmap
+                {t("roadmap.choose", "Choose your course roadmap")}
               </p>
-              <h1 className="text-2xl md:text-3xl font-semibold mt-1">
-                Select a path to see its roadmap
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold mt-1">
+                {t("roadmap.title", "Select a path to see its roadmap")}
               </h1>
               <p className="mt-2 max-w-xl text-xs md:text-sm text-zinc-400">
-                Click a card below (for example{" "}
-                <span className="font-semibold">Frontend Developer</span>) to
-                open the full roadmap with beginner, intermediate and advanced
-                levels.
+                {t(
+                  "roadmap.subtitle",
+                  "Click a card below (for example Frontend Developer) to open the full roadmap with beginner, intermediate and advanced levels."
+                )}
               </p>
             </div>
             <div className="hidden md:flex flex-col items-end gap-1 text-xs text-zinc-500">
@@ -6134,7 +6160,8 @@ const Roadmap = () => {
               </span>
               <span className="flex items-center gap-1">
                 <Layers className="w-4 h-4 text-[var(--accent-color)]" />
-                {totalLevels} levels (Beginner → Advanced)
+                {totalLevels}{" "}
+                {t("roadmap.levels", "levels (Beginner → Advanced)")}
               </span>
             </div>
           </div>
@@ -6152,7 +6179,7 @@ const Roadmap = () => {
                     </p>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
                   {section.tracks.map((track) => renderTrackCard(track))}
                 </div>
               </div>
@@ -6170,7 +6197,7 @@ const Roadmap = () => {
                     </p>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
                   {otherTracks.map((track) => renderTrackCard(track))}
                 </div>
               </div>
@@ -6182,17 +6209,17 @@ const Roadmap = () => {
       {/* Diagrammatic Roadmap Modal - Tree View */}
       <Dialog open={isRoadmapOpen} onOpenChange={setIsRoadmapOpen}>
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-zinc-950 via-black to-zinc-950 border-zinc-800 text-white shadow-sm">
-          <DialogHeader className="border-b border-zinc-800 pb-4">
+          <DialogHeader className="border-b border-zinc-800 pb-3 sm:pb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-[rgba(var(--accent-rgb),0.2)] to-[rgba(var(--accent-rgb),0.2)] border border-[rgba(var(--accent-rgb),0.3)] shadow-sm">
+                <div className="p-2.5 sm:p-3 rounded-xl bg-gradient-to-br from-[rgba(var(--accent-rgb),0.2)] to-[rgba(var(--accent-rgb),0.2)] border border-[rgba(var(--accent-rgb),0.3)] shadow-sm [&_svg]:w-5 [&_svg]:h-5 sm:[&_svg]:w-6 sm:[&_svg]:h-6">
                   {viewingTrack.icon}
                 </div>
                 <div>
-                  <DialogTitle className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-zinc-300 bg-clip-text text-transparent">
+                  <DialogTitle className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-zinc-300 bg-clip-text text-transparent">
                     {viewingTrack.name} Roadmap
                   </DialogTitle>
-                  <p className="text-sm text-zinc-400 mt-2 max-w-2xl">
+                  <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-2xl">
                     {viewingTrack.summary}
                   </p>
                 </div>
@@ -6200,15 +6227,15 @@ const Roadmap = () => {
             </div>
           </DialogHeader>
 
-          <div className="mt-6 space-y-6">
+          <div className="mt-4 sm:mt-6 space-y-4 sm:space-y-6">
             {/* Stats Bar */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
               <Card className="bg-gradient-to-br from-[rgba(var(--accent-rgb),0.1)] to-[rgba(var(--accent-rgb),0.05)] border-[rgba(var(--accent-rgb),0.3)] hover:border-[rgba(var(--accent-rgb),0.5)] transition-all duration-300">
                 <CardContent className="p-4 text-center">
                   <div className="flex items-center justify-center mb-2">
                     <BookOpen className="w-5 h-5 text-[var(--accent-color)] mr-2" />
                   </div>
-                  <div className="text-3xl font-bold text-[var(--accent-color)] mb-1">
+                  <div className="text-2xl sm:text-3xl font-bold text-[var(--accent-color)] mb-1">
                     {viewingTrack.totalCourses}
                   </div>
                   <div className="text-xs text-zinc-400 font-medium">
@@ -6221,7 +6248,7 @@ const Roadmap = () => {
                   <div className="flex items-center justify-center mb-2">
                     <Layers className="w-5 h-5 text-[var(--accent-color)] mr-2" />
                   </div>
-                  <div className="text-3xl font-bold text-[var(--accent-color)] mb-1">
+                  <div className="text-2xl sm:text-3xl font-bold text-[var(--accent-color)] mb-1">
                     {viewingTrack.levelCount}
                   </div>
                   <div className="text-xs text-zinc-400 font-medium">
@@ -6234,7 +6261,7 @@ const Roadmap = () => {
                   <div className="flex items-center justify-center mb-2">
                     <Calendar className="w-5 h-5 text-[var(--accent-color)] mr-2" />
                   </div>
-                  <div className="text-3xl font-bold text-[var(--accent-color)] mb-1">
+                  <div className="text-2xl sm:text-3xl font-bold text-[var(--accent-color)] mb-1">
                     {viewingTrack.estimatedMonths}
                   </div>
                   <div className="text-xs text-zinc-400 font-medium">
@@ -6245,9 +6272,9 @@ const Roadmap = () => {
             </div>
 
             {/* Tree Structure Roadmap */}
-            <div className="bg-zinc-950/50 border border-zinc-800 rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
-                <Target className="w-5 h-5 text-[var(--accent-color)]" />
+            <div className="bg-zinc-950/50 border border-zinc-800 rounded-lg p-4 sm:p-6">
+              <h3 className="text-base sm:text-lg font-semibold mb-4 sm:mb-6 flex items-center gap-2">
+                <Target className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--accent-color)]" />
                 Learning Path Structure
               </h3>
               <div className="space-y-1">

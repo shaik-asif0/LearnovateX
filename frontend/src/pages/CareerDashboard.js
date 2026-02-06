@@ -16,10 +16,12 @@ import {
 } from "recharts";
 import axiosInstance from "../lib/axios";
 import { toast } from "sonner";
+import { useI18n } from "../i18n/I18nProvider";
 
 const CareerDashboard = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { t } = useI18n();
 
   useEffect(() => {
     fetchStats();
@@ -30,7 +32,9 @@ const CareerDashboard = () => {
       const response = await axiosInstance.get("/dashboard/stats");
       setStats(response.data);
     } catch (error) {
-      toast.error("Failed to load statistics");
+      toast.error(
+        t("careerDashboard.toasts.loadStatsFailed", "Failed to load statistics")
+      );
     } finally {
       setLoading(false);
     }
@@ -38,10 +42,22 @@ const CareerDashboard = () => {
 
   const chartData = stats
     ? [
-        { name: "Code Score", value: stats.avg_code_score },
-        { name: "Submissions", value: stats.code_submissions * 10 },
-        { name: "Interviews", value: stats.interviews_taken * 20 },
-        { name: "Learning", value: stats.learning_sessions * 5 },
+        {
+          name: t("careerDashboard.chart.codeScore", "Code Score"),
+          value: stats.avg_code_score,
+        },
+        {
+          name: t("careerDashboard.chart.submissions", "Submissions"),
+          value: stats.code_submissions * 10,
+        },
+        {
+          name: t("careerDashboard.chart.interviews", "Interviews"),
+          value: stats.interviews_taken * 20,
+        },
+        {
+          name: t("careerDashboard.chart.learning", "Learning"),
+          value: stats.learning_sessions * 5,
+        },
       ]
     : [];
 
@@ -53,7 +69,7 @@ const CareerDashboard = () => {
         <div className="flex items-center gap-3 mb-6">
           <TrendingUp className="w-8 h-8 text-white" />
           <h1 className="text-2xl font-bold text-white">
-            Career Readiness Dashboard
+            {t("careerDashboard.title", "Career Readiness Dashboard")}
           </h1>
         </div>
 
@@ -67,7 +83,10 @@ const CareerDashboard = () => {
               <Card className="bg-gradient-to-br from-orange-900/50 to-orange-800/50 border-orange-700/50 hover:border-orange-600/70 transition-all duration-300">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-orange-300">
-                    Code Submissions
+                    {t(
+                      "careerDashboard.stats.codeSubmissions",
+                      "Code Submissions"
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -75,7 +94,10 @@ const CareerDashboard = () => {
                     {stats.code_submissions}
                   </div>
                   <p className="text-xs text-orange-400 mt-1">
-                    Total submissions
+                    {t(
+                      "careerDashboard.stats.totalSubmissions",
+                      "Total submissions"
+                    )}
                   </p>
                 </CardContent>
               </Card>
@@ -83,21 +105,26 @@ const CareerDashboard = () => {
               <Card className="bg-gradient-to-br from-orange-900/50 to-orange-800/50 border-orange-700/50 hover:border-orange-600/70 transition-all duration-300">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-orange-300">
-                    Average Score
+                    {t("careerDashboard.stats.averageScore", "Average Score")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-orange-100">
                     {stats.avg_code_score}%
                   </div>
-                  <p className="text-xs text-orange-400 mt-1">Code quality</p>
+                  <p className="text-xs text-orange-400 mt-1">
+                    {t("careerDashboard.stats.codeQuality", "Code quality")}
+                  </p>
                 </CardContent>
               </Card>
 
               <Card className="bg-gradient-to-br from-orange-900/50 to-orange-800/50 border-orange-700/50 hover:border-orange-600/70 transition-all duration-300">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-orange-300">
-                    Interviews Taken
+                    {t(
+                      "careerDashboard.stats.interviewsTaken",
+                      "Interviews Taken"
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -105,7 +132,10 @@ const CareerDashboard = () => {
                     {stats.interviews_taken}
                   </div>
                   <p className="text-xs text-orange-400 mt-1">
-                    Mock interviews
+                    {t(
+                      "careerDashboard.stats.mockInterviews",
+                      "Mock interviews"
+                    )}
                   </p>
                 </CardContent>
               </Card>
@@ -113,7 +143,10 @@ const CareerDashboard = () => {
               <Card className="bg-gradient-to-br from-orange-900/50 to-orange-800/50 border-orange-700/50 hover:border-orange-600/70 transition-all duration-300">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-orange-300">
-                    Learning Sessions
+                    {t(
+                      "careerDashboard.stats.learningSessions",
+                      "Learning Sessions"
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -121,7 +154,10 @@ const CareerDashboard = () => {
                     {stats.learning_sessions}
                   </div>
                   <p className="text-xs text-orange-400 mt-1">
-                    AI tutor sessions
+                    {t(
+                      "careerDashboard.stats.aiTutorSessions",
+                      "AI tutor sessions"
+                    )}
                   </p>
                 </CardContent>
               </Card>
@@ -131,7 +167,10 @@ const CareerDashboard = () => {
             <Card className="bg-gradient-to-br from-zinc-900 to-zinc-800 border-zinc-700">
               <CardHeader>
                 <CardTitle className="text-white">
-                  Performance Overview
+                  {t(
+                    "careerDashboard.performanceOverview",
+                    "Performance Overview"
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -182,42 +221,55 @@ const CareerDashboard = () => {
             <Card className="bg-gradient-to-br from-zinc-900 to-zinc-800 border-zinc-700">
               <CardHeader>
                 <CardTitle className="text-white">
-                  Career Readiness Tips
+                  {t("careerDashboard.tips.title", "Career Readiness Tips")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="p-4 bg-gradient-to-r from-orange-900/30 to-orange-900/30 rounded-lg border border-orange-700/30">
                     <h4 className="font-semibold mb-2 text-orange-300">
-                      🎯 Focus Areas
+                      {t("careerDashboard.tips.focusAreas", "🎯 Focus Areas")}
                     </h4>
                     <ul className="space-y-2 text-sm text-zinc-300">
                       {stats.code_submissions < 5 && (
                         <li>
-                          • Complete more coding challenges to improve
-                          problem-solving skills
+                          {t(
+                            "careerDashboard.tips.bullets.moreChallenges",
+                            "• Complete more coding challenges to improve problem-solving skills"
+                          )}
                         </li>
                       )}
                       {stats.avg_code_score < 70 && (
                         <li>
-                          • Focus on code quality and optimization techniques
+                          {t(
+                            "careerDashboard.tips.bullets.codeQuality",
+                            "• Focus on code quality and optimization techniques"
+                          )}
                         </li>
                       )}
                       {stats.interviews_taken < 3 && (
                         <li>
-                          • Practice more mock interviews to build confidence
+                          {t(
+                            "careerDashboard.tips.bullets.moreInterviews",
+                            "• Practice more mock interviews to build confidence"
+                          )}
                         </li>
                       )}
                       {stats.learning_sessions < 10 && (
                         <li>
-                          • Increase learning sessions with AI tutor for better
-                          concept understanding
+                          {t(
+                            "careerDashboard.tips.bullets.moreLearning",
+                            "• Increase learning sessions with AI tutor for better concept understanding"
+                          )}
                         </li>
                       )}
                       {stats.code_submissions >= 5 &&
                         stats.avg_code_score >= 70 && (
                           <li className="text-orange-400">
-                            ✓ Great job! Keep maintaining this momentum
+                            {t(
+                              "careerDashboard.tips.bullets.greatJob",
+                              "✓ Great job! Keep maintaining this momentum"
+                            )}
                           </li>
                         )}
                     </ul>
@@ -225,12 +277,13 @@ const CareerDashboard = () => {
 
                   <div className="p-4 bg-gradient-to-r from-orange-900/30 to-orange-900/30 rounded-lg border border-orange-700/30">
                     <h4 className="font-semibold mb-2 text-orange-300">
-                      ✨ Next Steps
+                      {t("careerDashboard.tips.nextSteps", "✨ Next Steps")}
                     </h4>
                     <p className="text-sm text-zinc-300">
-                      Continue building your skills across all areas. Consider
-                      tackling more advanced problems and practicing system
-                      design concepts for senior positions.
+                      {t(
+                        "careerDashboard.tips.nextStepsParagraph",
+                        "Continue building your skills across all areas. Consider tackling more advanced problems and practicing system design concepts for senior positions."
+                      )}
                     </p>
                   </div>
                 </div>

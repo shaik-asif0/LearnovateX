@@ -13,6 +13,8 @@ import { isAuthenticated, getUser } from "./lib/utils";
 import axiosInstance from "./lib/axios";
 import NavigationBar from "./components/NavigationBar";
 import MobileBottomNav from "./components/MobileBottomNav";
+import SupportChatWidget from "./components/SupportChatWidget";
+import { I18nProvider } from "./i18n/I18nProvider";
 // import SplashCursor from "./components/SplashCursor";
 
 // Pages
@@ -39,6 +41,7 @@ import PremiumInternshipsPage from "./pages/PremiumInternshipsPage";
 import CourseEnrollmentPage from "./pages/CourseEnrollmentPage";
 import InternshipApplicationPage from "./pages/InternshipApplicationPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import InteractiveCodingGamePrompt from "./pages/InteractiveCodingGamePrompt";
 
 const ProtectedRoute = ({ children }) => {
   return isAuthenticated() ? children : <Navigate to="/auth" />;
@@ -63,6 +66,59 @@ const AppContent = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const user = getUser();
   const activityRef = useRef({ path: null, startMs: null });
+
+  // Apply SettingsPage preferences globally (real-time)
+  useEffect(() => {
+    const getUserSettingsKey = (currentUser) => {
+      const keyPart =
+        currentUser?.id || currentUser?._id || currentUser?.email || "";
+      return keyPart ? `userSettings:${keyPart}` : "userSettings:anonymous";
+    };
+
+    const applyThemePreference = (themePref) => {
+      const root = document.documentElement;
+      const prefersDark = window.matchMedia?.(
+        "(prefers-color-scheme: dark)"
+      )?.matches;
+
+      const resolved =
+        themePref === "system" ? (prefersDark ? "dark" : "light") : themePref;
+
+      root.dataset.theme = resolved === "light" ? "light" : "dark";
+      root.style.colorScheme = resolved === "light" ? "light" : "dark";
+    };
+
+    const syncFromSettingsStorage = () => {
+      try {
+        const key = getUserSettingsKey(getUser());
+        const raw = localStorage.getItem(key);
+        if (!raw) {
+          applyThemePreference("dark");
+          return;
+        }
+        const parsed = JSON.parse(raw);
+        const themePref = parsed?.preferences?.theme || "dark";
+        applyThemePreference(themePref);
+      } catch (e) {
+        applyThemePreference("dark");
+      }
+    };
+
+    syncFromSettingsStorage();
+
+    const handleThemeMediaChange = () => syncFromSettingsStorage();
+    const media = window.matchMedia?.("(prefers-color-scheme: dark)");
+
+    window.addEventListener("storage", syncFromSettingsStorage);
+    window.addEventListener("userSettingsChange", syncFromSettingsStorage);
+    media?.addEventListener?.("change", handleThemeMediaChange);
+
+    return () => {
+      window.removeEventListener("storage", syncFromSettingsStorage);
+      window.removeEventListener("userSettingsChange", syncFromSettingsStorage);
+      media?.removeEventListener?.("change", handleThemeMediaChange);
+    };
+  }, []);
 
   const postActivityEvent = useCallback(async (payload) => {
     if (!isAuthenticated()) return;
@@ -355,8 +411,17 @@ const AppContent = () => {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/coding-game-3d"
+            element={
+              <ProtectedRoute>
+                <InteractiveCodingGamePrompt />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </div>
+      <SupportChatWidget />
       {showMobileBottomNav && <MobileBottomNav />}
     </>
   );
@@ -367,7 +432,9 @@ function App() {
     <div className="App">
       {/* <SplashCursor /> */}
       <BrowserRouter>
-        <AppContent />
+        <I18nProvider>
+          <AppContent />
+        </I18nProvider>
       </BrowserRouter>
       <Toaster position="top-right" richColors />
     </div>

@@ -53,12 +53,8 @@ import {
   Search,
   Settings,
   Globe,
-  MessageSquare,
   Copy,
-  Bell,
   X,
-  Bot,
-  Send,
   Info,
   Calendar,
   MapPin,
@@ -98,7 +94,6 @@ import {
   GitBranch,
   Terminal,
   Code2,
-  Palette,
 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import axiosInstance from "../lib/axios";
@@ -130,12 +125,8 @@ const ResumeAnalyzer = () => {
   const [comparisonResults, setComparisonResults] = useState(null);
   const [voiceAnalysis, setVoiceAnalysis] = useState(false);
   const [videoAnalysis, setVideoAnalysis] = useState(false);
-  const [theme, setTheme] = useState("dark");
-  const [notifications, setNotifications] = useState([]);
   const [bookmarks, setBookmarks] = useState([]);
   const [favorites, setFavorites] = useState([]);
-  const [liveChat, setLiveChat] = useState(false);
-  const [chatMessages, setChatMessages] = useState([]);
   const [filterCriteria, setFilterCriteria] = useState({
     scoreRange: [0, 100],
     dateRange: null,
@@ -568,50 +559,6 @@ const ResumeAnalyzer = () => {
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setLiveChat(!liveChat)}
-                className="border-zinc-700 text-white hover:bg-zinc-800 relative"
-              >
-                <MessageSquare className="w-4 h-4" />
-                {chatMessages.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full text-xs flex items-center justify-center">
-                    {chatMessages.length}
-                  </span>
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="border-zinc-700 text-white hover:bg-zinc-800"
-              >
-                <Palette className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setNotifications((prev) => [
-                    ...prev,
-                    {
-                      id: Date.now(),
-                      type: "info",
-                      message: "New feature available: Voice Analysis!",
-                      timestamp: new Date(),
-                    },
-                  ])
-                }
-                className="border-zinc-700 text-white hover:bg-zinc-800 relative"
-              >
-                <Bell className="w-4 h-4" />
-                {notifications.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full text-xs flex items-center justify-center">
-                    {notifications.length}
-                  </span>
-                )}
-              </Button>
               <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 rounded-lg">
                 <div
                   className={`w-2 h-2 rounded-full ${
@@ -1890,169 +1837,6 @@ const ResumeAnalyzer = () => {
           </TabsContent>
         </Tabs>
       </main>
-
-      {/* Live Chat Widget */}
-      {liveChat && (
-        <div className="fixed bottom-4 right-4 w-80 h-96 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b border-zinc-700">
-            <h3 className="text-white font-semibold flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-orange-400" />
-              AI Assistant
-            </h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setLiveChat(false)}
-              className="text-zinc-400 hover:text-white"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-          <div className="flex-1 p-4 overflow-y-auto space-y-3">
-            {chatMessages.length === 0 ? (
-              <div className="text-center text-zinc-400">
-                <Bot className="w-8 h-8 mx-auto mb-2 text-orange-400" />
-                <p>
-                  Hi! I'm your AI assistant. How can I help you with your resume
-                  analysis?
-                </p>
-              </div>
-            ) : (
-              chatMessages.map((msg, i) => (
-                <div
-                  key={i}
-                  className={`flex ${
-                    msg.sender === "user" ? "justify-end" : "justify-start"
-                  }`}
-                >
-                  <div
-                    className={`max-w-xs p-3 rounded-lg ${
-                      msg.sender === "user"
-                        ? "bg-orange-600 text-white"
-                        : "bg-zinc-800 text-zinc-300"
-                    }`}
-                  >
-                    {msg.text}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-          <div className="p-4 border-t border-zinc-700">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Ask me anything..."
-                className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:border-orange-500"
-                onKeyPress={(e) => {
-                  if (e.key === "Enter" && e.target.value.trim()) {
-                    const newMessage = {
-                      sender: "user",
-                      text: e.target.value.trim(),
-                      timestamp: new Date(),
-                    };
-                    setChatMessages((prev) => [...prev, newMessage]);
-                    e.target.value = "";
-
-                    // Simulate AI response
-                    setTimeout(() => {
-                      const responses = [
-                        "That's a great question! Let me help you with that.",
-                        "I can assist you with resume optimization and career advice.",
-                        "Your resume looks strong! Here are some suggestions...",
-                        "Would you like me to analyze specific sections of your resume?",
-                      ];
-                      const aiResponse = {
-                        sender: "ai",
-                        text: responses[
-                          Math.floor(Math.random() * responses.length)
-                        ],
-                        timestamp: new Date(),
-                      };
-                      setChatMessages((prev) => [...prev, aiResponse]);
-                    }, 1000);
-                  }
-                }}
-              />
-              <Button size="sm" className="bg-orange-600 hover:bg-orange-700">
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Notifications Panel */}
-      {notifications.length > 0 && (
-        <div className="fixed top-4 right-4 w-80 max-h-96 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 overflow-hidden">
-          <div className="flex items-center justify-between p-4 border-b border-zinc-700">
-            <h3 className="text-white font-semibold flex items-center gap-2">
-              <Bell className="w-5 h-5 text-orange-400" />
-              Notifications ({notifications.length})
-            </h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setNotifications([])}
-              className="text-zinc-400 hover:text-white"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-          <div className="max-h-80 overflow-y-auto">
-            {notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className="p-4 border-b border-zinc-800 hover:bg-zinc-800/50 transition-colors"
-              >
-                <div className="flex items-start gap-3">
-                  <div
-                    className={`p-1 rounded-full ${
-                      notification.type === "success"
-                        ? "bg-orange-500/20"
-                        : notification.type === "error"
-                        ? "bg-orange-500/20"
-                        : notification.type === "warning"
-                        ? "bg-orange-500/20"
-                        : "bg-orange-500/20"
-                    }`}
-                  >
-                    {notification.type === "success" ? (
-                      <CheckCircle2 className="w-4 h-4 text-orange-400" />
-                    ) : notification.type === "error" ? (
-                      <AlertTriangle className="w-4 h-4 text-orange-400" />
-                    ) : notification.type === "warning" ? (
-                      <AlertCircle className="w-4 h-4 text-orange-400" />
-                    ) : (
-                      <Info className="w-4 h-4 text-orange-400" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-zinc-300">
-                      {notification.message}
-                    </p>
-                    <p className="text-xs text-zinc-500 mt-1">
-                      {new Date(notification.timestamp).toLocaleTimeString()}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      setNotifications((prev) =>
-                        prev.filter((n) => n.id !== notification.id)
-                      )
-                    }
-                    className="text-zinc-400 hover:text-white"
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

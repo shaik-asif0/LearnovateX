@@ -32,10 +32,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Footer from "../components/Footer";
+import { useI18n } from "../i18n/I18nProvider";
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
   const user = getUser();
+  const { t } = useI18n();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -48,7 +50,7 @@ const StudentDashboard = () => {
       const response = await axiosInstance.get("/dashboard/stats");
       setStats(response.data);
     } catch (error) {
-      toast.error("Failed to load statistics");
+      toast.error(t("dashboard.error.loadStats", "Failed to load statistics"));
     } finally {
       setLoading(false);
     }
@@ -57,7 +59,7 @@ const StudentDashboard = () => {
   const features = [
     {
       icon: <Bot className="w-8 h-8" />,
-      title: "AI Tutor",
+      title: t("nav.aiTutor", "AI Tutor"),
       description:
         "Get personalized explanations and learn concepts with our advanced AI tutor that adapts to your learning style.",
       detailedContent:
@@ -68,26 +70,11 @@ const StudentDashboard = () => {
       iconColor: "text-white",
       image:
         "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=250&fit=crop&crop=center",
-      badge: "Popular",
-    },
-    {
-      icon: <Code className="w-8 h-8" />,
-      title: "Coding Arena",
-      description:
-        "Practice coding challenges and get instant AI evaluation with detailed feedback.",
-      detailedContent:
-        "Hundreds of coding problems, real-time code analysis, performance metrics, and skill improvement tracking.",
-      path: "/coding",
-      testId: "nav-coding-btn",
-      color: "bg-gradient-to-br from-orange-500 to-orange-600",
-      iconColor: "text-white",
-      image:
-        "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=250&fit=crop&crop=center",
-      badge: "New",
+      badge: t("badge.popular", "Popular"),
     },
     {
       icon: <FileText className="w-8 h-8" />,
-      title: "Resume Analyzer",
+      title: t("nav.resumeAnalyzer", "Resume Analyzer"),
       description:
         "AI-powered resume analysis with actionable tips to improve your job prospects.",
       detailedContent:
@@ -101,7 +88,7 @@ const StudentDashboard = () => {
     },
     {
       icon: <MessageSquare className="w-8 h-8" />,
-      title: "Mock Interview",
+      title: t("nav.mockInterview", "Mock Interview"),
       description:
         "Practice interviews with AI feedback and improve your communication skills.",
       detailedContent:
@@ -115,7 +102,7 @@ const StudentDashboard = () => {
     },
     {
       icon: <Target className="w-8 h-8" />,
-      title: "Learning Path",
+      title: t("nav.learningPath", "Learning Path"),
       description:
         "Structured learning curriculum tailored to your goals and skill level.",
       detailedContent:
@@ -129,7 +116,7 @@ const StudentDashboard = () => {
     },
     {
       icon: <Building2 className="w-8 h-8" />,
-      title: "Company Portal",
+      title: t("nav.companyPortal", "Company Portal"),
       description:
         "Explore company opportunities, internships, and job openings tailored for students.",
       detailedContent:
@@ -143,7 +130,7 @@ const StudentDashboard = () => {
     },
     {
       icon: <GraduationCap className="w-8 h-8" />,
-      title: "College Admin",
+      title: t("nav.collegeAdmin", "College Admin"),
       description:
         "College administration panel for managing academic records and campus activities.",
       detailedContent:
@@ -157,7 +144,7 @@ const StudentDashboard = () => {
     },
     {
       icon: <Map className="w-8 h-8" />,
-      title: "Roadmap",
+      title: t("nav.roadmap", "Roadmap"),
       description:
         "Explore course-based roadmaps to guide your learning journey.",
       detailedContent:
@@ -168,11 +155,11 @@ const StudentDashboard = () => {
       iconColor: "text-white",
       image:
         "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=250&fit=crop&crop=center",
-      badge: "New",
+      badge: t("badge.new", "New"),
     },
     {
       icon: <Sparkles className="w-8 h-8" />,
-      title: "Premium Access",
+      title: t("dashboard.feature.premiumAccess", "Premium Access"),
       description:
         "Unlock exclusive premium features, advanced AI tools, and personalized mentorship.",
       detailedContent:
@@ -183,7 +170,22 @@ const StudentDashboard = () => {
       iconColor: "text-white",
       image:
         "https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=250&fit=crop&crop=center",
-      badge: "Premium",
+      badge: t("badge.premium", "Premium"),
+    },
+    {
+      icon: <Zap className="w-8 h-8" />,
+      title: "3D Interactive Coding Game",
+      description:
+        "A real-time 3D coding game where your code controls the world.",
+      detailedContent:
+        "Language-agnostic logic control, live actions, visual consequences, and game-style XP/rank feedback.",
+      path: "/coding-game-3d",
+      testId: "nav-3d-coding-game-btn",
+      color: "bg-gradient-to-br from-orange-500 to-orange-600",
+      iconColor: "text-white",
+      image:
+        "https://images.unsplash.com/photo-1552820728-8b83bb6b773f?w=400&h=250&fit=crop&crop=center",
+      badge: "Future",
     },
   ];
 
@@ -229,11 +231,13 @@ const StudentDashboard = () => {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 w-full">
           <div className="text-center">
             <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold text-white mb-6">
-              Welcome to Your Learning Hub
+              {t("dashboard.hero.title", "Welcome to Your Learning Hub")}
             </h1>
             <p className="text-base sm:text-xl md:text-2xl text-orange-500 to-orange-600 mb-8 max-w-4xl mx-auto">
-              Accelerate your career with AI-powered tools, personalized
-              learning paths, and comprehensive skill development.
+              {t(
+                "dashboard.hero.subtitle",
+                "Accelerate your career with AI-powered tools, personalized learning paths, and comprehensive skill development."
+              )}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
@@ -241,7 +245,7 @@ const StudentDashboard = () => {
                 className="bg-white text-orange-600 hover:bg-orange-50 px-6 sm:px-8 py-3 text-base sm:text-lg font-semibold"
               >
                 <Sparkles className="w-5 h-5 mr-2" />
-                Start Learning
+                {t("dashboard.hero.startLearning", "Start Learning")}
               </Button>
               <Button
                 onClick={() => navigate("/coding")}
@@ -249,7 +253,7 @@ const StudentDashboard = () => {
                 className="border-white text-white hover:bg-white hover:text-orange-600 px-6 sm:px-8 py-3 text-base sm:text-lg font-semibold"
               >
                 <Code className="w-5 h-5 mr-2" />
-                Practice Coding
+                {t("dashboard.hero.practiceCoding", "Practice Coding")}
               </Button>
             </div>
           </div>
@@ -261,10 +265,13 @@ const StudentDashboard = () => {
         {/* Welcome Section */}
         <div className="mb-12 text-center">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-white">
-            Welcome back, {user?.name}!
+            {t("dashboard.welcomeBack", "Welcome back")}, {user?.name}!
           </h2>
           <p className="text-zinc-400 text-lg">
-            Continue your learning journey and unlock your potential
+            {t(
+              "dashboard.welcomeSubtitle",
+              "Continue your learning journey and unlock your potential"
+            )}
           </p>
         </div>
 
@@ -278,21 +285,23 @@ const StudentDashboard = () => {
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-white flex items-center">
                   <Code className="w-4 h-4 mr-2" />
-                  Code Submissions
+                  {t("dashboard.stats.codeSubmissions", "Code Submissions")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl sm:text-3xl font-bold text-white">
                   {stats.code_submissions}
                 </div>
-                <p className="text-gray-300 text-sm mt-1">Keep coding!</p>
+                <p className="text-gray-300 text-sm mt-1">
+                  {t("dashboard.stats.keepCoding", "Keep coding!")}
+                </p>
               </CardContent>
             </Card>
             <Card className="bg-black border-gray-700 md:hover:border-gray-600 md:hover:ring-1 md:hover:ring-white transition-all duration-300 md:hover:scale-105">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-white flex items-center">
                   <TrendingUp className="w-4 h-4 mr-2" />
-                  Avg Code Score
+                  {t("dashboard.stats.avgCodeScore", "Avg Code Score")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -323,7 +332,10 @@ const StudentDashboard = () => {
                   ></div>
                 </div>
                 <p className="text-gray-300 text-sm mt-2">
-                  Excellent progress!
+                  {t(
+                    "dashboard.stats.excellentProgress",
+                    "Excellent progress!"
+                  )}
                 </p>
               </CardContent>
             </Card>
@@ -331,7 +343,7 @@ const StudentDashboard = () => {
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-white flex items-center">
                   <MessageSquare className="w-4 h-4 mr-2" />
-                  Interviews
+                  {t("dashboard.stats.interviews", "Interviews")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -339,7 +351,10 @@ const StudentDashboard = () => {
                   {stats.interviews_taken}
                 </div>
                 <p className="text-gray-300 text-sm mt-1">
-                  Practice makes perfect!
+                  {t(
+                    "dashboard.stats.practiceMakesPerfect",
+                    "Practice makes perfect!"
+                  )}
                 </p>
               </CardContent>
             </Card>
@@ -347,7 +362,7 @@ const StudentDashboard = () => {
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-white flex items-center">
                   <BookOpen className="w-4 h-4 mr-2" />
-                  Learning Sessions
+                  {t("dashboard.stats.learningSessions", "Learning Sessions")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -381,14 +396,19 @@ const StudentDashboard = () => {
                     }}
                   ></div>
                 </div>
-                <p className="text-gray-300 text-sm mt-1">Keep learning!</p>
+                <p className="text-gray-300 text-sm mt-1">
+                  {t("dashboard.stats.keepLearning", "Keep learning!")}
+                </p>
               </CardContent>
             </Card>
             <Card className="bg-black border-gray-700 md:hover:border-gray-600 md:hover:ring-1 md:hover:ring-white transition-all duration-300 md:hover:scale-105 overflow-hidden">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-white flex items-center">
                   <Trophy className="w-4 h-4 mr-2" />
-                  Career Readiness Score
+                  {t(
+                    "dashboard.stats.careerReadinessScore",
+                    "Career Readiness Score"
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -397,7 +417,9 @@ const StudentDashboard = () => {
                     <div className="text-2xl font-bold text-white mb-1">
                       {stats.career_readiness_score}/100
                     </div>
-                    <p className="text-gray-300 text-xs">You're on track!</p>
+                    <p className="text-gray-300 text-xs">
+                      {t("dashboard.stats.onTrack", "You're on track!")}
+                    </p>
                   </div>
                   {/* Circular Progress Ring */}
                   <div className="relative w-14 h-14 ml-4 flex-shrink-0">
@@ -506,7 +528,9 @@ const StudentDashboard = () => {
                     {feature.detailedContent}
                   </p>
                   <div className="mt-4 flex items-center text-orange-400 group-hover:text-orange-300">
-                    <span className="text-sm font-medium">Explore Feature</span>
+                    <span className="text-sm font-medium">
+                      {t("dashboard.exploreFeature", "Explore Feature")}
+                    </span>
                     <svg
                       className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"
                       fill="none"

@@ -27,6 +27,31 @@ const getApiBaseUrl = () => {
 
 export const API = `${getApiBaseUrl()}/api`;
 
+export const toAbsoluteUploadsUrl = (maybeUrl) => {
+  if (!maybeUrl) return "";
+  const value = String(maybeUrl);
+
+  // Already absolute or a browser-managed URL
+  if (
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.startsWith("data:") ||
+    value.startsWith("blob:")
+  ) {
+    return value;
+  }
+
+  // Normalize /uploads paths coming from the backend
+  if (value.startsWith("/uploads/")) {
+    return `${getApiBaseUrl()}${value}`;
+  }
+  if (value.startsWith("uploads/")) {
+    return `${getApiBaseUrl()}/${value}`;
+  }
+
+  return value;
+};
+
 // Enhanced storage functions for mobile compatibility
 const isMobile = () => {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(

@@ -55,6 +55,7 @@ import { useNavigate } from "react-router-dom";
 import axiosInstance from "../lib/axios";
 import { getUser } from "../lib/utils";
 import { toast } from "sonner";
+import { useI18n } from "../i18n/I18nProvider";
 
 const buildYouTubeEmbedUrl = (youtubeId) => {
   const base = `https://www.youtube-nocookie.com/embed/${youtubeId}`;
@@ -70,6 +71,7 @@ const buildYouTubeEmbedUrl = (youtubeId) => {
 };
 
 const LearningPathPage = () => {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const user = getUser();
   const lessonNotesKey =
@@ -1894,7 +1896,12 @@ const LearningPathPage = () => {
   };
   const openLessonPlayer = (path, module, lesson) => {
     if (module.locked) {
-      toast.error("Complete previous modules to unlock this content");
+      toast.error(
+        t(
+          "learningPath.toasts.completePreviousModules",
+          "Complete previous modules to unlock this content"
+        )
+      );
       return;
     }
     setCurrentPath(path);
@@ -1964,7 +1971,9 @@ const LearningPathPage = () => {
       };
     });
     setLearningPaths(updatedPaths);
-    toast.success("Lesson completed! 🎉");
+    toast.success(
+      t("learningPath.toasts.lessonCompleted", "Lesson completed! 🎉")
+    );
   };
   const toggleBookmark = (pathId, moduleId, lessonId) => {
     const key = `${pathId}-${moduleId}-${lessonId}`;
@@ -1975,8 +1984,11 @@ const LearningPathPage = () => {
     localStorage.setItem(bookmarkedLessonsKey, JSON.stringify(newBookmarks));
     toast.success(
       bookmarkedLessons.includes(key)
-        ? "Removed from bookmarks"
-        : "Added to bookmarks"
+        ? t(
+            "learningPath.toasts.removedFromBookmarks",
+            "Removed from bookmarks"
+          )
+        : t("learningPath.toasts.addedToBookmarks", "Added to bookmarks")
     );
   };
   const toggleLike = (pathId, moduleId, lessonId) => {
@@ -1993,7 +2005,7 @@ const LearningPathPage = () => {
     const newNotes = { ...savedNotes, [key]: notes };
     setSavedNotes(newNotes);
     localStorage.setItem(lessonNotesKey, JSON.stringify(newNotes));
-    toast.success("Notes saved!");
+    toast.success(t("learningPath.toasts.notesSaved", "Notes saved!"));
   };
   const playNextLesson = () => {
     if (!currentPath || !currentLesson) return;
@@ -2071,7 +2083,12 @@ const LearningPathPage = () => {
   const difficulties = ["All", "Beginner", "Intermediate", "Advanced"];
   const generateCertificate = (path) => {
     if (path.progress < 100) {
-      toast.error("Complete the course to get a certificate!");
+      toast.error(
+        t(
+          "learningPath.toasts.completeCourseForCertificate",
+          "Complete the course to get a certificate!"
+        )
+      );
       return;
     }
     const certificate = {
@@ -2085,7 +2102,9 @@ const LearningPathPage = () => {
     setCertificates([...certificates, certificate]);
     setSelectedCertificate(certificate);
     setShowCertificateModal(true);
-    toast.success("Certificate generated! 🎉");
+    toast.success(
+      t("learningPath.toasts.certificateGenerated", "Certificate generated! 🎉")
+    );
   };
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black text-white">
@@ -2149,7 +2168,7 @@ const LearningPathPage = () => {
                 className="flex-1 bg-black flex items-center justify-center p-2 md:p-4"
                 ref={playerRef}
               >
-                <div className="w-full max-w-6xl aspect-video rounded-xl overflow-hidden shadow-2xl">
+                <div className="w-full max-w-6xl lg:max-w-4xl xl:max-w-5xl aspect-video rounded-xl overflow-hidden shadow-2xl">
                   <iframe
                     width="100%"
                     height="100%"
@@ -2220,11 +2239,13 @@ const LearningPathPage = () => {
                           navigator.clipboard.writeText(
                             `https://www.youtube.com/watch?v=${currentLesson.youtubeId}`
                           );
-                          toast.success("Link copied!");
+                          toast.success(
+                            t("common.toasts.linkCopied", "Link copied!")
+                          );
                         }}
                       >
                         <Share2 className="w-4 h-4" />
-                        Share
+                        {t("common.share", "Share")}
                       </Button>
                       <Button
                         size="sm"
@@ -2238,7 +2259,7 @@ const LearningPathPage = () => {
                         className="gap-2 bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)] text-white"
                       >
                         <CheckCircle2 className="w-4 h-4" />
-                        Complete
+                        {t("common.complete", "Complete")}
                       </Button>
                     </div>
                   </div>
@@ -2258,7 +2279,7 @@ const LearningPathPage = () => {
                       onClick={playNextLesson}
                       className="gap-2 border-zinc-700 text-white hover:bg-zinc-800"
                     >
-                      Next
+                      {t("common.next", "Next")}
                       <SkipForward className="w-4 h-4" />
                     </Button>
                   </div>
@@ -2269,17 +2290,17 @@ const LearningPathPage = () => {
                   {[
                     {
                       id: "overview",
-                      label: "Overview",
+                      label: t("learningPath.player.overview", "Overview"),
                       icon: <FileText className="w-4 h-4" />,
                     },
                     {
                       id: "notes",
-                      label: "Notes",
+                      label: t("learningPath.player.notes", "Notes"),
                       icon: <BookOpen className="w-4 h-4" />,
                     },
                     {
                       id: "resources",
-                      label: "Resources",
+                      label: t("learningPath.player.resources", "Resources"),
                       icon: <Download className="w-4 h-4" />,
                     },
                   ].map((tab) => (
@@ -2301,7 +2322,10 @@ const LearningPathPage = () => {
                   {activeTab === "overview" && (
                     <div>
                       <h4 className="font-semibold text-white mb-2">
-                        About this lesson
+                        {t(
+                          "learningPath.player.aboutLesson",
+                          "About this lesson"
+                        )}
                       </h4>
                       <p className="text-sm text-zinc-400">
                         Learn {currentLesson.title.toLowerCase()} from{" "}
@@ -2315,7 +2339,10 @@ const LearningPathPage = () => {
                       <textarea
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
-                        placeholder="Take notes..."
+                        placeholder={t(
+                          "learningPath.player.placeholders.takeNotes",
+                          "Take notes..."
+                        )}
                         className="w-full h-24 bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-sm text-white resize-none focus:outline-none"
                       />
                       <Button
@@ -2323,7 +2350,7 @@ const LearningPathPage = () => {
                         onClick={saveNotes}
                         className="bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)]"
                       >
-                        Save Notes
+                        {t("learningPath.player.saveNotes", "Save Notes")}
                       </Button>
                     </div>
                   )}
@@ -2337,7 +2364,12 @@ const LearningPathPage = () => {
                       >
                         <Youtube className="w-5 h-5 text-[var(--accent-color)]" />
                         <div className="flex-1">
-                          <p className="text-sm text-white">Watch on YouTube</p>
+                          <p className="text-sm text-white">
+                            {t(
+                              "learningPath.player.watchOnYoutube",
+                              "Watch on YouTube"
+                            )}
+                          </p>
                         </div>
                         <ExternalLink className="w-4 h-4 text-zinc-400" />
                       </a>
@@ -2347,7 +2379,12 @@ const LearningPathPage = () => {
                       >
                         <Code className="w-5 h-5 text-[var(--accent-color)]" />
                         <div className="flex-1">
-                          <p className="text-sm text-white">Practice Coding</p>
+                          <p className="text-sm text-white">
+                            {t(
+                              "learningPath.player.practiceCoding",
+                              "Practice Coding"
+                            )}
+                          </p>
                         </div>
                         <ArrowRight className="w-4 h-4 text-zinc-400" />
                       </div>
@@ -2484,13 +2521,16 @@ const LearningPathPage = () => {
               </div>
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-2">
-                  Learning Paths
+                  {t("learningPaths.title", "Learning Paths")}
                   <span className="px-2 py-0.5 bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] text-xs font-medium rounded animate-pulse">
                     LIVE
                   </span>
                 </h1>
                 <p className="text-zinc-400 text-sm">
-                  Learn from the best YouTube tutorials curated for you
+                  {t(
+                    "learningPaths.subtitle",
+                    "Learn from the best YouTube tutorials curated for you"
+                  )}
                 </p>
               </div>
             </div>
@@ -2501,7 +2541,7 @@ const LearningPathPage = () => {
                 className="gap-2 border-zinc-700 text-white hover:bg-zinc-800"
               >
                 <Filter className="w-4 h-4" />
-                Filters
+                {t("common.filters", "Filters")}
               </Button>
               <Button
                 onClick={loadProgress}
@@ -2511,7 +2551,9 @@ const LearningPathPage = () => {
                 <RefreshCw
                   className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
                 />
-                <span className="hidden md:inline">Refresh</span>
+                <span className="hidden md:inline">
+                  {t("common.refresh", "Refresh")}
+                </span>
               </Button>
             </div>
           </div>
@@ -2524,7 +2566,10 @@ const LearningPathPage = () => {
               </div>
               <input
                 type="text"
-                placeholder="Search courses, instructors, or topics..."
+                placeholder={t(
+                  "learningPaths.searchPlaceholder",
+                  "Search courses, instructors, or topics..."
+                )}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-12 pr-12 py-4 bg-gradient-to-r from-zinc-900 to-zinc-800 border border-zinc-700 rounded-2xl text-white placeholder-zinc-400 focus:outline-none focus:border-[var(--accent-color)] focus:ring-2 focus:ring-[rgba(var(--accent-rgb),0.2)] transition-all duration-300 hover:border-zinc-600 hover:shadow-lg text-lg"
@@ -2605,7 +2650,7 @@ const LearningPathPage = () => {
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-zinc-300 flex items-center gap-2">
                       <Target className="w-4 h-4" />
-                      Difficulty
+                      {t("learningPath.filters.difficulty", "Difficulty")}
                     </label>
                     <select
                       value={selectedDifficulty}
@@ -2614,7 +2659,15 @@ const LearningPathPage = () => {
                     >
                       {difficulties.map((diff) => (
                         <option key={diff} value={diff}>
-                          {diff}
+                          {diff === "All"
+                            ? t("common.all", "All")
+                            : diff === "Beginner"
+                            ? t("common.beginner", "Beginner")
+                            : diff === "Intermediate"
+                            ? t("common.intermediate", "Intermediate")
+                            : diff === "Advanced"
+                            ? t("common.advanced", "Advanced")
+                            : diff}
                         </option>
                       ))}
                     </select>
@@ -2622,17 +2675,25 @@ const LearningPathPage = () => {
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-zinc-300 flex items-center gap-2">
                       <TrendingUp className="w-4 h-4" />
-                      Sort By
+                      {t("learningPath.filters.sortBy", "Sort By")}
                     </label>
                     <select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value)}
                       className="w-full px-4 py-3 bg-zinc-800 border border-zinc-600 rounded-lg text-white focus:outline-none focus:border-[var(--accent-color)] focus:ring-2 focus:ring-[rgba(var(--accent-rgb),0.2)] transition-all duration-200 hover:border-zinc-500"
                     >
-                      <option value="popular">Most Popular</option>
-                      <option value="rating">Highest Rated</option>
-                      <option value="newest">Newest</option>
-                      <option value="progress">My Progress</option>
+                      <option value="popular">
+                        {t("learningPath.sort.mostPopular", "Most Popular")}
+                      </option>
+                      <option value="rating">
+                        {t("learningPath.sort.highestRated", "Highest Rated")}
+                      </option>
+                      <option value="newest">
+                        {t("learningPath.sort.newest", "Newest")}
+                      </option>
+                      <option value="progress">
+                        {t("learningPath.sort.myProgress", "My Progress")}
+                      </option>
                     </select>
                   </div>
                 </div>
@@ -2647,7 +2708,9 @@ const LearningPathPage = () => {
                   <BookOpen className="w-5 h-5 text-[var(--accent-color)]" />
                 </div>
                 <div>
-                  <p className="text-xs text-zinc-400">Courses</p>
+                  <p className="text-xs text-zinc-400">
+                    {t("learningPath.stats.courses", "Courses")}
+                  </p>
                   <p className="text-xl font-bold text-white">
                     {learningPaths.length}
                   </p>
@@ -2660,7 +2723,9 @@ const LearningPathPage = () => {
                   <CheckCircle2 className="w-5 h-5 text-[var(--accent-color)]" />
                 </div>
                 <div>
-                  <p className="text-xs text-zinc-400">Completed</p>
+                  <p className="text-xs text-zinc-400">
+                    {t("learningPath.stats.completed", "Completed")}
+                  </p>
                   <p className="text-xl font-bold text-white">
                     {learningPaths.filter((p) => p.progress === 100).length}
                   </p>
@@ -2673,7 +2738,9 @@ const LearningPathPage = () => {
                   <Bookmark className="w-5 h-5 text-[var(--accent-color)]" />
                 </div>
                 <div>
-                  <p className="text-xs text-zinc-400">Bookmarks</p>
+                  <p className="text-xs text-zinc-400">
+                    {t("learningPath.stats.bookmarks", "Bookmarks")}
+                  </p>
                   <p className="text-xl font-bold text-white">
                     {bookmarkedLessons.length}
                   </p>
@@ -2686,7 +2753,9 @@ const LearningPathPage = () => {
                   <Flame className="w-5 h-5 text-[var(--accent-color)]" />
                 </div>
                 <div>
-                  <p className="text-xs text-zinc-400">Watched</p>
+                  <p className="text-xs text-zinc-400">
+                    {t("learningPath.stats.watched", "Watched")}
+                  </p>
                   <p className="text-xl font-bold text-white">
                     {watchHistory.length}
                   </p>
@@ -2699,7 +2768,9 @@ const LearningPathPage = () => {
                   <Award className="w-5 h-5 text-[var(--accent-color)]" />
                 </div>
                 <div>
-                  <p className="text-xs text-zinc-400">Certificates</p>
+                  <p className="text-xs text-zinc-400">
+                    {t("learningPath.stats.certificates", "Certificates")}
+                  </p>
                   <p className="text-xl font-bold text-white">
                     {certificates.length}
                   </p>
@@ -2712,7 +2783,7 @@ const LearningPathPage = () => {
           <div className="mb-8">
             <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
               <Play className="w-5 h-5 text-[var(--accent-color)]" />
-              Continue Watching
+              {t("learningPath.continueWatching", "Continue Watching")}
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {watchHistory.slice(0, 4).map((item, idx) => {
@@ -2983,11 +3054,17 @@ const LearningPathPage = () => {
                             : "bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] border-[rgba(var(--accent-rgb),0.3)]"
                         }`}
                       >
-                        {path.difficulty}
+                        {path.difficulty === "Beginner"
+                          ? t("common.beginner", "Beginner")
+                          : path.difficulty === "Intermediate"
+                          ? t("common.intermediate", "Intermediate")
+                          : path.difficulty === "Advanced"
+                          ? t("common.advanced", "Advanced")
+                          : path.difficulty}
                       </span>
                       {path.progress > 0 && (
                         <span className="px-2 py-1 bg-[rgba(var(--accent-rgb),0.2)] text-[var(--accent-color)] text-xs font-semibold rounded-full backdrop-blur-sm border border-[rgba(var(--accent-rgb),0.3)]">
-                          {path.progress}% done
+                          {path.progress}% {t("common.done", "done")}
                         </span>
                       )}
                     </div>
@@ -3004,7 +3081,12 @@ const LearningPathPage = () => {
                         onClick={(e) => {
                           e.stopPropagation();
                           // Add bookmark functionality
-                          toast.success("Course bookmarked!");
+                          toast.success(
+                            t(
+                              "learningPath.toasts.courseBookmarked",
+                              "Course bookmarked!"
+                            )
+                          );
                         }}
                         className="w-8 h-8 p-0 bg-black/60 backdrop-blur-sm hover:bg-black/80 text-white opacity-0 group-hover:opacity-100 transition-all duration-300"
                       >
@@ -3021,7 +3103,12 @@ const LearningPathPage = () => {
                             navigator.clipboard.writeText(
                               window.location.href + `?course=${path.id}`
                             );
-                            toast.success("Course link copied!");
+                            toast.success(
+                              t(
+                                "learningPath.toasts.courseLinkCopied",
+                                "Course link copied!"
+                              )
+                            );
                           }}
                           className="bg-black/60 backdrop-blur-sm hover:bg-black/80 text-white"
                         >
@@ -3426,7 +3513,10 @@ const LearningPathPage = () => {
                     Certificate Awarded
                   </h3>
                   <p className="text-zinc-400">
-                    This certifies that you have successfully completed
+                    {t(
+                      "learningPath.certificate.certifiesCompleted",
+                      "This certifies that you have successfully completed"
+                    )}
                   </p>
                 </div>
 
@@ -3435,17 +3525,27 @@ const LearningPathPage = () => {
                     {selectedCertificate.title}
                   </h4>
                   <p className="text-zinc-400">
-                    by {selectedCertificate.instructor}
+                    {t("common.by", "by")} {selectedCertificate.instructor}
                   </p>
                 </div>
 
                 <div className="flex justify-center gap-8 text-sm text-zinc-400 mb-6">
                   <div className="text-center">
-                    <p className="font-medium text-white">Certificate ID</p>
+                    <p className="font-medium text-white">
+                      {t(
+                        "learningPath.certificate.certificateId",
+                        "Certificate ID"
+                      )}
+                    </p>
                     <p>{selectedCertificate.certificateId}</p>
                   </div>
                   <div className="text-center">
-                    <p className="font-medium text-white">Completion Date</p>
+                    <p className="font-medium text-white">
+                      {t(
+                        "learningPath.certificate.completionDate",
+                        "Completion Date"
+                      )}
+                    </p>
                     <p>{selectedCertificate.completionDate}</p>
                   </div>
                 </div>
@@ -3456,19 +3556,24 @@ const LearningPathPage = () => {
                       navigator.clipboard.writeText(
                         `Certificate ID: ${selectedCertificate.certificateId}\nCourse: ${selectedCertificate.title}\nCompleted: ${selectedCertificate.completionDate}`
                       );
-                      toast.success("Certificate details copied!");
+                      toast.success(
+                        t(
+                          "learningPath.toasts.certificateDetailsCopied",
+                          "Certificate details copied!"
+                        )
+                      );
                     }}
                     className="gap-2 bg-[rgb(var(--accent-rgb))] hover:bg-[rgba(var(--accent-rgb),0.9)] text-white"
                   >
                     <Share2 className="w-4 h-4" />
-                    Share
+                    {t("common.share", "Share")}
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => setShowCertificateModal(false)}
                     className="border-zinc-600 text-white hover:bg-zinc-800"
                   >
-                    Close
+                    {t("common.close", "Close")}
                   </Button>
                 </div>
               </div>

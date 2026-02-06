@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import {
@@ -28,6 +28,8 @@ import {
   Building2,
   GraduationCap,
   Palette,
+  Bell,
+  Trash2,
 } from "lucide-react";
 import {
   Sheet,
@@ -37,14 +39,120 @@ import {
   SheetTrigger,
 } from "./ui/sheet";
 import { getUser, clearAuth } from "../lib/utils";
+import axiosInstance from "../lib/axios";
+import { useI18n } from "../i18n/I18nProvider";
+import SearchBar from "./SearchBar";
 
 const NavigationBar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const user = getUser();
+  const { t } = useI18n();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isNavVisible, setIsNavVisible] = useState(true);
   const [accentColor, setAccentColor] = useState("#ff7a00"); // default orange
+
+  const isStudent = user?.role === "student";
+
+  const settingsKey =
+    user?.id || user?._id || user?.email
+      ? `userSettings:${user.id || user._id || user.email}`
+      : "userSettings:anonymous";
+
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifContextId, setNotifContextId] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const notifLongPressTimerRef = useRef(null);
+  const [readIds, setReadIds] = useState(() => {
+    try {
+      const key = `readNotifications:${
+        user?.id || user?._id || user?.email || "anonymous"
+      }`;
+      const raw = localStorage.getItem(key);
+      return new Set(raw ? JSON.parse(raw) : []);
+    } catch {
+      return new Set();
+    }
+  });
+
+  const [deletedIds, setDeletedIds] = useState(() => {
+    try {
+      const key = `deletedNotifications:${
+        user?.id || user?._id || user?.email || "anonymous"
+      }`;
+      const raw = localStorage.getItem(key);
+      return new Set(raw ? JSON.parse(raw) : []);
+    } catch {
+      return new Set();
+    }
+  });
+
+  const persistReadIds = (nextSet) => {
+    try {
+      const key = `readNotifications:${
+        user?.id || user?._id || user?.email || "anonymous"
+      }`;
+      localStorage.setItem(key, JSON.stringify(Array.from(nextSet)));
+    } catch {
+      // ignore
+    }
+  };
+
+  const persistDeletedIds = (nextSet) => {
+    try {
+      const key = `deletedNotifications:${
+        user?.id || user?._id || user?.email || "anonymous"
+      }`;
+      localStorage.setItem(key, JSON.stringify(Array.from(nextSet)));
+    } catch {
+      // ignore
+    }
+  };
+
+  const getPushEnabledFromSettings = () => {
+    try {
+      const raw = localStorage.getItem(settingsKey);
+      if (!raw) return true;
+      const parsed = JSON.parse(raw);
+      const n = parsed?.notifications;
+      if (!n || typeof n !== "object") return true;
+      return n.push !== false;
+    } catch {
+      return true;
+    }
+  };
+
+  const fetchNotifications = async () => {
+    if (!isStudent) return;
+
+    try {
+      const res = await axiosInstance.get("/student/notifications");
+      const list = Array.isArray(res.data) ? res.data : [];
+      const pushEnabled = getPushEnabledFromSettings();
+      const filtered = pushEnabled ? list : [];
+      const withoutDeleted = filtered.filter((n) => !deletedIds.has(n?.id));
+      setNotifications(withoutDeleted);
+    } catch {
+      setNotifications([]);
+    }
+  };
+
+  const startNotifLongPress = (id) => {
+    if (!id) return;
+    if (notifLongPressTimerRef.current) {
+      clearTimeout(notifLongPressTimerRef.current);
+    }
+    notifLongPressTimerRef.current = setTimeout(() => {
+      setNotifContextId(id);
+    }, 500);
+  };
+
+  const cancelNotifLongPress = () => {
+    if (notifLongPressTimerRef.current) {
+      clearTimeout(notifLongPressTimerRef.current);
+      notifLongPressTimerRef.current = null;
+    }
+  };
 
   const hexToRgb = (hex) => {
     const h = (hex || "").replace("#", "").trim();
@@ -130,6 +238,38 @@ const NavigationBar = () => {
   }, []);
 
   useEffect(() => {
+    if (!isStudent) return;
+    if (!notifOpen) return;
+    fetchNotifications();
+  }, [notifOpen, isStudent]);
+
+  const unreadCount = notifications.filter((n) => !readIds.has(n?.id)).length;
+
+  const markAsRead = (id) => {
+    if (!id) return;
+    setReadIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      persistReadIds(next);
+      return next;
+    });
+  };
+
+  const deleteNotification = (id) => {
+    if (!id) return;
+
+    setDeletedIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      persistDeletedIds(next);
+      return next;
+    });
+
+    setNotifications((prev) => prev.filter((n) => n?.id !== id));
+    setNotifContextId(null);
+  };
+
+  useEffect(() => {
     const navItems = document.querySelectorAll(".hoverable");
     navItems.forEach((item, index) => {
       item.style.animationDelay = `${index * 0.1}s`;
@@ -165,43 +305,43 @@ const NavigationBar = () => {
   const mainNavItems = [
     {
       icon: LayoutDashboard,
-      label: "Dashboard",
+      label: t("nav.dashboard", "Dashboard"),
       path: "/dashboard",
       roles: ["student", "job_seeker"],
     },
     {
       icon: Bot,
-      label: "AI Tutor",
+      label: t("nav.aiTutor", "AI Tutor"),
       path: "/tutor",
       roles: ["student", "job_seeker"],
     },
     {
       icon: Code,
-      label: "Coding Arena",
+      label: t("nav.codingArena", "Coding Arena"),
       path: "/coding",
       roles: ["student", "job_seeker"],
     },
     {
       icon: BookOpen,
-      label: "Resources",
+      label: t("nav.resources", "Resources"),
       path: "/resources",
       roles: ["student", "job_seeker"],
     },
     {
       icon: Trophy,
-      label: "Career Readiness",
+      label: t("nav.careerReadiness", "Career Readiness"),
       path: "/career-readiness",
       roles: ["student", "job_seeker"],
     },
     {
       icon: Sparkles,
-      label: "Premium",
+      label: t("nav.premium", "Premium"),
       path: "/premium",
       roles: ["student", "job_seeker", "company", "college_admin"],
     },
     {
       icon: FileSearch,
-      label: "Resume Analyzer",
+      label: t("nav.resumeAnalyzer", "Resume Analyzer"),
       path: "/resume",
       roles: ["job_seeker"],
       gradient: "from-orange-500 to-orange-600",
@@ -209,7 +349,7 @@ const NavigationBar = () => {
     },
     {
       icon: MessageSquare,
-      label: "Mock Interview",
+      label: t("nav.mockInterview", "Mock Interview"),
       path: "/interview",
       roles: ["job_seeker"],
       gradient: "from-orange-500 to-orange-600",
@@ -217,7 +357,7 @@ const NavigationBar = () => {
     },
     {
       icon: Building2,
-      label: "Company Portal",
+      label: t("nav.companyPortal", "Company Portal"),
       path: "/company",
       roles: ["company"],
       gradient: "from-orange-500 to-orange-600",
@@ -225,7 +365,7 @@ const NavigationBar = () => {
     },
     {
       icon: GraduationCap,
-      label: "College Admin",
+      label: t("nav.collegeAdmin", "College Admin"),
       path: "/college",
       roles: ["college_admin"],
       gradient: "from-orange-500 to-orange-600",
@@ -275,17 +415,33 @@ const NavigationBar = () => {
             </div>
           </div>
 
+          {/* Search Bar - always visible */}
+          <div className="flex-1 max-w-xs sm:max-w-sm mx-2 sm:mx-4">
+            <SearchBar />
+          </div>
+
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-1">
             {filteredMainNav.map((item) => {
               const active = isActive(item.path);
               const isPremium = item.label === "Premium";
+              const Icon = item.icon;
+              const iconOnlyPaths = [
+                "/dashboard",
+                "/tutor",
+                "/coding",
+                "/resources",
+                "/career-readiness",
+              ];
+              const showIconOnly = iconOnlyPaths.includes(item.path);
               return (
                 <button
                   key={item.path}
                   onClick={() => navigate(item.path)}
                   title={item.label}
-                  className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 hover:scale-105 hoverable mx-1
+                  className={`relative flex items-center ${
+                    showIconOnly ? "justify-center" : "gap-2"
+                  } px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 hover:scale-105 hoverable mx-1
                     ${
                       isPremium
                         ? `text-black shadow-md border hover:opacity-95`
@@ -304,7 +460,18 @@ const NavigationBar = () => {
                       : {}
                   }
                 >
-                  <span>{item.label}</span>
+                  {showIconOnly ? (
+                    <Icon
+                      className={`w-5 h-5 ${
+                        active ? "text-white" : "text-zinc-400"
+                      }`}
+                      style={{
+                        color: active ? "var(--accent-color)" : undefined,
+                      }}
+                    />
+                  ) : (
+                    <span>{item.label}</span>
+                  )}
                   {active && !isPremium && (
                     <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-white rounded-full"></span>
                   )}
@@ -315,6 +482,105 @@ const NavigationBar = () => {
 
           {/* Right Side - Profile + Accent Toggle */}
           <div className="flex items-center gap-2">
+            {isStudent && (
+              <DropdownMenu
+                open={notifOpen}
+                onOpenChange={(open) => {
+                  setNotifOpen(open);
+                  if (!open) setNotifContextId(null);
+                }}
+              >
+                <DropdownMenuTrigger asChild>
+                  <button
+                    aria-label="Notifications"
+                    className="relative p-2 rounded-lg"
+                    style={{
+                      background: "transparent",
+                      border: "1px solid rgba(255,255,255,0.04)",
+                    }}
+                  >
+                    <Bell className="w-5 h-5 text-zinc-200" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-red-600 text-white text-[10px] leading-4 text-center">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-80 bg-zinc-900 border-zinc-800"
+                >
+                  <DropdownMenuLabel className="text-zinc-300">
+                    Notifications
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-zinc-800" />
+                  <div className="max-h-80 overflow-auto p-1">
+                    {notifications.length === 0 ? (
+                      <div className="px-3 py-6 text-sm text-zinc-500 text-center">
+                        No notifications
+                      </div>
+                    ) : (
+                      notifications.slice(0, 25).map((n) => {
+                        const isUnread = !readIds.has(n?.id);
+                        return (
+                          <DropdownMenuItem
+                            key={n?.id}
+                            onClick={() => {
+                              if (notifContextId === n?.id) {
+                                setNotifContextId(null);
+                                return;
+                              }
+                              markAsRead(n?.id);
+                            }}
+                            onContextMenu={(e) => {
+                              e.preventDefault();
+                              setNotifContextId(n?.id);
+                            }}
+                            onTouchStart={() => startNotifLongPress(n?.id)}
+                            onTouchEnd={cancelNotifLongPress}
+                            onTouchCancel={cancelNotifLongPress}
+                            className={`flex flex-col items-start gap-1 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-zinc-800 ${
+                              isUnread ? "bg-white/5" : ""
+                            }`}
+                          >
+                            <div className="w-full flex items-center justify-between gap-2">
+                              <span className="text-sm font-medium text-white">
+                                {n?.title || "Notification"}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                {notifContextId === n?.id && (
+                                  <button
+                                    type="button"
+                                    aria-label="Delete notification"
+                                    title="Delete"
+                                    className="p-1 rounded hover:bg-zinc-700"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      deleteNotification(n?.id);
+                                    }}
+                                  >
+                                    <Trash2 className="w-4 h-4 text-zinc-400 hover:text-red-400" />
+                                  </button>
+                                )}
+                                {isUnread && (
+                                  <span className="w-2 h-2 rounded-full bg-red-500" />
+                                )}
+                              </div>
+                            </div>
+                            <span className="text-xs text-zinc-400 line-clamp-2">
+                              {n?.message || ""}
+                            </span>
+                          </DropdownMenuItem>
+                        );
+                      })
+                    )}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
             {/* Accent Palette Toggle */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -411,14 +677,14 @@ const NavigationBar = () => {
                     className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg cursor-pointer"
                   >
                     <User className="w-4 h-4" />
-                    <span>My Profile</span>
+                    <span>{t("nav.myProfile", "My Profile")}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => navigate("/settings")}
                     className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg cursor-pointer"
                   >
                     <Settings className="w-4 h-4" />
-                    <span>Settings</span>
+                    <span>{t("nav.settings", "Settings")}</span>
                   </DropdownMenuItem>
                 </div>
                 <DropdownMenuSeparator className="bg-zinc-800" />
@@ -442,7 +708,7 @@ const NavigationBar = () => {
                     className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg cursor-pointer"
                   >
                     <BookOpen className="w-4 h-4" />
-                    <span>Resources</span>
+                    <span>{t("nav.resources", "Resources")}</span>
                   </DropdownMenuItem>
                 </div>
                 {(user?.role === "company" ||
@@ -456,7 +722,9 @@ const NavigationBar = () => {
                           className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg cursor-pointer"
                         >
                           <Building2 className="w-4 h-4" />
-                          <span>Company Portal</span>
+                          <span>
+                            {t("nav.companyPortal", "Company Portal")}
+                          </span>
                         </DropdownMenuItem>
                       )}
                       {user?.role === "college_admin" && (
@@ -465,7 +733,7 @@ const NavigationBar = () => {
                           className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-orange-500 rounded-lg cursor-pointer"
                         >
                           <GraduationCap className="w-4 h-4" />
-                          <span>College Admin</span>
+                          <span>{t("nav.collegeAdmin", "College Admin")}</span>
                         </DropdownMenuItem>
                       )}
                     </div>
@@ -478,7 +746,7 @@ const NavigationBar = () => {
                     className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg cursor-pointer"
                   >
                     <LogOut className="w-4 h-4" />
-                    <span>Sign Out</span>
+                    <span>{t("nav.logout", "Sign Out")}</span>
                   </DropdownMenuItem>
                 </div>
               </DropdownMenuContent>

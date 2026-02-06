@@ -23,6 +23,16 @@ email-validator==2.3.0
 # PDF processing
 PyPDF2==3.0.1
 
+# DOCX processing
+python-docx==1.1.2
+
+# YouTube transcript extraction
+youtube-transcript-api==0.6.2
+
+# Optional OCR for images (requires system Tesseract)
+Pillow==10.4.0
+pytesseract==0.3.10
+
 # ATS Resume PDF generation
 reportlab==4.4.4
 

@@ -25,6 +25,16 @@ CREATE TABLE IF NOT EXISTS learning_history (
     created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS tutor_contexts (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    source_name TEXT,
+    source_url TEXT,
+    text_content TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS code_evaluations (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,

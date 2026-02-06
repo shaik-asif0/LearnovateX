@@ -80,10 +80,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { getUser, clearAuth } from "../lib/utils";
+import { useI18n } from "../i18n/I18nProvider";
 
 const SettingsPage = () => {
   const navigate = useNavigate();
   const user = getUser();
+  const { t, setLanguage } = useI18n();
   const userSettingsKey =
     user?.id || user?._id || user?.email
       ? `userSettings:${user.id || user._id || user.email}`
@@ -264,7 +266,9 @@ const SettingsPage = () => {
     }
     setSaving(false);
     setHasChanges(false);
-    toast.success("All settings saved successfully!");
+    toast.success(
+      t("settings.toasts.savedAll", "All settings saved successfully!")
+    );
   };
 
   const calculatePasswordStrength = (password) => {
@@ -285,18 +289,38 @@ const SettingsPage = () => {
 
   const handleChangePassword = () => {
     if (!passwords.current) {
-      toast.error("Please enter your current password");
+      toast.error(
+        t(
+          "settings.security.toasts.enterCurrentPassword",
+          "Please enter your current password"
+        )
+      );
       return;
     }
     if (passwords.new.length < 8) {
-      toast.error("New password must be at least 8 characters");
+      toast.error(
+        t(
+          "settings.security.toasts.passwordMinLength",
+          "New password must be at least 8 characters"
+        )
+      );
       return;
     }
     if (passwords.new !== passwords.confirm) {
-      toast.error("Passwords do not match");
+      toast.error(
+        t(
+          "settings.security.toasts.passwordsDoNotMatch",
+          "Passwords do not match"
+        )
+      );
       return;
     }
-    toast.success("Password changed successfully!");
+    toast.success(
+      t(
+        "settings.security.toasts.passwordChanged",
+        "Password changed successfully!"
+      )
+    );
     setPasswords({ current: "", new: "", confirm: "" });
     setPasswordStrength(0);
   };
@@ -305,7 +329,9 @@ const SettingsPage = () => {
     clearAuth();
     window.dispatchEvent(new Event("authChange"));
     navigate("/auth");
-    toast.success("Logged out successfully");
+    toast.success(
+      t("auth.toasts.loggedOutSuccessfully", "Logged out successfully")
+    );
   };
 
   const handleExportData = () => {
@@ -322,13 +348,24 @@ const SettingsPage = () => {
     a.href = url;
     a.download = "career-catalyst-settings.json";
     a.click();
-    toast.success("Settings exported successfully!");
+    toast.success(
+      t(
+        "settings.data.toasts.exportedSuccessfully",
+        "Settings exported successfully!"
+      )
+    );
   };
 
   const handleDeleteAccount = () => {
-    toast.error("Account deletion requires confirmation via email", {
-      duration: 4000,
-    });
+    toast.error(
+      t(
+        "settings.data.toasts.deleteRequiresEmailConfirmation",
+        "Account deletion requires confirmation via email"
+      ),
+      {
+        duration: 4000,
+      }
+    );
   };
 
   const getStrengthColor = (strength) => {
@@ -339,10 +376,13 @@ const SettingsPage = () => {
   };
 
   const getStrengthText = (strength) => {
-    if (strength <= 25) return "Weak";
-    if (strength <= 50) return "Fair";
-    if (strength <= 75) return "Good";
-    return "Strong";
+    if (strength <= 25)
+      return t("settings.security.passwordStrength.weak", "Weak");
+    if (strength <= 50)
+      return t("settings.security.passwordStrength.fair", "Fair");
+    if (strength <= 75)
+      return t("settings.security.passwordStrength.good", "Good");
+    return t("settings.security.passwordStrength.strong", "Strong");
   };
 
   const SettingToggle = ({
@@ -385,9 +425,14 @@ const SettingsPage = () => {
               <Settings className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white">Settings</h1>
+              <h1 className="text-3xl font-bold text-white">
+                {t("nav.settings", "Settings")}
+              </h1>
               <p className="text-zinc-400">
-                Manage your account and preferences
+                {t(
+                  "settings.header.subtitle",
+                  "Manage your account and preferences"
+                )}
               </p>
             </div>
           </div>
@@ -395,7 +440,7 @@ const SettingsPage = () => {
             <div className="flex items-center gap-2 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
               <AlertTriangle className="w-4 h-4 text-orange-400" />
               <span className="text-orange-400 text-sm">
-                You have unsaved changes
+                {t("settings.unsaved", "You have unsaved changes")}
               </span>
               <Button
                 size="sm"
@@ -403,7 +448,9 @@ const SettingsPage = () => {
                 disabled={saving}
                 className="ml-auto bg-orange-500 text-black hover:bg-orange-400"
               >
-                {saving ? "Saving..." : "Save All"}
+                {saving
+                  ? t("common.saving", "Saving...")
+                  : t("common.saveAll", "Save All")}
               </Button>
             </div>
           )}
@@ -419,43 +466,49 @@ const SettingsPage = () => {
                     {
                       id: "notifications",
                       icon: Bell,
-                      label: "Notifications",
+                      label: t(
+                        "settings.sidebar.notifications",
+                        "Notifications"
+                      ),
                       color: "orange",
                     },
                     {
                       id: "privacy",
                       icon: Shield,
-                      label: "Privacy",
+                      label: t("settings.sidebar.privacy", "Privacy"),
                       color: "orange",
                     },
                     {
                       id: "preferences",
                       icon: Palette,
-                      label: "Preferences",
+                      label: t("settings.sidebar.preferences", "Preferences"),
                       color: "orange",
                     },
                     {
                       id: "learning",
                       icon: BookOpen,
-                      label: "Learning",
+                      label: t("settings.sidebar.learning", "Learning"),
                       color: "orange",
                     },
                     {
                       id: "accessibility",
                       icon: Accessibility,
-                      label: "Accessibility",
+                      label: t(
+                        "settings.sidebar.accessibility",
+                        "Accessibility"
+                      ),
                       color: "orange",
                     },
                     {
                       id: "security",
                       icon: Lock,
-                      label: "Security",
+                      label: t("settings.sidebar.security", "Security"),
                       color: "orange",
                     },
                     {
                       id: "data",
                       icon: Database,
-                      label: "Data & Storage",
+                      label: t("settings.sidebar.data", "Data & Storage"),
                       color: "orange",
                     },
                   ].map((item) => {
@@ -497,10 +550,16 @@ const SettingsPage = () => {
                     </div>
                     <div>
                       <CardTitle className="text-white">
-                        Notification Preferences
+                        {t(
+                          "settings.notifications.title",
+                          "Notification Preferences"
+                        )}
                       </CardTitle>
                       <CardDescription className="text-zinc-400">
-                        Choose how and when you want to be notified
+                        {t(
+                          "settings.notifications.subtitle",
+                          "Choose how and when you want to be notified"
+                        )}
                       </CardDescription>
                     </div>
                   </div>
@@ -703,25 +762,22 @@ const SettingsPage = () => {
                   <div className="space-y-3">
                     <Label className="text-zinc-300 flex items-center gap-2">
                       <Languages className="w-4 h-4" />
-                      Language
+                      {t("settings.language", "Language")}
                     </Label>
                     <Select
                       value={settings.preferences.language}
-                      onValueChange={(value) =>
-                        updateSetting("preferences", "language", value)
-                      }
+                      onValueChange={(value) => {
+                        setLanguage(value);
+                        updateSetting("preferences", "language", value);
+                      }}
                     >
                       <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-zinc-800 border-zinc-700">
-                        <SelectItem value="en">🇺🇸 English</SelectItem>
-                        <SelectItem value="es">🇪🇸 Spanish</SelectItem>
-                        <SelectItem value="fr">🇫🇷 French</SelectItem>
-                        <SelectItem value="de">🇩🇪 German</SelectItem>
-                        <SelectItem value="ja">🇯🇵 Japanese</SelectItem>
-                        <SelectItem value="zh">🇨🇳 Chinese</SelectItem>
-                        <SelectItem value="hi">🇮🇳 Hindi</SelectItem>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="te">తెలుగు</SelectItem>
+                        <SelectItem value="hi">हिन्दी</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -984,17 +1040,28 @@ const SettingsPage = () => {
                       </div>
                       <div>
                         <CardTitle className="text-white">
-                          Change Password
+                          {t(
+                            "settings.security.changePassword",
+                            "Change Password"
+                          )}
                         </CardTitle>
                         <CardDescription className="text-zinc-400">
-                          Update your account password
+                          {t(
+                            "settings.security.changePasswordDescription",
+                            "Update your account password"
+                          )}
                         </CardDescription>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label className="text-zinc-300">Current Password</Label>
+                      <Label className="text-zinc-300">
+                        {t(
+                          "settings.security.currentPassword",
+                          "Current Password"
+                        )}
+                      </Label>
                       <div className="relative">
                         <Input
                           type={showCurrentPassword ? "text" : "password"}
@@ -1002,7 +1069,10 @@ const SettingsPage = () => {
                           onChange={(e) =>
                             handlePasswordChange("current", e.target.value)
                           }
-                          placeholder="Enter current password"
+                          placeholder={t(
+                            "settings.security.placeholders.currentPassword",
+                            "Enter current password"
+                          )}
                           className="bg-zinc-800 border-zinc-700 text-white pr-10"
                         />
                         <button
@@ -1021,7 +1091,9 @@ const SettingsPage = () => {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-zinc-300">New Password</Label>
+                      <Label className="text-zinc-300">
+                        {t("settings.security.newPassword", "New Password")}
+                      </Label>
                       <div className="relative">
                         <Input
                           type={showNewPassword ? "text" : "password"}
@@ -1029,7 +1101,10 @@ const SettingsPage = () => {
                           onChange={(e) =>
                             handlePasswordChange("new", e.target.value)
                           }
-                          placeholder="Enter new password"
+                          placeholder={t(
+                            "settings.security.placeholders.newPassword",
+                            "Enter new password"
+                          )}
                           className="bg-zinc-800 border-zinc-700 text-white pr-10"
                         />
                         <button
@@ -1048,7 +1123,10 @@ const SettingsPage = () => {
                         <div className="space-y-2 mt-2">
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-zinc-400">
-                              Password Strength
+                              {t(
+                                "settings.security.passwordStrengthLabel",
+                                "Password Strength"
+                              )}
                             </span>
                             <span
                               className={`font-medium ${
@@ -1077,7 +1155,10 @@ const SettingsPage = () => {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-zinc-300">
-                        Confirm New Password
+                        {t(
+                          "settings.security.confirmNewPassword",
+                          "Confirm New Password"
+                        )}
                       </Label>
                       <div className="relative">
                         <Input
@@ -1086,7 +1167,10 @@ const SettingsPage = () => {
                           onChange={(e) =>
                             handlePasswordChange("confirm", e.target.value)
                           }
-                          placeholder="Confirm new password"
+                          placeholder={t(
+                            "settings.security.placeholders.confirmPassword",
+                            "Confirm new password"
+                          )}
                           className="bg-zinc-800 border-zinc-700 text-white pr-10"
                         />
                         <button
@@ -1107,7 +1191,10 @@ const SettingsPage = () => {
                         passwords.new !== passwords.confirm && (
                           <p className="text-sm text-orange-400 flex items-center gap-1">
                             <AlertTriangle className="w-3 h-3" />
-                            Passwords do not match
+                            {t(
+                              "settings.security.passwordsDoNotMatch",
+                              "Passwords do not match"
+                            )}
                           </p>
                         )}
                     </div>
@@ -1116,7 +1203,7 @@ const SettingsPage = () => {
                       className="w-full bg-gradient-to-r from-orange-600 to-orange-600 hover:from-orange-700 hover:to-orange-700 text-white"
                     >
                       <Key className="w-4 h-4 mr-2" />
-                      Update Password
+                      {t("settings.security.updatePassword", "Update Password")}
                     </Button>
                   </CardContent>
                 </Card>
@@ -1188,7 +1275,10 @@ const SettingsPage = () => {
                       onClick={handleLogout}
                     >
                       <LogOut className="w-4 h-4 mr-2" />
-                      Sign Out All Devices
+                      {t(
+                        "settings.security.signOutAllDevices",
+                        "Sign Out All Devices"
+                      )}
                     </Button>
                   </CardContent>
                 </Card>
@@ -1206,10 +1296,13 @@ const SettingsPage = () => {
                       </div>
                       <div>
                         <CardTitle className="text-white">
-                          Data Management
+                          {t("settings.data.title", "Data Management")}
                         </CardTitle>
                         <CardDescription className="text-zinc-400">
-                          Export or manage your data
+                          {t(
+                            "settings.data.subtitle",
+                            "Export or manage your data"
+                          )}
                         </CardDescription>
                       </div>
                     </div>
@@ -1221,9 +1314,14 @@ const SettingsPage = () => {
                           <Download className="w-5 h-5 text-orange-400" />
                         </div>
                         <div>
-                          <p className="text-white font-medium">Export Data</p>
+                          <p className="text-white font-medium">
+                            {t("settings.data.exportData", "Export Data")}
+                          </p>
                           <p className="text-sm text-zinc-400">
-                            Download all your data as JSON
+                            {t(
+                              "settings.data.exportDataDescription",
+                              "Download all your data as JSON"
+                            )}
                           </p>
                         </div>
                       </div>
@@ -1232,7 +1330,7 @@ const SettingsPage = () => {
                         className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
                         onClick={handleExportData}
                       >
-                        Export
+                        {t("common.export", "Export")}
                       </Button>
                     </div>
                     <div className="flex items-center justify-between p-4 bg-zinc-800/50 rounded-xl">
@@ -1241,15 +1339,18 @@ const SettingsPage = () => {
                           <Cloud className="w-5 h-5 text-orange-400" />
                         </div>
                         <div>
-                          <p className="text-white font-medium">Cloud Sync</p>
+                          <p className="text-white font-medium">
+                            {t("settings.data.cloudSync", "Cloud Sync")}
+                          </p>
                           <p className="text-sm text-zinc-400">
-                            Last synced: Just now
+                            {t("settings.data.lastSynced", "Last synced")}:{" "}
+                            {t("common.justNow", "Just now")}
                           </p>
                         </div>
                       </div>
                       <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
                         <CheckCircle2 className="w-3 h-3 mr-1" />
-                        Synced
+                        {t("settings.data.synced", "Synced")}
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between p-4 bg-zinc-800/50 rounded-xl">
@@ -1258,9 +1359,14 @@ const SettingsPage = () => {
                           <HardDrive className="w-5 h-5 text-orange-400" />
                         </div>
                         <div>
-                          <p className="text-white font-medium">Clear Cache</p>
+                          <p className="text-white font-medium">
+                            {t("settings.data.clearCache", "Clear Cache")}
+                          </p>
                           <p className="text-sm text-zinc-400">
-                            Free up storage space
+                            {t(
+                              "settings.data.clearCacheDescription",
+                              "Free up storage space"
+                            )}
                           </p>
                         </div>
                       </div>
@@ -1268,10 +1374,15 @@ const SettingsPage = () => {
                         variant="outline"
                         className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
                         onClick={() =>
-                          toast.success("Cache cleared successfully!")
+                          toast.success(
+                            t(
+                              "settings.data.toasts.cacheCleared",
+                              "Cache cleared successfully!"
+                            )
+                          )
                         }
                       >
-                        Clear
+                        {t("common.clear", "Clear")}
                       </Button>
                     </div>
                   </CardContent>
@@ -1282,15 +1393,20 @@ const SettingsPage = () => {
                   <CardHeader>
                     <CardTitle className="text-orange-400 flex items-center gap-2">
                       <AlertTriangle className="w-5 h-5" />
-                      Danger Zone
+                      {t("settings.data.dangerZone", "Danger Zone")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between p-4 bg-orange-500/10 rounded-xl border border-orange-500/20">
                       <div>
-                        <p className="text-white font-medium">Delete Account</p>
+                        <p className="text-white font-medium">
+                          {t("settings.data.deleteAccount", "Delete Account")}
+                        </p>
                         <p className="text-sm text-zinc-400">
-                          Permanently delete your account and all data
+                          {t(
+                            "settings.data.deleteAccountDescription",
+                            "Permanently delete your account and all data"
+                          )}
                         </p>
                       </div>
                       <Button
@@ -1299,7 +1415,7 @@ const SettingsPage = () => {
                         onClick={handleDeleteAccount}
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
+                        {t("common.delete", "Delete")}
                       </Button>
                     </div>
                   </CardContent>

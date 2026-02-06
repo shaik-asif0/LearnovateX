@@ -11,7 +11,7 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, EmailStr
 from typing import List, Optional, Dict, Any
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 import jwt
 import bcrypt
 import asyncio
@@ -25,9 +25,12 @@ import smtplib
 from email.message import EmailMessage
 import hashlib
 import re
+import shutil
 
-# Azure OpenAI SDK
-from openai import AzureOpenAI
+# OpenAI SDK
+# - AzureOpenAI: for Azure OpenAI resources (requires endpoint + deployment)
+# - OpenAI: for OpenAI Platform (openai.com) API keys
+from openai import AzureOpenAI, OpenAI
 
 # ==================== DATA MODELS ====================
 class AchievementItem(BaseModel):
@@ -43,6 +46,16 @@ class AchievementItem(BaseModel):
 class AchievementCategory(BaseModel):
     category: str
     items: List[AchievementItem]
+
+
+class AssistantChatRequest(BaseModel):
+    message: str
+    context_path: Optional[str] = None
+    history: Optional[List[Dict[str, Any]]] = None
+
+
+class AssistantChatResponse(BaseModel):
+    response: str
 
 # ==================== APP SETUP ====================
 # Create the main app without a prefix
@@ -86,9 +99,16 @@ logger = logging.getLogger(__name__)
 ROOT_DIR = Path(__file__).parent
 # Load local env file.
 # IMPORTANT: Do NOT override cloud/App Service environment variables by default.
-# If you really need `.env` to override pre-existing OS vars (local-only), set:
+# For local development, we always prefer values from `.env` so the app runs
+# consistently even if the shell already has empty/old env vars.
+#
+# In Azure/App Service, you can still force override explicitly:
 #   DOTENV_OVERRIDE=true
-dotenv_override = os.environ.get("DOTENV_OVERRIDE", "false").lower() == "true"
+is_azure_app_service = bool(os.environ.get("WEBSITE_SITE_NAME") or os.environ.get("WEBSITE_INSTANCE_ID"))
+if is_azure_app_service:
+    dotenv_override = os.environ.get("DOTENV_OVERRIDE", "").strip().lower() == "true"
+else:
+    dotenv_override = True
 load_dotenv(ROOT_DIR / ".env", override=dotenv_override)
 
 # Database Configuration
@@ -101,7 +121,7 @@ JWT_ALGORITHM = os.environ.get('JWT_ALGORITHM', 'HS256')
 JWT_EXPIRATION_DAYS = int(os.environ.get('JWT_EXPIRATION_DAYS', 7))
 JWT_EXPIRATION_DELTA = timedelta(days=JWT_EXPIRATION_DAYS)
 
-# AI Mode Configuration: 'demo', 'azure'
+# AI Mode Configuration: 'demo', 'azure', 'openai'
 AI_MODE = os.environ.get('AI_MODE', 'demo')
 
 # Azure OpenAI Configuration (for future use)
@@ -109,12 +129,45 @@ AZURE_OPENAI_API_KEY = os.environ.get('AZURE_OPENAI_API_KEY', '')
 AZURE_OPENAI_ENDPOINT = os.environ.get('AZURE_OPENAI_ENDPOINT', '')
 AZURE_OPENAI_DEPLOYMENT = os.environ.get('AZURE_OPENAI_DEPLOYMENT', '')
 
+# OpenAI (non-Azure) Configuration
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+# Model name for OpenAI Platform (examples: gpt-4o-mini, gpt-4.1-mini)
+OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
+
 # File Storage Configuration
 UPLOAD_DIR = os.environ.get('UPLOAD_DIR', 'uploads')
 RESUME_UPLOAD_DIR = os.environ.get('RESUME_UPLOAD_DIR', 'uploads/resumes')
 CODE_UPLOAD_DIR = os.environ.get('CODE_UPLOAD_DIR', 'uploads/code_submissions')
 MAX_FILE_SIZE_MB = int(os.environ.get('MAX_FILE_SIZE_MB', 5))
+TUTOR_CONTEXT_MAX_FILE_SIZE_MB = int(os.environ.get('TUTOR_CONTEXT_MAX_FILE_SIZE_MB', 20))
+TESSERACT_CMD = os.environ.get('TESSERACT_CMD', '').strip()
+TESSERACT_LANG = os.environ.get('TESSERACT_LANG', 'eng').strip() or 'eng'
 ALLOWED_RESUME_FORMATS = os.environ.get('ALLOWED_RESUME_FORMATS', 'pdf').split(',')
+
+
+def _detect_tesseract_cmd() -> str:
+    # 1) Explicit env var
+    if TESSERACT_CMD:
+        return TESSERACT_CMD
+
+    # 2) In PATH
+    found = shutil.which("tesseract")
+    if found:
+        return found
+
+    # 3) Common Windows install paths
+    candidates = [
+        r"C:\\Program Files\\Tesseract-OCR\\tesseract.exe",
+        r"C:\\Program Files (x86)\\Tesseract-OCR\\tesseract.exe",
+    ]
+    for p in candidates:
+        try:
+            if os.path.exists(p):
+                return p
+        except Exception:
+            continue
+
+    return ""
 
 # Ensure upload directories exist and are served
 UPLOADS_ROOT = ROOT_DIR / UPLOAD_DIR
@@ -179,10 +232,12 @@ DEBUG = os.environ.get('DEBUG', 'true').lower() == 'true'
 
 # AI Configuration
 # Check AI mode and print appropriate message
-if AI_MODE == 'azure' and AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT:
+if AI_MODE == 'azure' and AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_DEPLOYMENT:
     print("✓ Azure OpenAI configured - AI features will use real-time responses")
-elif AI_MODE == 'azure':
-    print("⚠ Azure OpenAI mode selected but not configured - using demo mode")
+elif AI_MODE == 'openai' and OPENAI_API_KEY:
+    print("✓ OpenAI configured - AI features will use real-time responses")
+elif AI_MODE in ('azure', 'openai'):
+    print(f"⚠ {AI_MODE} mode selected but not configured - using demo mode")
 else:
     print("ℹ Running in demo mode - AI features will use sample responses")
 
@@ -266,10 +321,29 @@ class TutorMessage(BaseModel):
     message: str
     topic: Optional[str] = None
     difficulty: Optional[str] = "intermediate"
+    context_ids: Optional[List[str]] = None
 
 class TutorResponse(BaseModel):
     response: str
     session_id: str
+
+
+class TutorContextUploadResponse(BaseModel):
+    context_id: str
+    kind: str
+    filename: Optional[str] = None
+    text_extracted: Optional[bool] = None
+    warning: Optional[str] = None
+
+
+class TutorYouTubeContextRequest(BaseModel):
+    url: str
+
+
+class TutorYouTubeContextResponse(BaseModel):
+    context_id: str
+    kind: str
+    video_id: Optional[str] = None
 
 class CodeSubmission(BaseModel):
     code: str
@@ -481,6 +555,8 @@ def _send_email_smtp(to_email: str, subject: str, body_text: str, body_html: Opt
 
 def _email_status() -> dict:
     # Return safe diagnostics only (no passwords)
+    env_file_path = str(ROOT_DIR / ".env")
+    env_file_exists = (ROOT_DIR / ".env").exists()
     missing = []
     if not SMTP_HOST:
         missing.append("SMTP_HOST")
@@ -498,6 +574,12 @@ def _email_status() -> dict:
         "enabled": bool(ENABLE_EMAIL),
         "configured": configured,
         "missing": missing,
+        "dotenv": {
+            "env_file": env_file_path,
+            "env_file_exists": env_file_exists,
+            "override": bool(dotenv_override),
+            "is_azure_app_service": bool(is_azure_app_service),
+        },
         "password_set": bool(SMTP_PASSWORD),
         "password_len": len(SMTP_PASSWORD) if SMTP_PASSWORD else 0,
         "host": SMTP_HOST or None,
@@ -678,6 +760,26 @@ def _init_sqlite_db():
 
         conn.execute(
             """
+            CREATE TABLE IF NOT EXISTS tutor_contexts (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                kind TEXT NOT NULL,
+                source_name TEXT,
+                source_url TEXT,
+                text_content TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+            """
+        )
+        try:
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_tutor_contexts_user_id ON tutor_contexts(user_id)"
+            )
+        except Exception:
+            pass
+
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS activity_events (
                 id TEXT PRIMARY KEY,
                 user_id TEXT NOT NULL,
@@ -686,6 +788,18 @@ def _init_sqlite_db():
                 duration_seconds INTEGER,
                 metadata_json TEXT,
                 created_at TEXT NOT NULL
+            );
+            """
+        )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS login_streaks (
+                user_id TEXT PRIMARY KEY,
+                current_streak INTEGER NOT NULL DEFAULT 0,
+                longest_streak INTEGER NOT NULL DEFAULT 0,
+                last_login_at TEXT,
+                updated_at TEXT NOT NULL
             );
             """
         )
@@ -804,6 +918,20 @@ def _init_sqlite_db():
                 action_date TEXT NOT NULL,
                 action_json TEXT NOT NULL,
                 created_at TEXT NOT NULL
+            );
+            """
+        )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS weekly_checklist_states (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                week_start TEXT NOT NULL,
+                done_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                UNIQUE(user_id, week_start)
             );
             """
         )
@@ -1115,6 +1243,142 @@ def _insert_learning_history(history_doc: dict):
         )
 
 
+def _insert_tutor_context(context_doc: dict):
+    with _sqlite_connection() as conn:
+        conn.execute(
+            "INSERT INTO tutor_contexts (id, user_id, kind, source_name, source_url, text_content, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (
+                context_doc["id"],
+                context_doc["user_id"],
+                context_doc["kind"],
+                context_doc.get("source_name"),
+                context_doc.get("source_url"),
+                context_doc["text_content"],
+                context_doc["created_at"],
+            ),
+        )
+        conn.commit()
+
+
+def _select_tutor_contexts_by_ids(user_id: str, context_ids: List[str]) -> List[dict]:
+    if not context_ids:
+        return []
+    # Limit number of contexts fetched to avoid huge prompts
+    ids = [str(x) for x in context_ids if x]
+    ids = ids[:10]
+    placeholders = ",".join(["?"] * len(ids))
+    with _sqlite_connection() as conn:
+        cursor = conn.execute(
+            f"SELECT id, user_id, kind, source_name, source_url, text_content, created_at FROM tutor_contexts WHERE user_id = ? AND id IN ({placeholders}) ORDER BY created_at DESC",
+            (user_id, *ids),
+        )
+        rows = cursor.fetchall()
+    return [dict(r) for r in rows]
+
+
+async def store_tutor_context(context_doc: dict):
+    await asyncio.to_thread(_insert_tutor_context, context_doc)
+
+
+async def fetch_tutor_contexts_by_ids(user_id: str, context_ids: List[str]) -> List[dict]:
+    return await asyncio.to_thread(_select_tutor_contexts_by_ids, user_id, context_ids)
+
+
+def _extract_text_from_pdf_bytes(contents: bytes) -> str:
+    pdf_file = io.BytesIO(contents)
+    pdf_reader = PyPDF2.PdfReader(pdf_file)
+    text_content = ""
+    for page in pdf_reader.pages:
+        try:
+            text_content += (page.extract_text() or "") + "\n"
+        except Exception:
+            continue
+    return text_content.strip()
+
+
+def _extract_text_from_docx_bytes(contents: bytes) -> str:
+    try:
+        from docx import Document  # python-docx
+    except Exception:
+        raise RuntimeError("DOCX support requires 'python-docx' package")
+
+    doc = Document(io.BytesIO(contents))
+    parts: List[str] = []
+    for p in doc.paragraphs:
+        t = (p.text or "").strip()
+        if t:
+            parts.append(t)
+    return "\n".join(parts).strip()
+
+
+def _extract_text_from_image_bytes(contents: bytes) -> str:
+    """Best-effort OCR.
+
+    - First tries pytesseract (requires system Tesseract + Pillow).
+    - If not available, returns empty string (caller can decide fallback).
+    """
+    try:
+        from PIL import Image
+        import pytesseract
+        from pytesseract import TesseractNotFoundError
+    except Exception:
+        return ""
+
+    tesseract_cmd = _detect_tesseract_cmd()
+    if tesseract_cmd:
+        pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
+
+    # Detect missing system Tesseract early for a clearer error.
+    try:
+        _ = pytesseract.get_tesseract_version()
+    except TesseractNotFoundError:
+        raise RuntimeError(
+            "OCR is not configured (Tesseract not found). Install Tesseract OCR and add it to PATH, "
+            "or set TESSERACT_CMD to the full path of tesseract.exe (e.g. C:/Program Files/Tesseract-OCR/tesseract.exe)."
+        )
+    except Exception:
+        # If version check fails for some other reason, keep best-effort behavior.
+        pass
+
+    try:
+        img = Image.open(io.BytesIO(contents))
+        # Ensure a common color mode for OCR
+        if img.mode not in ("RGB", "L"):
+            img = img.convert("RGB")
+        text = pytesseract.image_to_string(img, lang=TESSERACT_LANG)
+        return (text or "").strip()
+    except Exception:
+        return ""
+
+
+def _youtube_video_id(url: str) -> Optional[str]:
+    if not url:
+        return None
+    s = str(url).strip()
+    # youtu.be/<id>
+    m = re.search(r"youtu\.be\/([A-Za-z0-9_-]{6,})", s)
+    if m:
+        return m.group(1)
+    # youtube.com/watch?v=<id>
+    m = re.search(r"[?&]v=([A-Za-z0-9_-]{6,})", s)
+    if m:
+        return m.group(1)
+    # youtube.com/shorts/<id>
+    m = re.search(r"youtube\.com\/shorts\/([A-Za-z0-9_-]{6,})", s)
+    if m:
+        return m.group(1)
+    return None
+
+
+def _truncate_text(text: str, max_chars: int) -> str:
+    if not text:
+        return ""
+    s = str(text)
+    if len(s) <= max_chars:
+        return s
+    return s[:max_chars] + "\n... (truncated)"
+
+
 def _insert_code_evaluation(eval_doc: dict):
     with _sqlite_connection() as conn:
         conn.execute(
@@ -1249,6 +1513,16 @@ def _fetch_code_submissions(user_id: str, limit: int = 100) -> List[dict]:
     for entry in submissions:
         entry['passed'] = bool(entry.get('passed'))
     return submissions
+
+
+def _delete_code_submission(user_id: str, submission_id: str) -> bool:
+    with _sqlite_connection() as conn:
+        cur = conn.execute(
+            "DELETE FROM code_evaluations WHERE id = ? AND user_id = ?",
+            (submission_id, user_id),
+        )
+        conn.commit()
+        return bool(cur.rowcount and cur.rowcount > 0)
 
 
 def _count_table_rows(table: str, user_id: str) -> int:
@@ -1728,6 +2002,124 @@ def _insert_daily_action_lock(user_id: str, action_date: str, action: dict) -> d
     return action
 
 
+def _week_start_monday_iso_date(now: Optional[datetime] = None) -> str:
+    dt = now or datetime.now(timezone.utc)
+    d = dt.date()
+    # Monday=0..Sunday=6
+    monday = d - timedelta(days=d.weekday())
+    return monday.isoformat()
+
+
+def _select_weekly_checklist_state(user_id: str, week_start: str) -> dict:
+    with _sqlite_connection() as conn:
+        row = conn.execute(
+            "SELECT done_json FROM weekly_checklist_states WHERE user_id = ? AND week_start = ? LIMIT 1",
+            (user_id, week_start),
+        ).fetchone()
+    if not row:
+        return {}
+    try:
+        parsed = json.loads(row["done_json"])
+        return parsed if isinstance(parsed, dict) else {}
+    except Exception:
+        return {}
+
+
+def _upsert_weekly_checklist_state(user_id: str, week_start: str, done_map: dict) -> dict:
+    state_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    payload = done_map if isinstance(done_map, dict) else {}
+    with _sqlite_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO weekly_checklist_states (id, user_id, week_start, done_json, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(user_id, week_start)
+            DO UPDATE SET done_json = excluded.done_json, updated_at = excluded.updated_at
+            """,
+            (state_id, user_id, week_start, json.dumps(payload), now, now),
+        )
+        conn.commit()
+    return payload
+
+
+def _patch_weekly_checklist_item(user_id: str, week_start: str, item_id: str, done: bool) -> dict:
+    current = _select_weekly_checklist_state(user_id, week_start)
+    next_map = dict(current) if isinstance(current, dict) else {}
+    next_map[str(item_id)] = bool(done)
+    return _upsert_weekly_checklist_state(user_id, week_start, next_map)
+
+
+def _compute_streak_from_dates(dates: List[date]) -> dict:
+    unique_days = sorted(set([d for d in dates if isinstance(d, date)]))
+    if not unique_days:
+        return {"current": 0, "longest": 0, "last_day": None}
+
+    longest = 1
+    run = 1
+    for i in range(1, len(unique_days)):
+        if (unique_days[i] - unique_days[i - 1]).days == 1:
+            run += 1
+        else:
+            longest = max(longest, run)
+            run = 1
+    longest = max(longest, run)
+
+    last_day = unique_days[-1]
+    current = 1
+    d = last_day
+    day_set = set(unique_days)
+    while (d - timedelta(days=1)) in day_set:
+        current += 1
+        d = d - timedelta(days=1)
+
+    return {"current": int(current), "longest": int(longest), "last_day": last_day}
+
+
+def _get_coding_streak_for_ui(user_id: str, now: Optional[datetime] = None) -> dict:
+    dt = now or datetime.now(timezone.utc)
+    submissions = _fetch_code_submissions(user_id, 500)
+
+    solved_datetimes: List[datetime] = []
+    for s in submissions:
+        try:
+            if not bool(s.get("passed")):
+                continue
+            created_at = s.get("created_at")
+            if not created_at:
+                continue
+            # created_at is stored as ISO string; treat as UTC.
+            solved_dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+            if solved_dt.tzinfo is None:
+                solved_dt = solved_dt.replace(tzinfo=timezone.utc)
+            solved_datetimes.append(solved_dt.astimezone(timezone.utc))
+        except Exception:
+            continue
+
+    if not solved_datetimes:
+        return {
+            "current_streak": 0,
+            "display_current_streak": 0,
+            "longest_streak": 0,
+            "last_solved_at": None,
+        }
+
+    last_solved_at = max(solved_datetimes)
+    day_list = [d.date() for d in solved_datetimes]
+    streak = _compute_streak_from_dates(day_list)
+
+    display_current = streak["current"]
+    if (dt - last_solved_at) > timedelta(hours=24):
+        display_current = 0
+
+    return {
+        "current_streak": int(streak["current"]),
+        "display_current_streak": int(display_current),
+        "longest_streak": int(streak["longest"]),
+        "last_solved_at": last_solved_at.isoformat(),
+    }
+
+
 def _insert_snapshot_if_missing(user_id: str, snapshot_date: str, readiness_score: float, breakdown: dict) -> None:
     with _sqlite_connection() as conn:
         exists = conn.execute(
@@ -1868,6 +2260,108 @@ def _insert_activity_event(user_id: str, event: ActivityEvent) -> None:
             (event_id, user_id, event_type, path, duration_seconds, metadata_json, created_at),
         )
         conn.commit()
+
+
+def _fetch_login_streak_row(user_id: str) -> Optional[dict]:
+    with _sqlite_connection() as conn:
+        row = conn.execute(
+            "SELECT user_id, current_streak, longest_streak, last_login_at, updated_at FROM login_streaks WHERE user_id = ?",
+            (user_id,),
+        ).fetchone()
+    if not row:
+        return None
+    return {
+        "user_id": row["user_id"],
+        "current_streak": int(row["current_streak"] or 0),
+        "longest_streak": int(row["longest_streak"] or 0),
+        "last_login_at": row["last_login_at"],
+        "updated_at": row["updated_at"],
+    }
+
+
+def _update_login_streak_on_login(user_id: str, now: Optional[datetime] = None) -> dict:
+    """Update and return login streak stats for a user.
+
+    Rules:
+    - First login => current=1, longest=1
+    - If last login was <=24h ago => keep current (no increment)
+    - If last login was >24h and <=48h ago => current += 1
+    - If last login was >48h ago => reset to 1
+    UI can show "real-time" by displaying 0 when now-last_login_at > 24h.
+    """
+    now_dt = now or datetime.now(timezone.utc)
+    now_iso = now_dt.isoformat()
+    row = _fetch_login_streak_row(user_id)
+
+    if not row or not row.get("last_login_at"):
+        current = 1
+        longest = 1
+        last_login_at = now_iso
+    else:
+        last_dt = _parse_iso_datetime(row.get("last_login_at"))
+        if not last_dt:
+            current = 1
+            longest = max(1, int(row.get("longest_streak") or 0))
+            last_login_at = now_iso
+        else:
+            last_dt = last_dt.astimezone(timezone.utc)
+            delta = now_dt - last_dt
+            prev_current = int(row.get("current_streak") or 0)
+            prev_longest = int(row.get("longest_streak") or 0)
+
+            if delta <= timedelta(hours=24):
+                current = max(1, prev_current)
+            elif delta <= timedelta(hours=48):
+                current = max(1, prev_current) + 1
+            else:
+                current = 1
+
+            longest = max(prev_longest, current)
+            last_login_at = now_iso
+
+    with _sqlite_connection() as conn:
+        conn.execute(
+            "INSERT INTO login_streaks (user_id, current_streak, longest_streak, last_login_at, updated_at) VALUES (?, ?, ?, ?, ?) "
+            "ON CONFLICT(user_id) DO UPDATE SET current_streak=excluded.current_streak, longest_streak=excluded.longest_streak, last_login_at=excluded.last_login_at, updated_at=excluded.updated_at",
+            (user_id, int(current), int(longest), last_login_at, now_iso),
+        )
+        conn.commit()
+
+    return {
+        "current_streak": int(current),
+        "longest_streak": int(longest),
+        "last_login_at": last_login_at,
+        "updated_at": now_iso,
+    }
+
+
+def _get_login_streak_for_ui(user_id: str) -> dict:
+    """Return login streak stats plus a 'display_current_streak' that auto-zeros after 24h."""
+    now_dt = datetime.now(timezone.utc)
+    row = _fetch_login_streak_row(user_id) or {
+        "current_streak": 0,
+        "longest_streak": 0,
+        "last_login_at": None,
+    }
+    last_login_at = row.get("last_login_at")
+    display_current = int(row.get("current_streak") or 0)
+    if last_login_at:
+        last_dt = _parse_iso_datetime(last_login_at)
+        if last_dt:
+            last_dt = last_dt.astimezone(timezone.utc)
+            if now_dt - last_dt > timedelta(hours=24):
+                display_current = 0
+        else:
+            display_current = 0
+    else:
+        display_current = 0
+
+    return {
+        "current_streak": int(row.get("current_streak") or 0),
+        "display_current_streak": int(display_current),
+        "longest_streak": int(row.get("longest_streak") or 0),
+        "last_login_at": last_login_at,
+    }
 
 
 def _fetch_time_spent_seconds(user_id: str, days: int = 30) -> int:
@@ -2404,6 +2898,47 @@ To improve: Use specific examples from your experience, quantify achievements wh
 (Situation, Task, Action, Result) for behavioral questions. Consider preparing 2-3 strong project stories you can adapt to different questions."""
 
     else:  # Default tutor response
+        if "REFERENCE MATERIAL" in (prompt or ""):
+            # Best-effort: extract the reference material block and summarize it.
+            # This keeps attachments useful even when Azure OpenAI is not configured.
+            material = ""
+            try:
+                m = re.search(
+                    r"REFERENCE MATERIAL\s*\(.*?\):\s*(.*?)\n\nInstructions:",
+                    prompt,
+                    flags=re.IGNORECASE | re.DOTALL,
+                )
+                if m:
+                    material = (m.group(1) or "").strip()
+            except Exception:
+                material = ""
+
+            if not material:
+                # fallback: grab a chunk of the prompt
+                material = (prompt or "")[-2000:].strip()
+
+            # Extract student question (if present)
+            question = ""
+            try:
+                qm = re.search(r"Student Question:\s*(.*)", prompt, flags=re.IGNORECASE)
+                if qm:
+                    question = (qm.group(1) or "").strip()
+            except Exception:
+                question = ""
+
+            snippet = material[:1400].strip()
+            lines = [ln.strip() for ln in snippet.splitlines() if ln.strip()]
+            summary_points = lines[:5]
+            summary = "\n".join([f"- {p}" for p in summary_points]) if summary_points else snippet
+
+            return (
+                "Based on the reference material you provided, here’s a clear explanation:\n\n"
+                + (f"Question: {question}\n\n" if question else "")
+                + "Summary of the material:\n"
+                + (summary + "\n\n")
+                + "If you tell me what exactly you want (summary, key points, Q&A, explain a topic), I can tailor the answer."
+            )
+
         return """Great question! Let me explain this concept step by step:
 
 **Overview:**
@@ -2474,6 +3009,29 @@ def _call_azure_openai_sync(prompt: str, system_instruction: str = None) -> str:
         return f"Error: Unable to get AI response. Please try again. ({str(e)})"
 
 
+def _call_openai_sync(prompt: str, system_instruction: str = None) -> str:
+    """Synchronous function to call OpenAI Platform (non-Azure) API"""
+    try:
+        client = OpenAI(api_key=OPENAI_API_KEY)
+
+        messages = []
+        if system_instruction:
+            messages.append({"role": "system", "content": system_instruction})
+        messages.append({"role": "user", "content": prompt})
+
+        response = client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=messages,
+            max_tokens=2000,
+            temperature=0.7,
+        )
+
+        return response.choices[0].message.content
+    except Exception as e:
+        logger.error(f"Error calling OpenAI: {e}")
+        return f"Error: Unable to get AI response. Please try again. ({str(e)})"
+
+
 async def get_ai_response(prompt: str, session_id: str, system_instruction: str = None, response_type: str = "tutor") -> str:
     """Get AI response - uses configured AI service or demo mode"""
     
@@ -2490,14 +3048,22 @@ async def get_ai_response(prompt: str, session_id: str, system_instruction: str 
         logger.info("Using demo mode for AI response")
         return _get_demo_response(prompt, response_type)
     
-    # Check internet connectivity for Azure mode
-    if AI_MODE == 'azure' and not _check_internet_connectivity():
+    # Check internet connectivity for real AI modes
+    if AI_MODE in ('azure', 'openai') and not _check_internet_connectivity():
         logger.warning("No internet connection, falling back to demo mode")
         return _get_demo_response(prompt, response_type)
-    
-    # Check if Azure OpenAI is configured
-    if not AZURE_OPENAI_API_KEY or not AZURE_OPENAI_ENDPOINT:
-        logger.warning("Azure OpenAI not configured, falling back to demo mode")
+
+    # Check if provider is configured
+    if AI_MODE == 'azure':
+        if not AZURE_OPENAI_API_KEY or not AZURE_OPENAI_ENDPOINT or not AZURE_OPENAI_DEPLOYMENT:
+            logger.warning("Azure OpenAI not configured, falling back to demo mode")
+            return _get_demo_response(prompt, response_type)
+    elif AI_MODE == 'openai':
+        if not OPENAI_API_KEY:
+            logger.warning("OpenAI not configured, falling back to demo mode")
+            return _get_demo_response(prompt, response_type)
+    else:
+        logger.warning(f"Unknown AI_MODE '{AI_MODE}', falling back to demo mode")
         return _get_demo_response(prompt, response_type)
     
     # Set appropriate system instruction based on response type
@@ -2515,25 +3081,42 @@ async def get_ai_response(prompt: str, session_id: str, system_instruction: str 
             if attempt > 0:
                 await asyncio.sleep(2 * attempt)
             
-            response = await asyncio.to_thread(
-                _call_azure_openai_sync,
-                prompt,
-                system_instruction
-            )
+            if AI_MODE == 'azure':
+                response = await asyncio.to_thread(
+                    _call_azure_openai_sync,
+                    prompt,
+                    system_instruction
+                )
+            else:
+                response = await asyncio.to_thread(
+                    _call_openai_sync,
+                    prompt,
+                    system_instruction
+                )
             
             if not response.startswith("Error:"):
-                logger.info(f"Successfully got Azure OpenAI response (type: {response_type})")
+                logger.info(f"Successfully got AI response (mode: {AI_MODE}, type: {response_type})")
                 return response
+
+            # If the provider is configured but the account has no quota/billing,
+            # return a clear error instead of misleading demo content.
+            lowered = response.lower()
+            if "insufficient_quota" in lowered or "exceeded your current quota" in lowered:
+                return (
+                    "OpenAI quota/billing issue: your account has no available quota for API calls. "
+                    "Please check Billing/Usage in your OpenAI dashboard (add a payment method or credits), "
+                    "then try again."
+                )
             
             # If AI call fails, fall back to demo mode
             if attempt == 2:
-                logger.warning("Azure OpenAI failed, falling back to demo mode")
+                logger.warning(f"AI provider '{AI_MODE}' failed, falling back to demo mode")
                 return _get_demo_response(prompt, response_type)
                 
         except Exception as e:
-            logger.error(f"Error calling Azure OpenAI API (attempt {attempt + 1}): {e}")
+            logger.error(f"Error calling AI provider '{AI_MODE}' (attempt {attempt + 1}): {e}")
             if attempt == 2:
-                logger.warning("Azure OpenAI failed, falling back to demo mode")
+                logger.warning(f"AI provider '{AI_MODE}' failed, falling back to demo mode")
                 return _get_demo_response(prompt, response_type)
     
     return _get_demo_response(prompt, response_type)
@@ -2673,13 +3256,29 @@ async def root():
 @api_router.get("/health")
 async def health_check():
     """Health check endpoint with system status"""
+    provider = "Demo"
+    configured = False
+    model = "demo-responses"
+    endpoint = None
+
+    if AI_MODE == 'azure':
+        provider = "Azure OpenAI"
+        configured = bool(AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_DEPLOYMENT)
+        endpoint = AZURE_OPENAI_ENDPOINT if AZURE_OPENAI_API_KEY else None
+        model = AZURE_OPENAI_DEPLOYMENT if configured else "demo-responses"
+    elif AI_MODE == 'openai':
+        provider = "OpenAI"
+        configured = bool(OPENAI_API_KEY)
+        model = OPENAI_MODEL if configured else "demo-responses"
+
     return {
         "status": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "ai_mode": "azure" if AI_MODE == 'azure' else "demo",
-        "azure_configured": bool(AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT),
-        "azure_endpoint": AZURE_OPENAI_ENDPOINT if AZURE_OPENAI_API_KEY else None,
-        "model": AZURE_OPENAI_DEPLOYMENT if AZURE_OPENAI_API_KEY else "demo-responses",
+        "ai_mode": AI_MODE,
+        "ai_provider": provider,
+        "ai_configured": configured,
+        "ai_endpoint": endpoint,
+        "model": model,
         "database": "sqlite",
         "version": "1.0.0"
     }
@@ -2688,15 +3287,40 @@ async def health_check():
 @api_router.get("/status")
 async def get_status():
     """Get detailed system status"""
+    ai_service = {
+        "mode": "Demo Mode",
+        "configured": False,
+        "endpoint": None,
+        "deployment": None,
+        "model": "demo-responses",
+        "note": "Demo mode provides sample responses. Configure OpenAI or Azure OpenAI for full AI capabilities.",
+    }
+
+    if AI_MODE == 'azure':
+        configured = bool(AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_DEPLOYMENT)
+        ai_service = {
+            "mode": "Azure OpenAI",
+            "configured": configured,
+            "endpoint": AZURE_OPENAI_ENDPOINT if AZURE_OPENAI_API_KEY else None,
+            "deployment": AZURE_OPENAI_DEPLOYMENT if configured else None,
+            "model": AZURE_OPENAI_DEPLOYMENT if configured else "demo-responses",
+            "note": "Azure OpenAI is active" if configured else "Azure mode selected but not configured; using demo responses.",
+        }
+    elif AI_MODE == 'openai':
+        configured = bool(OPENAI_API_KEY)
+        ai_service = {
+            "mode": "OpenAI",
+            "configured": configured,
+            "endpoint": None,
+            "deployment": None,
+            "model": OPENAI_MODEL if configured else "demo-responses",
+            "note": "OpenAI is active" if configured else "OpenAI mode selected but not configured; using demo responses.",
+        }
+
     return {
         "server": "running",
-        "ai_service": {
-            "mode": "Azure OpenAI" if AI_MODE == 'azure' else "Demo Mode",
-            "configured": bool(AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT),
-            "endpoint": AZURE_OPENAI_ENDPOINT if AZURE_OPENAI_API_KEY else None,
-            "deployment": AZURE_OPENAI_DEPLOYMENT if AZURE_OPENAI_API_KEY else None,
-            "note": "Demo mode provides sample responses. Configure Azure OpenAI for full AI capabilities." if AI_MODE == 'demo' else "Azure OpenAI is active"
-        },
+        "ai_mode": AI_MODE,
+        "ai_service": ai_service,
         "features": {
             "ai_tutor": "active",
             "code_evaluation": "active",
@@ -2704,13 +3328,176 @@ async def get_status():
             "mock_interviews": "active",
             "learning_paths": "active",
             "company_portal": "active",
-            "college_admin": "active"
+            "college_admin": "active",
         },
         "database": {
             "type": "SQLite",
-            "path": str(SQLITE_DB_PATH)
+            "path": str(SQLITE_DB_PATH),
         },
         "email": _email_status(),
+    }
+
+
+@api_router.get("/ai/test")
+async def ai_test():
+    """Probe the configured AI provider once.
+
+    This endpoint is meant for debugging environment/config issues.
+    It never returns API keys and uses a minimal test request.
+    """
+
+    def _classify_error(message: str):
+        lowered = (message or "").lower()
+        if "insufficient_quota" in lowered or "exceeded your current quota" in lowered:
+            return {
+                "code": "insufficient_quota",
+                "message": "OpenAI quota/billing issue. Check your plan, billing, and project limits.",
+                "hint": "OpenAI Dashboard → Billing/Usage: add payment method or credits, then retry.",
+            }
+        if "invalid_api_key" in lowered or "incorrect api key" in lowered or "api key" in lowered and "invalid" in lowered:
+            return {
+                "code": "invalid_api_key",
+                "message": "Invalid API key.",
+                "hint": "Verify OPENAI_API_KEY in backend/.env and restart the backend.",
+            }
+        if "permission" in lowered or "not authorized" in lowered or "unauthorized" in lowered:
+            return {
+                "code": "unauthorized",
+                "message": "Unauthorized request.",
+                "hint": "Verify your key and org/project permissions.",
+            }
+        if "timeout" in lowered:
+            return {
+                "code": "timeout",
+                "message": "Request timed out.",
+                "hint": "Check internet connectivity and try again.",
+            }
+        return {
+            "code": "request_failed",
+            "message": "AI request failed.",
+            "hint": "Check server logs for details.",
+        }
+
+    async def _probe_openai():
+        if not OPENAI_API_KEY:
+            return {
+                "provider": "OpenAI",
+                "mode": "openai",
+                "configured": False,
+                "ok": False,
+                "error": {
+                    "code": "missing_config",
+                    "message": "OPENAI_API_KEY is not set.",
+                    "hint": "Set OPENAI_API_KEY in backend/.env and restart the backend.",
+                },
+            }
+
+        def _call_once():
+            client = OpenAI(api_key=OPENAI_API_KEY)
+            resp = client.chat.completions.create(
+                model=OPENAI_MODEL,
+                messages=[{"role": "user", "content": "Reply with exactly: OK"}],
+                max_tokens=5,
+                temperature=0,
+            )
+            text = (resp.choices[0].message.content or "").strip()
+            return text
+
+        try:
+            text = await asyncio.to_thread(_call_once)
+            return {
+                "provider": "OpenAI",
+                "mode": "openai",
+                "configured": True,
+                "ok": True,
+                "model": OPENAI_MODEL,
+                "sample": text[:50],
+            }
+        except Exception as e:
+            error = _classify_error(str(e))
+            return {
+                "provider": "OpenAI",
+                "mode": "openai",
+                "configured": True,
+                "ok": False,
+                "model": OPENAI_MODEL,
+                "error": error,
+            }
+
+    async def _probe_azure():
+        configured = bool(AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_DEPLOYMENT)
+        if not configured:
+            return {
+                "provider": "Azure OpenAI",
+                "mode": "azure",
+                "configured": False,
+                "ok": False,
+                "error": {
+                    "code": "missing_config",
+                    "message": "Azure OpenAI is not configured.",
+                    "hint": "Set AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_DEPLOYMENT in backend/.env and restart.",
+                },
+            }
+
+        def _call_once():
+            client = AzureOpenAI(
+                api_key=AZURE_OPENAI_API_KEY,
+                api_version="2024-02-01",
+                azure_endpoint=AZURE_OPENAI_ENDPOINT,
+            )
+            resp = client.chat.completions.create(
+                model=AZURE_OPENAI_DEPLOYMENT,
+                messages=[{"role": "user", "content": "Reply with exactly: OK"}],
+                max_tokens=5,
+                temperature=0,
+            )
+            text = (resp.choices[0].message.content or "").strip()
+            return text
+
+        try:
+            text = await asyncio.to_thread(_call_once)
+            return {
+                "provider": "Azure OpenAI",
+                "mode": "azure",
+                "configured": True,
+                "ok": True,
+                "deployment": AZURE_OPENAI_DEPLOYMENT,
+                "endpoint": AZURE_OPENAI_ENDPOINT,
+                "sample": text[:50],
+            }
+        except Exception as e:
+            error = _classify_error(str(e))
+            return {
+                "provider": "Azure OpenAI",
+                "mode": "azure",
+                "configured": True,
+                "ok": False,
+                "deployment": AZURE_OPENAI_DEPLOYMENT,
+                "endpoint": AZURE_OPENAI_ENDPOINT,
+                "error": error,
+            }
+
+    if AI_MODE == "openai":
+        result = await _probe_openai()
+    elif AI_MODE == "azure":
+        result = await _probe_azure()
+    else:
+        result = {
+            "provider": "Demo",
+            "mode": "demo",
+            "configured": False,
+            "ok": False,
+            "error": {
+                "code": "demo_mode",
+                "message": "AI_MODE is demo; real AI is disabled.",
+                "hint": "Set AI_MODE=openai (and OPENAI_API_KEY) or AI_MODE=azure in backend/.env, then restart.",
+            },
+        }
+
+    return {
+        "ai_mode": AI_MODE,
+        "result": result,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -2765,6 +3552,23 @@ async def login(credentials: UserLogin):
     sqlite_user = await fetch_sqlite_user(credentials.email)
     if not sqlite_user or not verify_password(credentials.password, sqlite_user['password']):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    # Record login activity + update login streak (server-side, cross-device)
+    try:
+        await asyncio.to_thread(
+            _insert_activity_event,
+            sqlite_user["id"],
+            ActivityEvent(event_type="login", path="/auth/login"),
+        )
+    except Exception:
+        # Don't block auth on analytics
+        pass
+
+    try:
+        await asyncio.to_thread(_update_login_streak_on_login, sqlite_user["id"])
+    except Exception:
+        # Don't block auth on streak update
+        pass
     
     token = create_token(sqlite_user['id'], sqlite_user['email'])
     
@@ -3035,7 +3839,7 @@ def _as_bullets(lines: List[str]) -> List[str]:
     return bullets
 
 
-def _build_ats_resume_pdf_bytes(name: str, email: str, profile: dict) -> bytes:
+def _build_ats_resume_pdf_bytes(name: str, email: str, profile: dict, template: str = "classic") -> bytes:
     try:
         import re
         from reportlab.platypus import (
@@ -3055,39 +3859,137 @@ def _build_ats_resume_pdf_bytes(name: str, email: str, profile: dict) -> bytes:
     except Exception:
         raise RuntimeError("PDF generator dependency missing. Install 'reportlab'.")
 
+    template_id = (template or "classic").strip().lower()
+    allowed_templates = {
+        "classic",
+        "modern",
+        "minimal",
+        "compact",
+        "timeline",
+        "twocol",
+        "academic",
+        "tech",
+        "freshers",
+        "executive",
+        "creative",
+        "bold",
+    }
+    if template_id not in allowed_templates:
+        template_id = "classic"
+
+    # Template styling variations (ATS-safe: standard fonts, no graphics-heavy layout)
+    font_base = "Times-Roman"
+    font_bold = "Times-Bold"
+    base_size = 9.5
+    base_leading = 12
+    name_size = 18
+    section_title_size = 10.5
+    section_rule = True
+    rule_thickness = 1
+    rule_color = colors.black
+    section_upper = False
+    # margins in inches: (left, right, top, bottom)
+    margins = (0.65, 0.65, 0.30, 0.35)
+
+    if template_id == "modern":
+        font_base = "Helvetica"
+        font_bold = "Helvetica-Bold"
+        base_size = 10
+        base_leading = 12
+        name_size = 19
+        section_title_size = 11
+        rule_thickness = 0.7
+        rule_color = colors.HexColor("#444444")
+    elif template_id == "minimal":
+        font_base = "Helvetica"
+        font_bold = "Helvetica-Bold"
+        base_size = 9.5
+        base_leading = 11.5
+        name_size = 17
+        section_title_size = 10
+        section_rule = False
+    elif template_id == "compact":
+        base_size = 9
+        base_leading = 11
+        name_size = 16
+        section_title_size = 10
+        margins = (0.55, 0.55, 0.25, 0.30)
+    elif template_id == "bold":
+        section_title_size = 11.5
+        section_upper = True
+        rule_thickness = 1.2
+    elif template_id == "creative":
+        font_base = "Helvetica"
+        font_bold = "Helvetica-Bold"
+        base_size = 10
+        base_leading = 13
+        name_size = 20
+        section_title_size = 11
+        rule_thickness = 0.7
+        rule_color = colors.HexColor("#555555")
+    elif template_id == "executive":
+        name_size = 20
+        base_size = 10
+        base_leading = 13
+        section_title_size = 11
+    elif template_id == "timeline":
+        font_base = "Helvetica"
+        font_bold = "Helvetica-Bold"
+        base_size = 9.5
+        base_leading = 12
+        section_title_size = 10.5
+        rule_thickness = 0.7
+        rule_color = colors.HexColor("#444444")
+    elif template_id == "academic":
+        font_base = "Times-Roman"
+        font_bold = "Times-Bold"
+        base_size = 10
+        base_leading = 13
+        section_title_size = 11
+    elif template_id == "tech":
+        font_base = "Helvetica"
+        font_bold = "Helvetica-Bold"
+        base_size = 9.5
+        base_leading = 12
+        section_title_size = 10.5
+    elif template_id == "freshers":
+        base_size = 10
+        base_leading = 13
+        name_size = 19
+        section_title_size = 11
+
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
         buf,
         pagesize=A4,
-        leftMargin=0.65 * inch,
-        rightMargin=0.65 * inch,
-        topMargin=0.30 * inch,
-        bottomMargin=0.35 * inch,
+        leftMargin=margins[0] * inch,
+        rightMargin=margins[1] * inch,
+        topMargin=margins[2] * inch,
+        bottomMargin=margins[3] * inch,
         title="Resume",
         author=name or "",
     )
 
     styles = getSampleStyleSheet()
     base = styles["BodyText"]
-    # Match screenshot-like resume style: serif font + slightly smaller text.
-    base.fontName = "Times-Roman"
-    base.fontSize = 9.5
-    base.leading = 12
+    base.fontName = font_base
+    base.fontSize = base_size
+    base.leading = base_leading
     base.spaceAfter = 0
 
     name_style = ParagraphStyle(
         "Name",
         parent=base,
-        fontName="Times-Bold",
-        fontSize=18,
-        leading=21,
+        fontName=font_bold,
+        fontSize=name_size,
+        leading=max(20, int(name_size) + 2),
         textColor=colors.black,
         spaceAfter=2,
     )
     headline_style = ParagraphStyle(
         "Headline",
         parent=base,
-        fontName="Times-Bold",
+        fontName=font_bold,
         fontSize=10.5,
         leading=13,
         textColor=colors.black,
@@ -3096,8 +3998,8 @@ def _build_ats_resume_pdf_bytes(name: str, email: str, profile: dict) -> bytes:
     small_style = ParagraphStyle(
         "Small",
         parent=base,
-        fontSize=9,
-        leading=11,
+        fontSize=max(8.5, base_size - 0.5),
+        leading=max(10.5, base_leading - 1),
         textColor=colors.black,
     )
     small_right_style = ParagraphStyle(
@@ -3108,9 +4010,9 @@ def _build_ats_resume_pdf_bytes(name: str, email: str, profile: dict) -> bytes:
     section_title_style = ParagraphStyle(
         "SectionTitle",
         parent=base,
-        fontName="Times-Bold",
-        fontSize=10.5,
-        leading=13,
+        fontName=font_bold,
+        fontSize=section_title_size,
+        leading=max(12, int(section_title_size) + 2),
         spaceBefore=5,
         spaceAfter=2,
         textColor=colors.black,
@@ -3118,9 +4020,9 @@ def _build_ats_resume_pdf_bytes(name: str, email: str, profile: dict) -> bytes:
     entry_bold_style = ParagraphStyle(
         "EntryBold",
         parent=base,
-        fontName="Times-Bold",
-        fontSize=9.5,
-        leading=12,
+        fontName=font_bold,
+        fontSize=base_size,
+        leading=base_leading,
         textColor=colors.black,
     )
 
@@ -3134,16 +4036,22 @@ def _build_ats_resume_pdf_bytes(name: str, email: str, profile: dict) -> bytes:
         return Paragraph(txt, st)
 
     def section_header(title: str):
-        story.append(p(title, section_title_style))
-        story.append(
-            HRFlowable(
-                width="100%",
-                thickness=1,
-                color=colors.black,
-                spaceBefore=1,
-                spaceAfter=4,
+        t = (title or "").strip()
+        if section_upper and t:
+            t = t.upper()
+        story.append(p(t, section_title_style))
+        if section_rule:
+            story.append(
+                HRFlowable(
+                    width="100%",
+                    thickness=rule_thickness,
+                    color=rule_color,
+                    spaceBefore=1,
+                    spaceAfter=4,
+                )
             )
-        )
+        else:
+            story.append(Spacer(1, 3))
 
     def two_col_table(rows: List[List[Paragraph]], col_widths: List[float], *, bottom_padding: int = 1):
         tbl = Table(rows, colWidths=col_widths, hAlign="LEFT")
@@ -3269,7 +4177,23 @@ def _build_ats_resume_pdf_bytes(name: str, email: str, profile: dict) -> bytes:
         if tech_cloud:
             story.append(p_html(f"<b>Cloud:</b> {_esc(str(tech_cloud))}", base))
         if (not tech_langs and not tech_cloud) and skills_dedup:
-            story.append(p_html(f"<b>Skills:</b> {_esc(', '.join(skills_dedup))}", base))
+            if template_id == "twocol" and len(skills_dedup) >= 8:
+                half = (len(skills_dedup) + 1) // 2
+                left = skills_dedup[:half]
+                right = skills_dedup[half:]
+                story.append(
+                    two_col_table(
+                        [
+                            [
+                                p_html(f"<b>Skills:</b> {_esc(', '.join(left))}", base),
+                                p(", ".join(right), base) if right else p("", base),
+                            ]
+                        ],
+                        [doc.width * 0.50, doc.width * 0.50],
+                    )
+                )
+            else:
+                story.append(p_html(f"<b>Skills:</b> {_esc(', '.join(skills_dedup))}", base))
 
     # Soft Skills
     soft_skills = (profile or {}).get("soft_skills") or ""
@@ -3368,16 +4292,17 @@ def _build_ats_resume_pdf_bytes(name: str, email: str, profile: dict) -> bytes:
             if not raw:
                 return ""
 
+            prefix = "• " if template_id == "timeline" else ""
             for sep in (":", "—", "-"):
                 if sep in raw:
                     company, rest = raw.split(sep, 1)
                     company = company.strip()
                     rest = rest.strip()
                     if company and rest:
-                        return f"<b>{_esc(company)}</b> { _esc(sep) } {_esc(rest)}"
+                        return f"{prefix}<b>{_esc(company)}</b> { _esc(sep) } {_esc(rest)}"
                     break
 
-            return f"<b>{_esc(raw)}</b>"
+            return f"{prefix}<b>{_esc(raw)}</b>"
 
         def looks_like_new_entry(line: str) -> bool:
             if not line:
@@ -3482,7 +4407,11 @@ def _build_ats_resume_pdf_bytes(name: str, email: str, profile: dict) -> bytes:
 
 
 @api_router.get("/profile/resume/ats")
-async def download_ats_resume(format: str = Query("pdf"), current_user: dict = Depends(get_current_user)):
+async def download_ats_resume(
+    format: str = Query("pdf"),
+    template: str = Query("classic"),
+    current_user: dict = Depends(get_current_user),
+):
     fmt = (format or "pdf").strip().lower()
     if fmt != "pdf":
         raise HTTPException(status_code=400, detail="Only PDF format is supported")
@@ -3511,7 +4440,7 @@ async def download_ats_resume(format: str = Query("pdf"), current_user: dict = D
     name = user.get("name") or ""
     email = user.get("email") or ""
     try:
-        pdf_bytes = await asyncio.to_thread(_build_ats_resume_pdf_bytes, name, email, profile_data)
+        pdf_bytes = await asyncio.to_thread(_build_ats_resume_pdf_bytes, name, email, profile_data, template)
     except RuntimeError as e:
         raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
@@ -3522,17 +4451,291 @@ async def download_ats_resume(format: str = Query("pdf"), current_user: dict = D
     return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf", headers=headers)
 
 # AI Tutor Routes
+@api_router.post("/assistant/chat", response_model=AssistantChatResponse)
+async def assistant_chat(payload: AssistantChatRequest, current_user: dict = Depends(get_current_user)):
+    """In-app support assistant (Azure OpenAI when configured).
+
+    Intended for short, product/help questions about LearnovateX.
+    """
+
+    user_text = (payload.message or "").strip()
+    if not user_text:
+        raise HTTPException(status_code=400, detail="Message is required")
+
+    # Keep prompt concise and safe.
+    path = (payload.context_path or "").strip()
+    system_instruction = (
+        "You are LearnovateX Support Assistant. "
+        "Help users understand how to use the app (learning paths, roadmap, profile, settings, internships, notifications). "
+        "Be concise, step-by-step, and reference UI locations like 'top-right profile menu' when helpful. "
+        "If you are unsure, ask one clarifying question."
+    )
+
+    history = payload.history or []
+    compact_history = []
+    for h in history[-20:]:
+        role = str(h.get("role") or "")
+        content = str(h.get("content") or "")
+        if role in ("user", "assistant") and content:
+            compact_history.append({"role": role, "content": content[:800]})
+
+    history_block = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in compact_history])
+    prompt = (
+        f"User: {current_user.get('name') or current_user.get('email') or 'User'}\n"
+        f"Current page: {path or 'unknown'}\n\n"
+        + (f"Recent conversation:\n{history_block}\n\n" if history_block else "")
+        + f"Question: {user_text}\n\n"
+        "Answer as app help."
+    )
+
+    session_id = f"{current_user['id']}_assistant_{datetime.now().timestamp()}"
+    response = await get_ai_response(prompt, session_id, system_instruction=system_instruction, response_type="tutor")
+    return AssistantChatResponse(response=response)
+
+
+@api_router.post("/tutor/context/upload", response_model=TutorContextUploadResponse)
+async def tutor_context_upload(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
+    contents = await file.read()
+    if not contents:
+        raise HTTPException(status_code=400, detail="Empty file")
+
+    max_bytes = int(TUTOR_CONTEXT_MAX_FILE_SIZE_MB) * 1024 * 1024
+    if len(contents) > max_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Max {TUTOR_CONTEXT_MAX_FILE_SIZE_MB}MB",
+        )
+
+    filename = (file.filename or "file").strip() or "file"
+    ext = os.path.splitext(filename)[1].lower()
+    content_type = (file.content_type or "").lower()
+
+    image_exts = {
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".webp",
+        ".gif",
+        ".bmp",
+        ".tif",
+        ".tiff",
+        ".jfif",
+    }
+
+    # Accept: images, pdf, docx (doc is accepted by UI but not reliably parseable here)
+    is_pdf = ext == ".pdf" or content_type == "application/pdf"
+    is_docx = ext == ".docx" or content_type in (
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
+    is_doc = ext == ".doc" or content_type == "application/msword"
+    # Some browsers/OSes send images as application/octet-stream; rely on extension too.
+    is_image = content_type.startswith("image/") or (ext in image_exts)
+
+    if not (is_pdf or is_docx or is_doc or is_image):
+        raise HTTPException(status_code=400, detail="Unsupported file type. Upload image, PDF, or DOCX")
+
+    extracted_text = ""
+    kind = "file"
+    warning: Optional[str] = None
+    text_extracted: Optional[bool] = None
+
+    try:
+        if is_pdf:
+            extracted_text = await asyncio.to_thread(_extract_text_from_pdf_bytes, contents)
+            kind = "pdf"
+        elif is_docx:
+            extracted_text = await asyncio.to_thread(_extract_text_from_docx_bytes, contents)
+            kind = "docx"
+        elif is_doc:
+            # .doc is a legacy binary format and requires extra system tools.
+            raise HTTPException(status_code=400, detail=".doc is not supported. Please upload .docx")
+        elif is_image:
+            kind = "image"
+            try:
+                extracted_text = await asyncio.to_thread(_extract_text_from_image_bytes, contents)
+            except RuntimeError as e:
+                # OCR is not configured; still allow attaching the image.
+                warning = str(e) or "OCR is not configured"
+                extracted_text = ""
+    except HTTPException:
+        raise
+    except RuntimeError as e:
+        msg = str(e)
+        # OCR misconfiguration is a user-facing setup issue.
+        if kind == "image" and msg:
+            # Keep compatibility: image OCR issues are handled above now.
+            warning = msg
+            extracted_text = ""
+        raise HTTPException(status_code=500, detail=msg or "Failed to process file")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read file: {str(e)}")
+
+    extracted_text = (extracted_text or "").strip()
+    if not extracted_text:
+        # Image OCR may not be configured; PDFs can be scanned; DOCX can contain only images.
+        if kind == "image":
+            # Still store a placeholder so the UI shows an attachment chip and
+            # the tutor can ask the user to describe the image.
+            if not warning:
+                warning = "No readable text found in this image. If it contains text, enable OCR (Tesseract) or upload a clearer image."
+            extracted_text = (
+                "[Image attachment]\n"
+                "I could not extract any readable text from this image. "
+                "If you want me to answer based on it, please describe what's in the image or enable OCR on the server."
+            )
+            text_extracted = False
+        elif kind == "pdf":
+            raise HTTPException(
+                status_code=400,
+                detail="No readable text found in this PDF. If it's a scanned PDF (image-only), upload a searchable PDF or upload images with OCR enabled.",
+            )
+        elif kind == "docx":
+            raise HTTPException(
+                status_code=400,
+                detail="No readable text found in this DOCX. If the document contains only images/scans, export it as searchable PDF or paste the text directly.",
+            )
+        else:
+            raise HTTPException(status_code=400, detail="No readable text found in this file")
+    else:
+        text_extracted = True
+
+    context_id = str(uuid.uuid4())
+    context_doc = {
+        "id": context_id,
+        "user_id": current_user["id"],
+        "kind": kind,
+        "source_name": filename,
+        "source_url": None,
+        "text_content": _truncate_text(extracted_text, 200_000),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await store_tutor_context(context_doc)
+
+    return TutorContextUploadResponse(
+        context_id=context_id,
+        kind=kind,
+        filename=filename,
+        text_extracted=text_extracted,
+        warning=warning,
+    )
+
+
+@api_router.post("/tutor/context/youtube", response_model=TutorYouTubeContextResponse)
+async def tutor_context_youtube(
+    payload: TutorYouTubeContextRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    url = (payload.url or "").strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="url is required")
+
+    video_id = _youtube_video_id(url)
+    if not video_id:
+        raise HTTPException(status_code=400, detail="Invalid YouTube URL")
+
+    try:
+        from youtube_transcript_api import YouTubeTranscriptApi
+        from youtube_transcript_api._errors import (
+            TranscriptsDisabled,
+            NoTranscriptFound,
+            VideoUnavailable,
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="YouTube transcript support requires 'youtube-transcript-api' package",
+        )
+
+    try:
+        transcript = await asyncio.to_thread(
+            YouTubeTranscriptApi.get_transcript,
+            video_id,
+            languages=["en"],
+        )
+        text = " ".join([(t.get("text") or "").strip() for t in transcript if (t.get("text") or "").strip()])
+    except (TranscriptsDisabled, NoTranscriptFound):
+        raise HTTPException(status_code=400, detail="No transcript available for this video")
+    except VideoUnavailable:
+        raise HTTPException(status_code=400, detail="YouTube video unavailable")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to fetch transcript: {str(e)}")
+
+    text = (text or "").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Transcript was empty")
+
+    context_id = str(uuid.uuid4())
+    context_doc = {
+        "id": context_id,
+        "user_id": current_user["id"],
+        "kind": "youtube",
+        "source_name": None,
+        "source_url": url,
+        "text_content": _truncate_text(text, 200_000),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await store_tutor_context(context_doc)
+
+    return TutorYouTubeContextResponse(context_id=context_id, kind="youtube", video_id=video_id)
+
+
 @api_router.post("/tutor/chat", response_model=TutorResponse)
 async def tutor_chat(message: TutorMessage, current_user: dict = Depends(get_current_user)):
     session_id = f"{current_user['id']}_tutor_{datetime.now().timestamp()}"
+
+    context_ids = message.context_ids or []
+    context_block = ""
+    if context_ids:
+        try:
+            ctx_docs = await fetch_tutor_contexts_by_ids(current_user["id"], context_ids)
+        except Exception:
+            ctx_docs = []
+
+        if ctx_docs:
+            parts: List[str] = []
+            budget = 12_000
+            used = 0
+            for c in ctx_docs:
+                header = None
+                if c.get("kind") == "youtube":
+                    header = f"YouTube: {c.get('source_url') or ''}".strip()
+                else:
+                    header = f"File: {c.get('source_name') or 'attachment'}".strip()
+
+                body = (c.get("text_content") or "").strip()
+                if not body:
+                    continue
+                remaining = budget - used
+                if remaining <= 0:
+                    break
+                clipped = body[:remaining]
+                used += len(clipped)
+                parts.append(f"[{header}]\n{clipped}")
+            if parts:
+                context_block = "\n\n".join(parts)
     
     prompt = f"""
 Topic: {message.topic if message.topic else 'General'}
 Difficulty Level: {message.difficulty}
 Student Question: {message.message}
-
-Provide a detailed, step-by-step explanation. Use examples and analogies to make the concept clear.
 """
+
+    if context_block:
+        prompt += f"""
+
+REFERENCE MATERIAL (from user's uploaded file(s)/YouTube transcript):
+{context_block}
+
+Instructions:
+- If the question asks about the reference material, answer based strictly on it.
+- If the reference material is insufficient, say what's missing and ask 1 clarifying question.
+- Otherwise, answer normally as a tutor.
+"""
+    else:
+        prompt += "\nProvide a detailed, step-by-step explanation. Use examples and analogies to make the concept clear.\n"
     
     response = await get_gemini_response(prompt, session_id)
     
@@ -3619,9 +4822,20 @@ SUGGESTIONS: [detailed suggestions]
     return CodeEvaluation(**eval_doc)
 
 @api_router.get("/code/submissions")
-async def get_submissions(current_user: dict = Depends(get_current_user)):
-    submissions = await get_user_code_submissions(current_user['id'])
+async def get_submissions(
+    limit: int = Query(50, ge=1, le=500),
+    current_user: dict = Depends(get_current_user),
+):
+    submissions = await fetch_code_submissions(current_user['id'], limit)
     return submissions
+
+
+@api_router.delete("/code/submissions/{submission_id}")
+async def delete_submission(submission_id: str, current_user: dict = Depends(get_current_user)):
+    ok = await asyncio.to_thread(_delete_code_submission, current_user["id"], submission_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Submission not found")
+    return {"ok": True}
 
 # Resume Analysis Routes
 @api_router.post("/resume/analyze", response_model=ResumeAnalysis)
@@ -3888,6 +5102,9 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
     crs = await calculate_career_readiness_score(current_user['id'])
     streak = await get_learning_streak_stats(current_user['id'])
     learning_consistency = await calculate_learning_consistency(current_user['id'])
+
+    login_streak = await asyncio.to_thread(_get_login_streak_for_ui, current_user["id"])
+    coding_streak = await asyncio.to_thread(_get_coding_streak_for_ui, current_user["id"])
     
     return {
         "code_submissions": code_submissions,
@@ -3901,6 +5118,18 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
         "longest_streak": streak.get("longest_streak", 0),
         "active_days_30": streak.get("active_days_30", 0),
         "last_activity_at": streak.get("last_activity_at"),
+
+        # Login-based streak (24h/48h logic)
+        "login_current_streak": login_streak.get("current_streak", 0),
+        "login_display_current_streak": login_streak.get("display_current_streak", 0),
+        "login_longest_streak": login_streak.get("longest_streak", 0),
+        "login_last_login_at": login_streak.get("last_login_at"),
+
+        # Coding streak (based on passed code submissions)
+        "coding_current_streak": coding_streak.get("current_streak", 0),
+        "coding_display_current_streak": coding_streak.get("display_current_streak", 0),
+        "coding_longest_streak": coding_streak.get("longest_streak", 0),
+        "coding_last_solved_at": coding_streak.get("last_solved_at"),
     }
 
 
@@ -4059,6 +5288,8 @@ async def get_career_readiness_dashboard(current_user: dict = Depends(get_curren
     if not locked:
         locked = await asyncio.to_thread(_insert_daily_action_lock, user_id, action_date, prediction["best_action"])
     weekly_plan = _weekly_plan_from_blocker(prediction.get("biggest_blocker") or "")
+    week_start = _week_start_monday_iso_date()
+    weekly_done_map = await asyncio.to_thread(_select_weekly_checklist_state, user_id, week_start)
 
     # Timeline snapshots (1/day)
     await asyncio.to_thread(_insert_snapshot_if_missing, user_id, action_date, readiness_score, breakdown)
@@ -4157,6 +5388,10 @@ async def get_career_readiness_dashboard(current_user: dict = Depends(get_curren
         "action_plan": {
             "today": locked,
             "weekly": weekly_plan,
+            "weekly_state": {
+                "week_start": week_start,
+                "done_map": weekly_done_map,
+            },
         },
         "insights": {
             "skill_gaps": skill_gaps,
@@ -4167,6 +5402,26 @@ async def get_career_readiness_dashboard(current_user: dict = Depends(get_curren
         },
         "history": history,
     }
+
+
+class WeeklyChecklistPatch(BaseModel):
+    week_start: str
+    item_id: str
+    done: bool
+
+
+@api_router.patch("/career/weekly-checklist")
+async def patch_weekly_checklist(payload: WeeklyChecklistPatch, current_user: dict = Depends(get_current_user)):
+    user_id = current_user["id"]
+    week_start = (payload.week_start or "").strip()
+    item_id = (payload.item_id or "").strip()
+    if not week_start or len(week_start) < 10:
+        raise HTTPException(status_code=400, detail="week_start is required")
+    if not item_id:
+        raise HTTPException(status_code=400, detail="item_id is required")
+
+    done_map = await asyncio.to_thread(_patch_weekly_checklist_item, user_id, week_start, item_id, bool(payload.done))
+    return {"ok": True, "week_start": week_start, "done_map": done_map}
 
 
 
@@ -4553,11 +5808,22 @@ async def get_students(current_user: dict = Depends(get_current_user)):
     for student in students:
         learning_count = await count_learning_sessions(student['id'])
         code_count = await count_code_submissions(student['id'])
+
+        login_streak = await asyncio.to_thread(_get_login_streak_for_ui, student["id"])
         
         students_with_stats.append({
             **student,
             "learning_sessions": learning_count,
-            "code_submissions": code_count
+            "code_submissions": code_count,
+
+            # Streaks (accurate, server-side)
+            "login_current_streak": login_streak.get("current_streak", 0),
+            "login_display_current_streak": login_streak.get("display_current_streak", 0),
+            "login_longest_streak": login_streak.get("longest_streak", 0),
+            "login_last_login_at": login_streak.get("last_login_at"),
+
+            # Backward-compatible alias used by some UIs
+            "streak": login_streak.get("display_current_streak", 0),
         })
     
     return students_with_stats
@@ -4760,6 +6026,128 @@ async def get_announcements(current_user: dict = Depends(get_current_user)):
         announcements.append(record)
     
     return announcements
+
+
+@api_router.get("/student/notifications")
+async def get_student_notifications(current_user: dict = Depends(get_current_user)):
+    """Get in-app notifications for students.
+
+    Currently aggregates:
+    - College admin announcements (filtered by target_students when present)
+    - New job postings (recent active jobs)
+    - Internship application status updates (from premium applications)
+    """
+    if current_user.get('role') != 'student':
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    user_id = str(current_user.get('id') or "")
+    user_email = str(current_user.get('email') or "")
+
+    notifications: List[dict] = []
+
+    # New job postings (recent)
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+    with _sqlite_connection() as conn:
+        cursor = conn.execute(
+            """SELECT id, title, department, location, type, created_at
+               FROM job_postings
+               WHERE status = 'active' AND created_at >= ?
+               ORDER BY created_at DESC""",
+            (cutoff,),
+        )
+        job_rows = cursor.fetchall()
+
+    for row in job_rows:
+        job = dict(row)
+        created_at = job.get('created_at') or datetime.now(timezone.utc).isoformat()
+        title = job.get('title') or 'Job'
+        location = job.get('location')
+        job_type = job.get('type')
+        parts = [p for p in [location, job_type] if p]
+        suffix = f" ({' • '.join(parts)})" if parts else ""
+        notifications.append(
+            {
+                "id": f"job:{job['id']}",
+                "category": "push",
+                "source": "company",
+                "type": "new_job",
+                "title": "New Job Posted",
+                "message": f"{title}{suffix}",
+                "created_at": created_at,
+            }
+        )
+
+    # Announcements
+    with _sqlite_connection() as conn:
+        cursor = conn.execute(
+            """SELECT id, title, message, type, target_students, created_at
+               FROM announcements
+               ORDER BY created_at DESC"""
+        )
+        rows = cursor.fetchall()
+
+    for row in rows:
+        record = dict(row)
+        targets = []
+        if record.get('target_students'):
+            try:
+                targets = json.loads(record['target_students']) or []
+            except Exception:
+                targets = []
+
+        # If targets is empty, treat as broadcast. Otherwise match user id/email.
+        is_broadcast = not targets
+        is_targeted = user_id in targets or user_email in targets
+        if not (is_broadcast or is_targeted):
+            continue
+
+        created_at = record.get('created_at') or datetime.now(timezone.utc).isoformat()
+        notifications.append(
+            {
+                "id": f"announcement:{record['id']}",
+                "category": "push",
+                "source": "college_admin",
+                "type": record.get('type') or "general",
+                "title": record.get('title') or "Announcement",
+                "message": record.get('message') or "",
+                "created_at": created_at,
+            }
+        )
+
+    # Internship application updates
+    with _sqlite_connection() as conn:
+        cursor = conn.execute(
+            """SELECT id, internship_title, application_date, status
+               FROM internship_applications
+               WHERE user_id = ?
+               ORDER BY application_date DESC""",
+            (user_id,),
+        )
+        app_rows = cursor.fetchall()
+
+    for row in app_rows:
+        app = dict(row)
+        status = (app.get('status') or 'applied').strip()
+        created_at = app.get('application_date') or datetime.now(timezone.utc).isoformat()
+        internship_title = app.get('internship_title') or 'Internship'
+
+        # Use application id + status so status changes surface as a new notification
+        notifications.append(
+            {
+                "id": f"application:{app['id']}:{status}",
+                "category": "push",
+                "source": "company",
+                "type": "application_update",
+                "title": "Application Update",
+                "message": f"Your application for '{internship_title}' is {status}.",
+                "created_at": created_at,
+            }
+        )
+
+    # Sort newest first (ISO timestamps sort lexicographically in normal cases)
+    notifications.sort(key=lambda n: str(n.get('created_at') or ""), reverse=True)
+
+    return notifications
 
 @api_router.delete("/college/announcements/{announcement_id}")
 async def delete_announcement(announcement_id: str, current_user: dict = Depends(get_current_user)):
