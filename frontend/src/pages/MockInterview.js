@@ -61,9 +61,12 @@ import {
 import axiosInstance from "../lib/axios";
 import { getUser } from "../lib/utils";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogFooter } from "../components/ui/dialog";
-import * as poseDetection from "@tensorflow-models/pose-detection";
-import * as tf from "@tensorflow/tfjs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+} from "../components/ui/dialog";
 
 const MockInterview = () => {
   const user = getUser();
@@ -158,20 +161,6 @@ const MockInterview = () => {
   useEffect(() => {
     currentQuestionRef.current = currentQuestion;
   }, [currentQuestion]);
-
-  useEffect(() => {
-    const initializeTensorFlow = async () => {
-      try {
-        await tf.ready();
-        await tf.setBackend("webgl"); // Set the backend to 'webgl' or 'cpu' if 'webgl' is not supported
-        console.log("TensorFlow.js is ready and backend is set.");
-      } catch (error) {
-        console.error("Error initializing TensorFlow.js:", error);
-      }
-    };
-
-    initializeTensorFlow();
-  }, []);
 
   const startCamera = async () => {
     try {
@@ -397,7 +386,10 @@ const MockInterview = () => {
       setShowInstructions(false);
 
       // Start camera
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
       mediaStreamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -672,20 +664,13 @@ const MockInterview = () => {
     questions.length > 0 ? (answeredCount / questions.length) * 100 : 0;
 
   const [showInstructions, setShowInstructions] = useState(false);
-  const [poseDetector, setPoseDetector] = useState(null);
-
-  useEffect(() => {
-    // Load the pose detection model
-    const loadPoseModel = async () => {
-      const detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet);
-      setPoseDetector(detector);
-    };
-    loadPoseModel();
-  }, []);
 
   const enableCameraAndMic = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
       mediaStreamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -695,7 +680,9 @@ const MockInterview = () => {
       setVideoEnabled(true);
       toast.success("Camera and microphone enabled.");
     } catch (error) {
-      toast.error("Failed to enable camera or microphone. Please check your permissions.");
+      toast.error(
+        "Failed to enable camera or microphone. Please check your permissions."
+      );
     }
   };
 
