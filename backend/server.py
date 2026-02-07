@@ -32,6 +32,18 @@ import shutil
 # - OpenAI: for OpenAI Platform (openai.com) API keys
 from openai import AzureOpenAI, OpenAI
 
+
+from fastapi.middleware.cors import CORSMiddleware
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # allow all for now
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 # ==================== DATA MODELS ====================
 class AchievementItem(BaseModel):
     id: int
