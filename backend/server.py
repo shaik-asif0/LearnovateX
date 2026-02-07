@@ -33,15 +33,15 @@ import shutil
 from openai import AzureOpenAI, OpenAI
 
 
-from fastapi.middleware.cors import CORSMiddleware
-app = FastAPI()
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # allow all for now
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# from fastapi.middleware.cors import CORSMiddleware
+# app = FastAPI()
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["*"],  # allow all for now
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
 
 
 # ==================== DATA MODELS ====================
@@ -7121,10 +7121,10 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=int(os.environ.get("PORT", 8000))
-    )
+# if __name__ == "__main__":
+#     import uvicorn
+#     uvicorn.run(
+#         app,
+#         host="0.0.0.0",
+#         port=int(os.environ.get("PORT", 8000))
+#     )
