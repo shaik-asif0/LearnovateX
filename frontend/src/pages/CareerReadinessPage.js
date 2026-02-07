@@ -267,7 +267,12 @@ const CareerReadinessPage = () => {
         trend: lastActivityAtForUi ? "up" : "stable",
       },
     ];
-  }, [activityTracking, formatDuration, lastActivityAtForUi, stats]);
+  }, [
+    activityTracking,
+    formatDuration,
+    lastActivityAtForUi,
+    stats,
+  ]);
 
   // Dynamic career insights computed from real student data
   const careerInsights = useMemo(() => {
@@ -342,110 +347,105 @@ const CareerReadinessPage = () => {
     return insights;
   }, [crsBreakdown, mentorData, activityTracking, stats]);
 
-  const fetchStats = useCallback(
-    async (silent = false) => {
-      if (!silent) setLoading(true);
-      if (silent) setIsRefreshing(true);
+  const fetchStats = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    if (silent) setIsRefreshing(true);
 
-      try {
-        const response = await axiosInstance.get("/dashboard/stats");
-        setStats(response.data);
+    try {
+      const response = await axiosInstance.get("/dashboard/stats");
+      setStats(response.data);
 
-        // Calculate breakdown inline
-        const stats = response.data;
-        const codingScore = stats.avg_code_score;
-        const resumeScore = Math.min(stats.resume_analyses * 10, 100);
-        const interviewScore = Math.min(stats.interviews_taken * 15, 100);
-        const learningScore =
-          typeof stats.learning_consistency_score === "number"
-            ? stats.learning_consistency_score
-            : Math.min(stats.learning_sessions * (100.0 / 30.0), 100);
+      // Calculate breakdown inline
+      const stats = response.data;
+      const codingScore = stats.avg_code_score;
+      const resumeScore = Math.min(stats.resume_analyses * 10, 100);
+      const interviewScore = Math.min(stats.interviews_taken * 15, 100);
+      const learningScore =
+        typeof stats.learning_consistency_score === "number"
+          ? stats.learning_consistency_score
+          : Math.min(stats.learning_sessions * (100.0 / 30.0), 100);
 
-        const breakdown = {
-          coding: {
-            score: codingScore,
-            weight: 30,
-            contribution: codingScore * 0.3,
-            trend: "up",
-          },
-          resume: {
-            score: resumeScore,
-            weight: 25,
-            contribution: resumeScore * 0.25,
-            trend: "up",
-          },
-          interview: {
-            score: interviewScore,
-            weight: 25,
-            contribution: interviewScore * 0.25,
-            trend: "stable",
-          },
-          learning: {
-            score: learningScore,
-            weight: 20,
-            contribution: learningScore * 0.2,
-            trend: "up",
-          },
-        };
+      const breakdown = {
+        coding: {
+          score: codingScore,
+          weight: 30,
+          contribution: codingScore * 0.3,
+          trend: "up",
+        },
+        resume: {
+          score: resumeScore,
+          weight: 25,
+          contribution: resumeScore * 0.25,
+          trend: "up",
+        },
+        interview: {
+          score: interviewScore,
+          weight: 25,
+          contribution: interviewScore * 0.25,
+          trend: "stable",
+        },
+        learning: {
+          score: learningScore,
+          weight: 20,
+          contribution: learningScore * 0.2,
+          trend: "up",
+        },
+      };
 
-        setCrsBreakdown(breakdown);
-        setLastUpdated(new Date());
-        setConnectionStatus("connected");
-        setDataFetchError(null);
+      setCrsBreakdown(breakdown);
+      setLastUpdated(new Date());
+      setConnectionStatus("connected");
+      setDataFetchError(null);
 
-        // Prefer login-based streak (server-side, cross-device). Fallback to learning streak.
-        const loginDisplayCurrent =
-          typeof stats.login_display_current_streak === "number"
-            ? stats.login_display_current_streak
-            : null;
-        const loginLongest =
-          typeof stats.login_longest_streak === "number"
-            ? stats.login_longest_streak
-            : null;
-        const loginLastLoginAt = stats.login_last_login_at || null;
+      // Prefer login-based streak (server-side, cross-device). Fallback to learning streak.
+      const loginDisplayCurrent =
+        typeof stats.login_display_current_streak === "number"
+          ? stats.login_display_current_streak
+          : null;
+      const loginLongest =
+        typeof stats.login_longest_streak === "number"
+          ? stats.login_longest_streak
+          : null;
+      const loginLastLoginAt = stats.login_last_login_at || null;
 
-        if (loginDisplayCurrent !== null || loginLongest !== null) {
-          setStreakData({
-            current: loginDisplayCurrent || 0,
-            longest: loginLongest || 0,
-            lastLoginAt: loginLastLoginAt,
-          });
-        } else {
-          setStreakData({
-            current: stats.current_streak || 0,
-            longest: stats.longest_streak || 0,
-            lastLoginAt: null,
-          });
-        }
-
-        if (silent) {
-          toast.success(
-            t("careerReadiness.toasts.dataUpdated", "Data updated")
-          );
-        }
-      } catch (error) {
-        // Real-time mode: show error state, never use demo/mock data
-        setConnectionStatus("error");
-        setDataFetchError(
-          error?.response?.data?.detail ||
-            error?.message ||
-            "Failed to connect to tracking server"
-        );
-        if (!silent) {
-          toast.error(
-            t(
-              "careerReadiness.toasts.loadFailed",
-              "Failed to load career readiness data. Check your connection."
-            )
-          );
-        }
-      } finally {
-        setLoading(false);
-        setIsRefreshing(false);
+      if (loginDisplayCurrent !== null || loginLongest !== null) {
+        setStreakData({
+          current: loginDisplayCurrent || 0,
+          longest: loginLongest || 0,
+          lastLoginAt: loginLastLoginAt,
+        });
+      } else {
+        setStreakData({
+          current: stats.current_streak || 0,
+          longest: stats.longest_streak || 0,
+          lastLoginAt: null,
+        });
       }
-    },
-    [t]
-  );
+
+      if (silent) {
+        toast.success(t("careerReadiness.toasts.dataUpdated", "Data updated"));
+      }
+    } catch (error) {
+      // Real-time mode: show error state, never use demo/mock data
+      setConnectionStatus("error");
+      setDataFetchError(
+        error?.response?.data?.detail ||
+          error?.message ||
+          "Failed to connect to tracking server"
+      );
+      if (!silent) {
+        toast.error(
+          t(
+            "careerReadiness.toasts.loadFailed",
+            "Failed to load career readiness data. Check your connection."
+          )
+        );
+      }
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  }, []);
 
   // Real-time: if last login was >24h ago, auto-show streak=0 without waiting for a refresh.
   useEffect(() => {
@@ -518,32 +518,29 @@ const CareerReadinessPage = () => {
     }
   }, []);
 
-  const fetchApplyTracker = useCallback(
-    async (silent = false) => {
-      if (!silent) setApplyTrackerLoading(true);
-      setApplyTrackerError(null);
+  const fetchApplyTracker = useCallback(async (silent = false) => {
+    if (!silent) setApplyTrackerLoading(true);
+    setApplyTrackerError(null);
 
-      try {
-        const response = await axiosInstance.get("/career/apply-tracker");
-        setApplyTrackerItems(Array.isArray(response.data) ? response.data : []);
-      } catch (error) {
-        setApplyTrackerItems([]);
-        if (!silent) {
-          setApplyTrackerError(
-            error?.response?.data?.detail ||
-              error?.message ||
-              t(
-                "careerReadiness.applyTracker.errors.loadFailed",
-                "Failed to load apply tracker"
-              )
-          );
-        }
-      } finally {
-        if (!silent) setApplyTrackerLoading(false);
+    try {
+      const response = await axiosInstance.get("/career/apply-tracker");
+      setApplyTrackerItems(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      setApplyTrackerItems([]);
+      if (!silent) {
+        setApplyTrackerError(
+          error?.response?.data?.detail ||
+            error?.message ||
+            t(
+              "careerReadiness.applyTracker.errors.loadFailed",
+              "Failed to load apply tracker"
+            )
+        );
       }
-    },
-    [t]
-  );
+    } finally {
+      if (!silent) setApplyTrackerLoading(false);
+    }
+  }, []);
 
   const trackJobToApplyTracker = useCallback(
     async ({ role, source, url, matchTag }) => {
@@ -617,7 +614,7 @@ const CareerReadinessPage = () => {
         setApplyTrackerBusyId(null);
       }
     },
-    [fetchApplyTracker, t]
+    [fetchApplyTracker]
   );
 
   const deleteApplyTrackerItem = useCallback(
@@ -646,7 +643,7 @@ const CareerReadinessPage = () => {
         setApplyTrackerBusyId(null);
       }
     },
-    [fetchApplyTracker, t]
+    [fetchApplyTracker]
   );
 
   // Fetch real personal goals from backend (auto-computed progress)

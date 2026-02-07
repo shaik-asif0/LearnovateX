@@ -31,7 +31,7 @@ jobs:
       # If AZURE_WEBAPP_PUBLISH_PROFILE is configured, this workflow can deploy without azure/login.
       # If it's missing/empty, we use OIDC login (recommended) like the portal-generated workflow.
       - name: Login to Azure (OIDC)
-        if: ${{ !secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        if: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE == '' }}
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_D3581CD740E74C8CB014742ADC6EB364 }}
