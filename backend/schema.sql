@@ -211,3 +211,15 @@ CREATE TABLE IF NOT EXISTS password_reset_otps (
 );
 
 CREATE INDEX IF NOT EXISTS idx_password_reset_otps_email ON password_reset_otps(email);
+
+-- Personal goals for real-time SaaS tracking
+CREATE TABLE IF NOT EXISTS personal_goals (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'custom',
+    target REAL NOT NULL DEFAULT 1,
+    deadline TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
