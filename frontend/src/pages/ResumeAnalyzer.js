@@ -98,6 +98,7 @@ import {
 import { useDropzone } from "react-dropzone";
 import axiosInstance from "../lib/axios";
 import { toast } from "sonner";
+import { useI18n } from "../i18n/I18nProvider";
 
 const ResumeAnalyzer = () => {
   const [loading, setLoading] = useState(false);
@@ -169,10 +170,13 @@ const ResumeAnalyzer = () => {
       window.open(blobUrl, "_blank", "noopener,noreferrer");
       setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     } catch (e) {
-      toast.error("Could not generate ATS resume", {
-        duration: 2200,
-        position: "bottom-right",
-      });
+      toast.error(
+        t("resume.errors.generateAts", "Could not generate ATS resume"),
+        {
+          duration: 2200,
+          position: "bottom-right",
+        }
+      );
     }
   };
 
@@ -183,10 +187,13 @@ const ResumeAnalyzer = () => {
       triggerBrowserDownload(blobUrl, "ATS_Resume.pdf");
       setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     } catch (e) {
-      toast.error("Could not download ATS resume", {
-        duration: 2200,
-        position: "bottom-right",
-      });
+      toast.error(
+        t("resume.errors.downloadAts", "Could not download ATS resume"),
+        {
+          duration: 2200,
+          position: "bottom-right",
+        }
+      );
     }
   };
 
@@ -276,7 +283,9 @@ const ResumeAnalyzer = () => {
       setConnectionStatus("connected");
       setLastActivity(new Date());
       // Add success notification
-      toast.success("Analysis history refreshed!");
+      toast.success(
+        t("resume.toasts.history_refreshed", "Analysis history refreshed!")
+      );
     } catch (error) {
       console.error("Failed to load history:", error);
       setConnectionStatus("disconnected");
@@ -302,7 +311,7 @@ const ResumeAnalyzer = () => {
 
   const handleAnalyze = async () => {
     if (!file) {
-      toast.error("Please upload a resume first");
+      toast.error(t("resume.errors.no_file", "Please upload a resume first"));
       return;
     }
 
@@ -397,12 +406,17 @@ const ResumeAnalyzer = () => {
         ]);
       }, 1000);
 
-      toast.success("Resume analyzed successfully!");
+      toast.success(
+        t("resume.toasts.analyzed", "Resume analyzed successfully!")
+      );
       loadHistory();
     } catch (error) {
       clearInterval(stepInterval);
       clearInterval(scoreIntervalRef.current);
-      toast.error(error.response?.data?.detail || "Failed to analyze resume");
+      toast.error(
+        error.response?.data?.detail ||
+          t("resume.errors.analyze_failed", "Failed to analyze resume")
+      );
     } finally {
       setLoading(false);
       setIsAnalyzing(false);
@@ -484,9 +498,9 @@ const ResumeAnalyzer = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast.success("Analysis report exported!");
+      toast.success(t("resume.toasts.exported", "Analysis report exported!"));
     } catch (error) {
-      toast.error("Failed to export analysis");
+      toast.error(t("resume.toasts.exportFailed", "Failed to export analysis"));
     } finally {
       setExportLoading(false);
     }
@@ -499,7 +513,9 @@ const ResumeAnalyzer = () => {
         : [...prev, analysisId]
     );
     toast.success(
-      bookmarks.includes(analysisId) ? "Bookmark removed!" : "Bookmark added!"
+      bookmarks.includes(analysisId)
+        ? t("resume.toasts.bookmarkRemoved", "Bookmark removed!")
+        : t("resume.toasts.bookmarkAdded", "Bookmark added!")
     );
   };
 
@@ -511,8 +527,8 @@ const ResumeAnalyzer = () => {
     );
     toast.success(
       favorites.includes(analysisId)
-        ? "Removed from favorites!"
-        : "Added to favorites!"
+        ? t("resume.toasts.favoriteRemoved", "Removed from favorites!")
+        : t("resume.toasts.favoriteAdded", "Added to favorites!")
     );
   };
 
@@ -523,6 +539,8 @@ const ResumeAnalyzer = () => {
       if (scoreIntervalRef.current) clearInterval(scoreIntervalRef.current);
     };
   }, []);
+
+  const { t } = useI18n();
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -541,20 +559,23 @@ const ResumeAnalyzer = () => {
               </div>
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-white flex flex-wrap items-center gap-2">
-                  AI Resume Analyzer
+                  {t("resume.title", "AI Resume Analyzer")}
                   <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
                     <Sparkles className="w-3 h-3 mr-1" />
-                    Real-time AI
+                    {t("resume.badge.realTime", "Real-time AI")}
                   </Badge>
                   {isAnalyzing && (
                     <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 animate-pulse">
                       <Activity className="w-3 h-3 mr-1" />
-                      Analyzing
+                      {t("resume.badge.analyzing", "Analyzing")}
                     </Badge>
                   )}
                 </h1>
                 <p className="text-zinc-400 text-sm">
-                  Advanced AI-powered resume analysis with real-time insights
+                  {t(
+                    "resume.subtitle",
+                    "Advanced AI-powered resume analysis with real-time insights"
+                  )}
                 </p>
               </div>
             </div>
@@ -581,7 +602,9 @@ const ResumeAnalyzer = () => {
                 <RefreshCw
                   className={`w-4 h-4 ${loadingHistory ? "animate-spin" : ""}`}
                 />
-                <span className="hidden md:inline">Refresh</span>
+                <span className="hidden md:inline">
+                  {t("common.refresh", "Refresh")}
+                </span>
               </Button>
             </div>
           </div>
@@ -614,11 +637,13 @@ const ResumeAnalyzer = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
                 <FileText className="w-5 h-5 text-orange-400" />
-                ATS Resume
+                {t("resume.ats.title", "ATS Resume")}
               </CardTitle>
               <CardDescription className="text-zinc-400">
-                View or download an ATS-friendly resume generated from your
-                Profile
+                {t(
+                  "resume.ats.description",
+                  "View or download an ATS-friendly resume generated from your Profile"
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -629,11 +654,11 @@ const ResumeAnalyzer = () => {
                   className="border-zinc-700 text-white hover:bg-zinc-800"
                 >
                   <FileText className="w-4 h-4 mr-2" />
-                  View
+                  {t("common.view", "View")}
                 </Button>
                 <Button onClick={downloadAtsResume} className="gap-2">
                   <Download className="w-4 h-4" />
-                  Download
+                  {t("common.download", "Download")}
                 </Button>
               </div>
             </CardContent>
@@ -647,7 +672,9 @@ const ResumeAnalyzer = () => {
                   <FileCheck className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-xs text-zinc-400">Analyzed</p>
+                  <p className="text-xs text-zinc-400">
+                    {t("resume.stats.analyzed", "Analyzed")}
+                  </p>
                   <p className="text-xl font-bold text-white">
                     {analysisHistory.length}
                   </p>
@@ -660,7 +687,9 @@ const ResumeAnalyzer = () => {
                   <TrendingUp className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-xs text-zinc-400">Avg Score</p>
+                  <p className="text-xs text-zinc-400">
+                    {t("resume.stats.avgScore", "Avg Score")}
+                  </p>
                   <p className="text-xl font-bold text-white">
                     {analysisHistory.length > 0
                       ? Math.round(
@@ -680,7 +709,9 @@ const ResumeAnalyzer = () => {
                   <Lightbulb className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-xs text-zinc-400">Suggestions</p>
+                  <p className="text-xs text-zinc-400">
+                    {t("resume.stats.suggestions", "Suggestions")}
+                  </p>
                   <p className="text-xl font-bold text-white">
                     {analysisHistory.reduce(
                       (a, b) => a + (b.suggestions?.length || 0),
@@ -696,8 +727,12 @@ const ResumeAnalyzer = () => {
                   <Brain className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-xs text-zinc-400">AI Insights</p>
-                  <p className="text-xl font-bold text-white">Real-time</p>
+                  <p className="text-xs text-zinc-400">
+                    {t("resume.stats.aiInsights", "AI Insights")}
+                  </p>
+                  <p className="text-xl font-bold text-white">
+                    {t("resume.stats.realTime", "Real-time")}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -707,7 +742,9 @@ const ResumeAnalyzer = () => {
                   <Award className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-xs text-zinc-400">Top Score</p>
+                  <p className="text-xs text-zinc-400">
+                    {t("resume.stats.topScore", "Top Score")}
+                  </p>
                   <p className="text-xl font-bold text-white">
                     {analysisHistory.length > 0
                       ? Math.max(
@@ -797,10 +834,13 @@ const ResumeAnalyzer = () => {
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
                     <Upload className="w-5 h-5 text-orange-400" />
-                    Upload Resume
+                    {t("resume.upload.title", "Upload Resume")}
                   </CardTitle>
                   <CardDescription className="text-zinc-400">
-                    Drop your PDF resume to get AI-powered analysis
+                    {t(
+                      "resume.upload.description",
+                      "Drop your PDF resume to get AI-powered analysis"
+                    )}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -839,7 +879,7 @@ const ResumeAnalyzer = () => {
                           className="text-zinc-400 hover:text-orange-400"
                         >
                           <Trash2 className="w-4 h-4 mr-1" />
-                          Remove
+                          {t("common.remove", "Remove")}
                         </Button>
                       </div>
                     ) : (
@@ -850,16 +890,30 @@ const ResumeAnalyzer = () => {
                         <div>
                           <p className="font-semibold text-white text-lg">
                             {isDragActive
-                              ? "Drop your resume here"
-                              : "Drag & drop your resume"}
+                              ? t(
+                                  "resume.upload.dropHere",
+                                  "Drop your resume here"
+                                )
+                              : t(
+                                  "resume.upload.dragDrop",
+                                  "Drag & drop your resume"
+                                )}
                           </p>
                           <p className="text-sm text-zinc-400 mt-1">
-                            or click to browse files
+                            {t(
+                              "resume.upload.orClick",
+                              "or click to browse files"
+                            )}
                           </p>
                         </div>
                         <div className="flex items-center justify-center gap-2 text-xs text-zinc-500">
                           <FileText className="w-3 h-3" />
-                          <span>PDF format • Max 10MB</span>
+                          <span>
+                            {t(
+                              "resume.upload.pdfInfo",
+                              "PDF format • Max 10MB"
+                            )}
+                          </span>
                         </div>
                       </div>
                     )}
@@ -1051,7 +1105,7 @@ const ResumeAnalyzer = () => {
                                 {analysis.credibility_score}
                               </p>
                               <p className="text-xs text-zinc-400 mt-1">
-                                out of 100
+                                {t("resume.outOf100", "out of 100")}
                               </p>
                             </div>
                           </div>
@@ -1073,7 +1127,7 @@ const ResumeAnalyzer = () => {
                             </Badge>
                             <Badge className="bg-zinc-800 text-white border-zinc-700">
                               <Clock className="w-3 h-3 mr-1" />
-                              Just analyzed
+                              {t("resume.justAnalyzed", "Just analyzed")}
                             </Badge>
                           </div>
                         </div>
@@ -1087,11 +1141,16 @@ const ResumeAnalyzer = () => {
                             navigator.clipboard.writeText(
                               `Resume Score: ${analysis.credibility_score}/100\n${analysis.analysis}`
                             );
-                            toast.success("Analysis copied to clipboard!");
+                            toast.success(
+                              t(
+                                "resume.toasts.copied_clipboard",
+                                "Analysis copied to clipboard!"
+                              )
+                            );
                           }}
                         >
                           <Share2 className="w-4 h-4 mr-1" />
-                          Share
+                          {t("common.share", "Share")}
                         </Button>
                         <Button
                           variant="outline"
@@ -1100,7 +1159,7 @@ const ResumeAnalyzer = () => {
                           onClick={() => setActiveTab("upload")}
                         >
                           <RefreshCw className="w-4 h-4 mr-1" />
-                          Analyze New
+                          {t("resume.analyzeNew", "Analyze New")}
                         </Button>
                       </div>
                     </div>
@@ -1140,7 +1199,10 @@ const ResumeAnalyzer = () => {
                         <div className="flex items-center gap-3 p-4 bg-orange-500/10 rounded-lg border border-orange-500/20">
                           <CheckCircle2 className="w-5 h-5 text-orange-400" />
                           <span className="text-orange-400">
-                            No questionable skills detected! Great job.
+                            {t(
+                              "resume.no_questionable_skills",
+                              "No questionable skills detected! Great job."
+                            )}
                           </span>
                         </div>
                       )}
@@ -1177,7 +1239,10 @@ const ResumeAnalyzer = () => {
                           ))
                         ) : (
                           <p className="text-zinc-400 text-sm">
-                            No specific suggestions at this time.
+                            {t(
+                              "resume.no_suggestions",
+                              "No specific suggestions at this time."
+                            )}
                           </p>
                         )}
                       </div>
@@ -1238,7 +1303,10 @@ const ResumeAnalyzer = () => {
                           Keyword Analysis
                         </CardTitle>
                         <CardDescription className="text-zinc-400">
-                          Optimal keywords for your industry
+                          {t(
+                            "resume.keyword.description",
+                            "Optimal keywords for your industry"
+                          )}
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -1340,7 +1408,10 @@ const ResumeAnalyzer = () => {
                               {industryMatch}
                             </p>
                             <p className="text-sm text-zinc-400">
-                              High compatibility detected
+                              {t(
+                                "resume.industry.highCompatibility",
+                                "High compatibility detected"
+                              )}
                             </p>
                           </div>
                         </div>
@@ -1454,7 +1525,10 @@ const ResumeAnalyzer = () => {
                               </Badge>
                             </div>
                             <p className="text-xs text-zinc-400">
-                              Suitability score
+                              {t(
+                                "resume.template.suitability",
+                                "Suitability score"
+                              )}
                             </p>
                           </div>
                         ))}
@@ -1476,7 +1550,7 @@ const ResumeAnalyzer = () => {
                     ) : (
                       <Download className="w-4 h-4" />
                     )}
-                    Export Report
+                    {t("resume.exportReport", "Export Report")}
                   </Button>
                   <Button
                     onClick={() => setComparisonMode(!comparisonMode)}
@@ -1484,7 +1558,7 @@ const ResumeAnalyzer = () => {
                     className="gap-2 border-zinc-700 text-white hover:bg-zinc-800"
                   >
                     <Users className="w-4 h-4" />
-                    Compare Resumes
+                    {t("resume.compare", "Compare Resumes")}
                   </Button>
                   <Button
                     onClick={() => setVoiceAnalysis(!voiceAnalysis)}
@@ -1494,7 +1568,7 @@ const ResumeAnalyzer = () => {
                     }`}
                   >
                     <Mic className="w-4 h-4" />
-                    Voice Analysis{" "}
+                    {t("resume.features.voiceAnalysis", "Voice Analysis")}
                     {voiceAnalysis && (
                       <CheckCircle2 className="w-3 h-3 text-orange-400" />
                     )}
@@ -1507,7 +1581,7 @@ const ResumeAnalyzer = () => {
                     }`}
                   >
                     <Video className="w-4 h-4" />
-                    Video Analysis{" "}
+                    {t("resume.features.videoAnalysis", "Video Analysis")}
                     {videoAnalysis && (
                       <CheckCircle2 className="w-3 h-3 text-orange-400" />
                     )}
@@ -1521,10 +1595,13 @@ const ResumeAnalyzer = () => {
                       <div>
                         <CardTitle className="text-white flex items-center gap-2 text-lg">
                           <Brain className="w-5 h-5 text-orange-400" />
-                          Detailed AI Analysis
+                          {t("resume.detailedTitle", "Detailed AI Analysis")}
                         </CardTitle>
                         <CardDescription className="text-zinc-400">
-                          Comprehensive review of your resume
+                          {t(
+                            "resume.detailedDescription",
+                            "Comprehensive review of your resume"
+                          )}
                         </CardDescription>
                       </div>
                       <Button
@@ -1533,7 +1610,9 @@ const ResumeAnalyzer = () => {
                         onClick={() => setShowDetails(!showDetails)}
                         className="text-zinc-400 hover:text-white"
                       >
-                        {showDetails ? "Collapse" : "Expand"}
+                        {showDetails
+                          ? t("common.collapse", "Collapse")
+                          : t("common.expand", "Expand")}
                       </Button>
                     </div>
                   </CardHeader>
@@ -1560,10 +1639,16 @@ const ResumeAnalyzer = () => {
                         </div>
                         <div>
                           <h3 className="text-lg font-semibold text-white">
-                            Ready to Improve Your Resume?
+                            {t(
+                              "resume.readyTitle",
+                              "Ready to Improve Your Resume?"
+                            )}
                           </h3>
                           <p className="text-zinc-400 text-sm">
-                            Use AI Tutor for personalized guidance
+                            {t(
+                              "resume.readySubtitle",
+                              "Use AI Tutor for personalized guidance"
+                            )}
                           </p>
                         </div>
                       </div>
@@ -1573,7 +1658,7 @@ const ResumeAnalyzer = () => {
                           className="bg-gradient-to-r from-orange-600 to-orange-600 hover:from-orange-700 hover:to-orange-700 text-white"
                         >
                           <Brain className="w-4 h-4 mr-2" />
-                          Ask AI Tutor
+                          {t("resume.askTutor", "Ask AI Tutor")}
                         </Button>
                         <Button
                           variant="outline"
@@ -1581,7 +1666,7 @@ const ResumeAnalyzer = () => {
                           className="border-zinc-600 text-white hover:bg-zinc-800"
                         >
                           <Upload className="w-4 h-4 mr-2" />
-                          Upload New Resume
+                          {t("resume.uploadNew", "Upload New Resume")}
                         </Button>
                       </div>
                     </div>
@@ -1598,14 +1683,14 @@ const ResumeAnalyzer = () => {
               <CardHeader className="pb-3">
                 <CardTitle className="text-white flex items-center gap-2">
                   <Filter className="w-5 h-5 text-orange-400" />
-                  Advanced Filters
+                  {t("resume.filters.title", "Advanced Filters")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
                     <label className="text-sm font-medium text-zinc-300 mb-2 block">
-                      Score Range
+                      {t("resume.filters.scoreRange", "Score Range")}
                     </label>
                     <div className="px-3 py-2 bg-zinc-800 rounded-lg text-sm text-zinc-300">
                       {filterCriteria.scoreRange[0]} -{" "}
@@ -1614,7 +1699,7 @@ const ResumeAnalyzer = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-zinc-300 mb-2 block">
-                      Sort By
+                      {t("resume.filters.sortBy", "Sort By")}
                     </label>
                     <select
                       value={filterCriteria.sortBy}
@@ -1626,18 +1711,27 @@ const ResumeAnalyzer = () => {
                       }
                       className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-zinc-300 focus:outline-none focus:border-orange-500"
                     >
-                      <option value="date">Date</option>
-                      <option value="score">Score</option>
-                      <option value="filename">Filename</option>
+                      <option value="date">
+                        {t("resume.filters.option.date", "Date")}
+                      </option>
+                      <option value="score">
+                        {t("resume.filters.option.score", "Score")}
+                      </option>
+                      <option value="filename">
+                        {t("resume.filters.option.filename", "Filename")}
+                      </option>
                     </select>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-zinc-300 mb-2 block">
-                      Industry
+                      {t("resume.filters.industry", "Industry")}
                     </label>
                     <input
                       type="text"
-                      placeholder="Filter by industry..."
+                      placeholder={t(
+                        "resume.filters.placeholder.industry",
+                        "Filter by industry..."
+                      )}
                       value={filterCriteria.industry}
                       onChange={(e) =>
                         setFilterCriteria((prev) => ({
@@ -1658,12 +1752,14 @@ const ResumeAnalyzer = () => {
                           sortBy: "date",
                           sortOrder: "desc",
                         });
-                        toast.success("Filters reset!");
+                        toast.success(
+                          t("resume.toasts.filters_reset", "Filters reset!")
+                        );
                       }}
                       variant="outline"
                       className="w-full border-zinc-600 text-zinc-300 hover:bg-zinc-800"
                     >
-                      Reset Filters
+                      {t("resume.filters.reset", "Reset Filters")}
                     </Button>
                   </div>
                 </div>
@@ -1674,10 +1770,14 @@ const ResumeAnalyzer = () => {
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <History className="w-5 h-5 text-orange-400" />
-                  Analysis History ({analysisHistory.length})
+                  {t("resume.history.title", "Analysis History")} (
+                  {analysisHistory.length})
                 </CardTitle>
                 <CardDescription className="text-zinc-400">
-                  Your previous resume analyses with detailed insights
+                  {t(
+                    "resume.history.description",
+                    "Your previous resume analyses with detailed insights"
+                  )}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -1689,14 +1789,17 @@ const ResumeAnalyzer = () => {
                   <div className="text-center py-12">
                     <FileText className="w-12 h-12 mx-auto mb-4 text-zinc-600" />
                     <p className="text-zinc-400 mb-4">
-                      No analysis history yet
+                      {t("resume.history.empty", "No analysis history yet")}
                     </p>
                     <Button
                       onClick={() => setActiveTab("upload")}
                       className="bg-white text-black hover:bg-zinc-200"
                     >
                       <Upload className="w-4 h-4 mr-2" />
-                      Analyze Your First Resume
+                      {t(
+                        "resume.history.firstAnalyze",
+                        "Analyze Your First Resume"
+                      )}
                     </Button>
                   </div>
                 ) : (

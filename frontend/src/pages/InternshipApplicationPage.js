@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useI18n } from "../i18n/I18nProvider";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "../lib/axios";
 import "./InternshipApplicationPage.css";
@@ -18,8 +19,17 @@ const InternshipApplicationPage = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const { t } = useI18n();
+
   if (!internship) {
-    return <div>Internship not found. Please go back and try again.</div>;
+    return (
+      <div>
+        {t(
+          "internship.notFound",
+          "Internship not found. Please go back and try again."
+        )}
+      </div>
+    );
   }
 
   const handleFormChange = (e) => {
@@ -62,10 +72,12 @@ const InternshipApplicationPage = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-      alert("Successfully applied!");
+      alert(t("internship.apply.success", "Successfully applied!"));
       navigate("/premium/internships");
     } catch (error) {
-      alert("Application failed. Please try again.");
+      alert(
+        t("internship.apply.failed", "Application failed. Please try again.")
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -73,7 +85,9 @@ const InternshipApplicationPage = () => {
 
   return (
     <div className="application-container">
-      <h2>Apply for {internship.title}</h2>
+      <h2>
+        {t("internship.applyFor", "Apply for")} {internship.title}
+      </h2>
       <div className="internship-info">
         <img
           src={internship.image}
@@ -82,25 +96,30 @@ const InternshipApplicationPage = () => {
         />
         <div className="internship-info-details">
           <p>
-            <strong>Description:</strong> {internship.desc}
+            <strong>{t("internship.label.description", "Description:")}</strong>{" "}
+            {internship.desc}
           </p>
           <p>
-            <strong>Company:</strong> {internship.company}
+            <strong>{t("internship.label.company", "Company:")}</strong>{" "}
+            {internship.company}
           </p>
           <p>
-            <strong>Location:</strong> {internship.location}
+            <strong>{t("internship.label.location", "Location:")}</strong>{" "}
+            {internship.location}
           </p>
           <p>
-            <strong>Duration:</strong> {internship.duration}
+            <strong>{t("internship.label.duration", "Duration:")}</strong>{" "}
+            {internship.duration}
           </p>
           <p>
-            <strong>Application Fee:</strong> ₹499
+            <strong>{t("internship.label.fee", "Application Fee:")}</strong>{" "}
+            ₹499
           </p>
         </div>
       </div>
       <form onSubmit={handleSubmit} className="application-form">
         <div className="form-group">
-          <label>Name:</label>
+          <label>{t("internship.form.label.name", "Name")}</label>
           <input
             type="text"
             name="name"
@@ -110,7 +129,7 @@ const InternshipApplicationPage = () => {
           />
         </div>
         <div className="form-group">
-          <label>Email:</label>
+          <label>{t("internship.form.label.email", "Email")}</label>
           <input
             type="email"
             name="email"
@@ -120,7 +139,7 @@ const InternshipApplicationPage = () => {
           />
         </div>
         <div className="form-group">
-          <label>Phone:</label>
+          <label>{t("internship.form.label.phone", "Phone")}</label>
           <input
             type="tel"
             name="phone"
@@ -130,7 +149,7 @@ const InternshipApplicationPage = () => {
           />
         </div>
         <div className="form-group">
-          <label>Address:</label>
+          <label>{t("internship.form.label.address", "Address")}</label>
           <textarea
             name="address"
             value={formData.address}
@@ -139,17 +158,24 @@ const InternshipApplicationPage = () => {
           />
         </div>
         <div className="form-group">
-          <label>Qualification:</label>
+          <label>
+            {t("internship.form.label.qualification", "Qualification")}
+          </label>
           <input
             type="text"
             name="qualification"
             value={formData.qualification}
             onChange={handleFormChange}
-            placeholder="e.g., B.Tech Computer Science"
+            placeholder={t(
+              "internship.placeholder.qualification",
+              "e.g., B.Tech Computer Science"
+            )}
           />
         </div>
         <div className="form-group">
-          <label>Payment Screenshot:</label>
+          <label>
+            {t("internship.form.label.screenshot", "Payment Screenshot")}
+          </label>
           <input
             type="file"
             name="screenshot"
@@ -159,14 +185,18 @@ const InternshipApplicationPage = () => {
           />
         </div>
         <div className="qr-section">
-          <p>Scan QR code to pay application fee:</p>
+          <p>
+            {t("internship.qr.scan", "Scan QR code to pay application fee:")}
+          </p>
           <img
             src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=merchant@upi&pn=Internship%20Application&am=499&cu=INR`}
             alt="QR Code"
           />
         </div>
         <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Applying..." : "Complete Application"}
+          {isSubmitting
+            ? t("internship.applying", "Applying...")
+            : t("internship.completeApplication", "Complete Application")}
         </button>
       </form>
     </div>

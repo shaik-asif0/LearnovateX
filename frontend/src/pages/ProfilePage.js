@@ -1172,18 +1172,27 @@ const ProfilePage = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <User className="w-5 h-5 text-primary" />
-                    Personal Details
+                    {t(
+                      "profile.sections.profile_summary.title",
+                      "Personal Details"
+                    )}
                   </CardTitle>
                   <CardDescription>
                     {editing
-                      ? "Update your core details"
-                      : "Your account details and contact information"}
+                      ? t(
+                          "profile.sections.profile_summary.editHint",
+                          "Update your core details"
+                        )
+                      : t(
+                          "profile.sections.profile_summary.placeholder",
+                          "Your account details and contact information"
+                        )}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Full Name</Label>
+                      <Label>{t("profile.labels.fullName", "Full Name")}</Label>
                       {editing ? (
                         <Input
                           value={profileData.name}
@@ -1201,14 +1210,14 @@ const ProfilePage = () => {
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label>Email</Label>
+                      <Label>{t("profile.labels.email", "Email")}</Label>
                       <p className="text-sm font-medium flex items-center gap-2">
                         {profileData.email}
                         <CheckCircle2 className="w-4 h-4 text-primary" />
                       </p>
                     </div>
                     <div className="space-y-2">
-                      <Label>Phone</Label>
+                      <Label>{t("profile.labels.phone", "Phone")}</Label>
                       {editing ? (
                         <Input
                           value={profileData.phone}

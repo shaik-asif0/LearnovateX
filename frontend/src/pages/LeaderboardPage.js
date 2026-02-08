@@ -8,10 +8,12 @@ import {
 import { Avatar, AvatarFallback } from "../components/ui/avatar";
 import { Trophy, Medal, Crown, TrendingUp } from "lucide-react";
 import { getUser } from "../lib/utils";
+import { useI18n } from "../i18n/I18nProvider";
 import axiosInstance from "../lib/axios";
 
 const LeaderboardPage = () => {
   const currentUser = getUser();
+  const { t } = useI18n();
 
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -70,10 +72,12 @@ const LeaderboardPage = () => {
           <div className="flex items-center justify-center gap-3 mb-4">
             <Trophy className="w-10 h-10 text-white" />
             <h1 className="text-3xl sm:text-4xl font-bold text-white">
-              Global Leaderboard
+              {t("leaderboard.title", "Global Leaderboard")}
             </h1>
           </div>
-          <p className="text-zinc-400">Top performers across all challenges</p>
+          <p className="text-zinc-400">
+            {t("leaderboard.subtitle", "Top performers across all challenges")}
+          </p>
         </div>
 
         {/* Stats Cards */}
@@ -84,7 +88,9 @@ const LeaderboardPage = () => {
               <div className="text-3xl font-bold text-white mb-1">
                 {totalParticipants}
               </div>
-              <p className="text-sm text-zinc-400">Total Participants</p>
+              <p className="text-sm text-zinc-400">
+                {t("leaderboard.stats.totalParticipants", "Total Participants")}
+              </p>
             </CardContent>
           </Card>
           <Card className="bg-zinc-900 border-zinc-800 text-center">
@@ -93,7 +99,9 @@ const LeaderboardPage = () => {
               <div className="text-3xl font-bold text-white mb-1">
                 {topScore}
               </div>
-              <p className="text-sm text-zinc-400">Top Score</p>
+              <p className="text-sm text-zinc-400">
+                {t("leaderboard.stats.topScore", "Top Score")}
+              </p>
             </CardContent>
           </Card>
           <Card className="bg-zinc-900 border-zinc-800 text-center">
@@ -102,7 +110,9 @@ const LeaderboardPage = () => {
               <div className="text-3xl font-bold text-white mb-1">
                 {bestAvg}%
               </div>
-              <p className="text-sm text-zinc-400">Best Average</p>
+              <p className="text-sm text-zinc-400">
+                {t("leaderboard.stats.bestAverage", "Best Average")}
+              </p>
             </CardContent>
           </Card>
         </div>

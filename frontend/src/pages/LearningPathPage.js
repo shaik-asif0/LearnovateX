@@ -3184,7 +3184,9 @@ const LearningPathPage = () => {
                           <GraduationCap className="w-4 h-4 text-[var(--accent-color)]" />
                         </div>
                         <div>
-                          <p className="text-xs text-zinc-500">Instructor</p>
+                          <p className="text-xs text-zinc-500">
+                            {t("learningPath.labels.instructor", "Instructor")}
+                          </p>
                           <p className="font-medium text-zinc-300">
                             {path.instructor}
                           </p>
@@ -3195,7 +3197,9 @@ const LearningPathPage = () => {
                           <Users className="w-4 h-4 text-[var(--accent-color)]" />
                         </div>
                         <div>
-                          <p className="text-xs text-zinc-500">Students</p>
+                          <p className="text-xs text-zinc-500">
+                            {t("learningPath.labels.students", "Students")}
+                          </p>
                           <p className="font-medium text-zinc-300">
                             {(path.students / 1000000).toFixed(1)}M
                           </p>
@@ -3206,7 +3210,9 @@ const LearningPathPage = () => {
                           <BookOpen className="w-4 h-4 text-[var(--accent-color)]" />
                         </div>
                         <div>
-                          <p className="text-xs text-zinc-500">Lessons</p>
+                          <p className="text-xs text-zinc-500">
+                            {t("learningPath.labels.lessons", "Lessons")}
+                          </p>
                           <p className="font-medium text-zinc-300">
                             {path.modules.reduce(
                               (acc, m) => acc + m.lessons.length,
@@ -3220,7 +3226,9 @@ const LearningPathPage = () => {
                           <Clock className="w-4 h-4 text-[var(--accent-color)]" />
                         </div>
                         <div>
-                          <p className="text-xs text-zinc-500">Duration</p>
+                          <p className="text-xs text-zinc-500">
+                            {t("learningPath.labels.duration", "Duration")}
+                          </p>
                           <p className="font-medium text-zinc-300">
                             {path.duration}
                           </p>
@@ -3229,7 +3237,9 @@ const LearningPathPage = () => {
                     </div>
                     <div className="space-y-3 mb-6">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-zinc-400">Course Progress</span>
+                        <span className="text-zinc-400">
+                          {t("learningPath.courseProgress", "Course Progress")}
+                        </span>
                         <span className="font-semibold text-white">
                           {path.progress}%
                         </span>

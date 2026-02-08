@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useI18n } from "../i18n/I18nProvider";
 import {
   Card,
   CardHeader,
@@ -22,23 +23,32 @@ const Connect = ({ students }) => {
     );
   }, [search, students]);
 
+  const { t } = useI18n();
+
   return (
     <div className="min-h-screen bg-black text-white">
       <main className="max-w-3xl mx-auto px-4 py-8">
         <Card className="bg-zinc-900 border-zinc-800 mb-6">
           <CardHeader>
-            <CardTitle className="text-white">Connect with Students</CardTitle>
+            <CardTitle className="text-white">
+              {t("connect.title", "Connect with Students")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <Input
-              placeholder="Search by name or email..."
+              placeholder={t(
+                "connect.searchPlaceholder",
+                "Search by name or email..."
+              )}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="mb-4 bg-zinc-800 border-zinc-700 text-white"
             />
             <div className="space-y-3">
               {filtered.length === 0 ? (
-                <p className="text-zinc-400">No students found.</p>
+                <p className="text-zinc-400">
+                  {t("connect.noStudents", "No students found.")}
+                </p>
               ) : (
                 filtered.map((student) => (
                   <div
@@ -53,7 +63,7 @@ const Connect = ({ students }) => {
                       size="sm"
                       className="bg-white text-black hover:bg-zinc-200"
                     >
-                      Message
+                      {t("connect.message", "Message")}
                     </Button>
                   </div>
                 ))

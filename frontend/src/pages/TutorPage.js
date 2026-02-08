@@ -132,7 +132,9 @@ const TutorPage = () => {
     if (!file) return null;
     const maxMb = 20;
     if (file.size > maxMb * 1024 * 1024) {
-      toast.error(`File too large. Max ${maxMb}MB`);
+      toast.error(
+        t("tutor.upload.too_large", `File too large. Max ${maxMb}MB`)
+      );
       return null;
     }
 
@@ -160,7 +162,10 @@ const TutorPage = () => {
         ...prev,
         {
           role: "assistant",
-          content: `Attached: ${filename}. Ask me anything based on this file.`,
+          content: t(
+            "tutor.attached_file",
+            `Attached: ${filename}. Ask me anything based on this file.`
+          ),
           timestamp: new Date().toISOString(),
         },
       ]);
@@ -179,7 +184,9 @@ const TutorPage = () => {
       return newId;
     } catch (e) {
       const detail =
-        e?.response?.data?.detail || e?.message || "Failed to upload file";
+        e?.response?.data?.detail ||
+        e?.message ||
+        t("tutor.upload.failed", "Failed to upload file");
       toast.error(detail);
       return null;
     } finally {
@@ -212,7 +219,7 @@ const TutorPage = () => {
       const detail =
         e?.response?.data?.detail ||
         e?.message ||
-        "Failed to read YouTube link";
+        t("tutor.upload.youtube_failed", "Failed to read YouTube link");
       toast.error(detail);
       return null;
     } finally {
@@ -227,37 +234,62 @@ const TutorPage = () => {
   };
 
   const topics = [
-    { value: "python", label: "Python", icon: Code, color: "white" },
-    { value: "java", label: "Java", icon: Code, color: "white" },
     {
-      value: "javascript",
-      label: "JavaScript",
+      value: "python",
+      label: t("tutor.topic.python", "Python"),
       icon: Code,
       color: "white",
     },
-    { value: "dsa", label: "Data Structures", icon: Database, color: "white" },
-    { value: "sql", label: "SQL", icon: Database, color: "white" },
-    { value: "aptitude", label: "Aptitude", icon: Calculator, color: "white" },
+    {
+      value: "java",
+      label: t("tutor.topic.java", "Java"),
+      icon: Code,
+      color: "white",
+    },
+    {
+      value: "javascript",
+      label: t("tutor.topic.javascript", "JavaScript"),
+      icon: Code,
+      color: "white",
+    },
+    {
+      value: "dsa",
+      label: t("tutor.topic.dsa", "Data Structures"),
+      icon: Database,
+      color: "white",
+    },
+    {
+      value: "sql",
+      label: t("tutor.topic.sql", "SQL"),
+      icon: Database,
+      color: "white",
+    },
+    {
+      value: "aptitude",
+      label: t("tutor.topic.aptitude", "Aptitude"),
+      icon: Calculator,
+      color: "white",
+    },
     {
       value: "system-design",
-      label: "System Design",
+      label: t("tutor.topic.system_design", "System Design"),
       icon: Target,
       color: "white",
     },
     {
       value: "web-dev",
-      label: "Web Development",
+      label: t("tutor.topic.web_dev", "Web Development"),
       icon: Code,
       color: "white",
     },
   ];
 
   const quickPrompts = [
-    "Explain with an example",
-    "What are the key concepts?",
-    "Common interview questions",
-    "Best practices",
-    "Real-world applications",
+    t("tutor.quick.explain_example", "Explain with an example"),
+    t("tutor.quick.key_concepts", "What are the key concepts?"),
+    t("tutor.quick.common_questions", "Common interview questions"),
+    t("tutor.quick.best_practices", "Best practices"),
+    t("tutor.quick.real_world", "Real-world applications"),
   ];
 
   useEffect(() => {
@@ -523,7 +555,9 @@ const TutorPage = () => {
       return updated;
     });
     toast.success(
-      isHelpful ? "Thanks for the feedback! 👍" : "We'll improve! 📝"
+      isHelpful
+        ? t("tutor.toasts.feedback_thanks", "Thanks for the feedback! 👍")
+        : t("tutor.toasts.feedback_improve", "We'll improve! 📝")
     );
   };
 
@@ -531,13 +565,13 @@ const TutorPage = () => {
     navigator.clipboard.writeText(text);
     setCopied(index);
     setTimeout(() => setCopied(null), 2000);
-    toast.success("Copied to clipboard!");
+    toast.success(t("tutor.toasts.copied", "Copied to clipboard!"));
   };
 
   const clearHistory = () => {
     setMessages([]);
     localStorage.removeItem(tutorHistoryKey);
-    toast.success("Chat history cleared");
+    toast.success(t("tutor.toasts.history_cleared", "Chat history cleared"));
   };
 
   const formatTime = (seconds) => {
@@ -570,39 +604,39 @@ const TutorPage = () => {
         <CardHeader className="pb-2">
           <CardTitle className="text-xs text-zinc-400 flex items-center gap-2">
             <Library className="w-3 h-3" />
-            Topic
+            {t("tutor.options.topic", "Topic")}
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
           <div className="grid grid-cols-2 gap-1">
-            {topics.slice(0, 4).map((t) => {
-              const Icon = t.icon;
+            {topics.slice(0, 4).map((topicItem) => {
+              const Icon = topicItem.icon;
               return (
                 <button
-                  key={t.value}
+                  aria-label={t("tutor.aria.open_options", "Open options")}
                   onClick={() => {
-                    setTopic(t.value);
+                    setTopic(topicItem.value);
                     onClose?.();
                   }}
                   className={`p-2 rounded-lg border transition-all text-left ${
-                    topic === t.value
+                    topic === topicItem.value
                       ? "border-[rgba(var(--accent-rgb),0.5)] bg-[rgba(var(--accent-rgb),0.1)]"
                       : "border-zinc-800 bg-zinc-800/50 hover:border-zinc-700"
                   }`}
                 >
                   <Icon
                     className={`w-3 h-3 mb-1 ${
-                      topic === t.value
+                      topic === topicItem.value
                         ? "text-[var(--accent-color)]"
                         : "text-zinc-500"
                     }`}
                   />
                   <p
                     className={`text-xs ${
-                      topic === t.value ? "text-white" : "text-zinc-400"
+                      topic === topicItem.value ? "text-white" : "text-zinc-400"
                     }`}
                   >
-                    {t.label}
+                    {topicItem.label}
                   </p>
                 </button>
               );
@@ -616,19 +650,21 @@ const TutorPage = () => {
             }}
           >
             <SelectTrigger className="mt-3 bg-zinc-800 border-zinc-700 text-white text-sm">
-              <SelectValue placeholder="More topics..." />
+              <SelectValue
+                placeholder={t("tutor.options.more_topics", "More topics...")}
+              />
             </SelectTrigger>
             <SelectContent
               portalled={false}
               className="bg-zinc-900 border-zinc-800"
             >
-              {topics.map((t) => {
-                const Icon = t.icon;
+              {topics.map((topicItem) => {
+                const Icon = topicItem.icon;
                 return (
-                  <SelectItem key={t.value} value={t.value}>
+                  <SelectItem key={topicItem.value} value={topicItem.value}>
                     <span className="flex items-center gap-2">
                       <Icon className="w-4 h-4" />
-                      {t.label}
+                      {topicItem.label}
                     </span>
                   </SelectItem>
                 );
@@ -643,15 +679,21 @@ const TutorPage = () => {
         <CardHeader className="pb-2">
           <CardTitle className="text-xs text-zinc-400 flex items-center gap-2">
             <Crosshair className="w-3 h-3" />
-            Difficulty
+            {t("tutor.difficulty", "Difficulty")}
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
           <div className="flex gap-1">
             {[
-              { value: "beginner", label: "Beginner" },
-              { value: "intermediate", label: "Medium" },
-              { value: "advanced", label: "Expert" },
+              {
+                value: "beginner",
+                label: t("tutor.level.beginner", "Beginner"),
+              },
+              {
+                value: "intermediate",
+                label: t("tutor.level.intermediate", "Medium"),
+              },
+              { value: "advanced", label: t("tutor.level.advanced", "Expert") },
             ].map((d) => (
               <button
                 key={d.value}
@@ -677,13 +719,15 @@ const TutorPage = () => {
         <CardHeader className="pb-2">
           <CardTitle className="text-xs text-zinc-400 flex items-center gap-2">
             <History className="w-3 h-3" />
-            History
+            {t("tutor.history.title", "History")}
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
           <div className="max-h-56 overflow-y-auto pr-1 space-y-1">
             {messages.length === 0 ? (
-              <p className="text-xs text-zinc-500 py-2">No history yet</p>
+              <p className="text-xs text-zinc-500 py-2">
+                {t("tutor.history.empty", "No history yet")}
+              </p>
             ) : (
               messages.slice(-30).map((m, idx) => {
                 const baseIndex = Math.max(0, messages.length - 30);
@@ -706,7 +750,9 @@ const TutorPage = () => {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-[11px] text-zinc-400 capitalize">
-                        {m?.role === "user" ? "You" : "AI"}
+                        {m?.role === "user"
+                          ? t("tutor.you", "You")
+                          : t("tutor.ai", "AI")}
                       </span>
                       <span className="text-[10px] text-zinc-500">
                         {m?.timestamp
@@ -785,7 +831,7 @@ const TutorPage = () => {
                 {t("tutor.title", "AI Personal Tutor")}
                 <Badge className="bg-white text-black border-0 text-xs">
                   <Sparkles className="w-3 h-3 mr-1" />
-                  Gemini Powered
+                  {t("tutor.badge.gemini", "Gemini Powered")}
                 </Badge>
               </h1>
               <p className="text-zinc-400 text-sm flex items-center gap-2">
@@ -883,7 +929,9 @@ const TutorPage = () => {
                       className="w-[60vw] sm:max-w-sm bg-zinc-900 border-zinc-800 overflow-y-auto"
                     >
                       <SheetHeader className="pr-8">
-                        <SheetTitle className="text-white">Options</SheetTitle>
+                        <SheetTitle className="text-white">
+                          {t("tutor.options.title", "Options")}
+                        </SheetTitle>
                         <p className="text-sm text-zinc-400">
                           {currentTopic?.label} • {difficulty}
                         </p>
@@ -901,7 +949,7 @@ const TutorPage = () => {
                     className="hidden sm:inline-flex border-zinc-700 text-zinc-400 text-xs"
                   >
                     <History className="w-3 h-3 mr-1" />
-                    {messages.length} messages
+                    {messages.length} {t("tutor.messages", "messages")}
                   </Badge>
                 </div>
               </div>
@@ -922,8 +970,10 @@ const TutorPage = () => {
                       {t("tutor.welcomeTitle", "Welcome to AI Tutor!")}
                     </h3>
                     <p className="text-zinc-400 mb-6 max-w-md mx-auto">
-                      I'm your personal learning assistant powered by Gemini AI.
-                      Ask me anything about {currentTopic?.label}!
+                      {t(
+                        "tutor.welcomeDescription",
+                        `I'm your personal learning assistant powered by Gemini AI. Ask me anything about ${currentTopic?.label}!`
+                      )}
                     </p>
                     <div className="flex flex-wrap justify-center gap-2 max-w-lg mx-auto">
                       {quickPrompts.map((prompt, idx) => (
@@ -1057,7 +1107,10 @@ const TutorPage = () => {
                               />
                             </div>
                             <span className="text-sm text-zinc-400">
-                              AI is thinking...
+                              {t(
+                                "tutor.status.ai_thinking",
+                                "AI is thinking..."
+                              )}
                             </span>
                           </div>
                         )}
@@ -1091,7 +1144,10 @@ const TutorPage = () => {
                         <button
                           type="button"
                           className="p-0.5 rounded hover:bg-zinc-700"
-                          aria-label="Remove attachment"
+                          aria-label={t(
+                            "tutor.aria.remove_attachment",
+                            "Remove attachment"
+                          )}
                           onClick={() => removeAttachedContext(ctx.id)}
                         >
                           <X className="w-3.5 h-3.5" />
@@ -1144,7 +1200,7 @@ const TutorPage = () => {
                         variant="outline"
                         size="icon"
                         className="h-10 w-10 sm:h-12 sm:w-12 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
-                        aria-label="Attach"
+                        aria-label={t("tutor.aria.attach", "Attach")}
                         disabled={contextUploading}
                       >
                         <Plus className="w-4 h-4" />
@@ -1162,7 +1218,7 @@ const TutorPage = () => {
                         className="focus:bg-zinc-800"
                       >
                         <ImageIcon className="w-4 h-4" />
-                        Image
+                        {t("tutor.dropdown.image", "Image")}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onSelect={(e) => {
@@ -1172,7 +1228,7 @@ const TutorPage = () => {
                         className="focus:bg-zinc-800"
                       >
                         <FileText className="w-4 h-4" />
-                        PDF
+                        {t("tutor.dropdown.pdf", "PDF")}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onSelect={(e) => {
@@ -1182,11 +1238,14 @@ const TutorPage = () => {
                         className="focus:bg-zinc-800"
                       >
                         <FileText className="w-4 h-4" />
-                        DOC / DOCX
+                        {t("tutor.dropdown.doc", "DOC / DOCX")}
                       </DropdownMenuItem>
                       <DropdownMenuItem disabled className="opacity-60">
                         <Youtube className="w-4 h-4" />
-                        Paste a YouTube link in chat
+                        {t(
+                          "tutor.dropdown.paste_youtube",
+                          "Paste a YouTube link in chat"
+                        )}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

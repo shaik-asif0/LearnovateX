@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useI18n } from "../i18n/I18nProvider";
 import {
   Card,
   CardHeader,
@@ -10,6 +11,7 @@ import { Progress } from "../components/ui/progress";
 import axiosInstance from "../lib/axios";
 
 const StudentAnalytics = () => {
+  const { t } = useI18n();
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -48,21 +50,30 @@ const StudentAnalytics = () => {
         <Card className="bg-zinc-900 border-zinc-800 mb-6">
           <CardHeader>
             <CardTitle className="text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <span>Student Analytics & Deep Reports</span>
+              <span>
+                {t(
+                  "studentAnalytics.title",
+                  "Student Analytics & Deep Reports"
+                )}
+              </span>
               <Button
                 size="sm"
                 className="bg-white text-black hover:bg-zinc-200 w-full sm:w-auto"
                 onClick={exportReport}
               >
-                Export CSV
+                {t("studentAnalytics.exportCsv", "Export CSV")}
               </Button>
             </CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <p className="text-zinc-400">Loading analytics...</p>
+              <p className="text-zinc-400">
+                {t("studentAnalytics.loading", "Loading analytics...")}
+              </p>
             ) : !analytics ? (
-              <p className="text-orange-400">Failed to load analytics.</p>
+              <p className="text-orange-400">
+                {t("studentAnalytics.failed", "Failed to load analytics.")}
+              </p>
             ) : (
               <div className="space-y-4">
                 {Object.entries(analytics).map(([key, value]) => (
@@ -72,7 +83,9 @@ const StudentAnalytics = () => {
                         {key.replace(/_/g, " ")}
                       </span>
                       <span className="text-white font-medium">
-                        {typeof value === "object" ? "Complex data" : value}
+                        {typeof value === "object"
+                          ? t("studentAnalytics.complexData", "Complex data")
+                          : value}
                       </span>
                     </div>
                     <Progress

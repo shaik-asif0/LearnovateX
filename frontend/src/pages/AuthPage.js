@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useI18n } from "../i18n/I18nProvider";
 import { useNavigate } from "react-router-dom";
 import axios from "../lib/axios";
 import { toast } from "sonner";
@@ -31,6 +32,7 @@ import { Brain } from "lucide-react";
 const AuthPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const { t } = useI18n();
 
   // Login state
   const [loginData, setLoginData] = useState({ email: "", password: "" });
@@ -169,14 +171,14 @@ const AuthPage = () => {
                 value="login"
                 className="data-[state=active]:bg-white data-[state=active]:text-black"
               >
-                Login
+                {t("auth.login", "Login")}
               </TabsTrigger>
               <TabsTrigger
                 data-testid="register-tab"
                 value="register"
                 className="data-[state=active]:bg-white data-[state=active]:text-black"
               >
-                Register
+                {t("auth.register", "Register")}
               </TabsTrigger>
             </TabsList>
 
@@ -184,7 +186,7 @@ const AuthPage = () => {
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="login-email" className="text-zinc-300">
-                    Email
+                    {t("auth.label.email", "Email")}
                   </Label>
                   <Input
                     data-testid="login-email-input"
@@ -201,7 +203,7 @@ const AuthPage = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="login-password" className="text-zinc-300">
-                    Password
+                    {t("auth.label.password", "Password")}
                   </Label>
                   <Input
                     data-testid="login-password-input"
@@ -223,7 +225,7 @@ const AuthPage = () => {
                     className="h-auto p-0 text-sm text-zinc-400 hover:text-white"
                     onClick={() => navigate("/forgot-password")}
                   >
-                    Forgot Password?
+                    {t("auth.forgotPassword", "Forgot Password?")}
                   </Button>
                 </div>
                 <Button
@@ -232,7 +234,9 @@ const AuthPage = () => {
                   className="w-full rounded-full font-semibold bg-white text-black hover:bg-zinc-200"
                   disabled={loading}
                 >
-                  {loading ? "Logging in..." : "Login"}
+                  {loading
+                    ? t("auth.loggingIn", "Logging in...")
+                    : t("auth.login", "Login")}
                 </Button>
               </form>
             </TabsContent>
@@ -241,7 +245,7 @@ const AuthPage = () => {
               <form onSubmit={handleRegister} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="register-name" className="text-zinc-300">
-                    Full Name
+                    {t("auth.label.fullName", "Full Name")}
                   </Label>
                   <Input
                     data-testid="register-name-input"
@@ -258,7 +262,7 @@ const AuthPage = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="register-email" className="text-zinc-300">
-                    Email
+                    {t("auth.label.email", "Email")}
                   </Label>
                   <Input
                     data-testid="register-email-input"
@@ -278,7 +282,7 @@ const AuthPage = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="register-password" className="text-zinc-300">
-                    Password
+                    {t("auth.label.password", "Password")}
                   </Label>
                   <Input
                     data-testid="register-password-input"
@@ -298,7 +302,7 @@ const AuthPage = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="register-role" className="text-zinc-300">
-                    I am a
+                    {t("auth.label.role", "I am a")}
                   </Label>
                   <Select
                     value={registerData.role}
@@ -314,11 +318,17 @@ const AuthPage = () => {
                       <SelectValue placeholder="Select your role" />
                     </SelectTrigger>
                     <SelectContent className="bg-zinc-900 border-zinc-800">
-                      <SelectItem value="student">Student</SelectItem>
-                      <SelectItem value="job_seeker">Job Seeker</SelectItem>
-                      <SelectItem value="company">Company/Recruiter</SelectItem>
+                      <SelectItem value="student">
+                        {t("auth.role.student", "Student")}
+                      </SelectItem>
+                      <SelectItem value="job_seeker">
+                        {t("auth.role.job_seeker", "Job Seeker")}
+                      </SelectItem>
+                      <SelectItem value="company">
+                        {t("auth.role.company", "Company/Recruiter")}
+                      </SelectItem>
                       <SelectItem value="college_admin">
-                        College Admin
+                        {t("auth.role.college_admin", "College Admin")}
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -329,7 +339,9 @@ const AuthPage = () => {
                   className="w-full rounded-full font-semibold bg-white text-black hover:bg-zinc-200"
                   disabled={loading}
                 >
-                  {loading ? "Creating account..." : "Create Account"}
+                  {loading
+                    ? t("auth.creatingAccount", "Creating account...")
+                    : t("auth.createAccount", "Create Account")}
                 </Button>
               </form>
             </TabsContent>

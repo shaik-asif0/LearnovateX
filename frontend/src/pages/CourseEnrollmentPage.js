@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useI18n } from "../i18n/I18nProvider";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "../lib/axios";
 import "./CourseEnrollmentPage.css";
@@ -18,8 +19,17 @@ const CourseEnrollmentPage = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const { t } = useI18n();
+
   if (!course) {
-    return <div>Course not found. Please go back and try again.</div>;
+    return (
+      <div>
+        {t(
+          "courseEnrollment.notFound",
+          "Course not found. Please go back and try again."
+        )}
+      </div>
+    );
   }
 
   const handleFormChange = (e) => {
@@ -59,10 +69,15 @@ const CourseEnrollmentPage = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-      alert("Successfully enrolled!");
+      alert(t("courseEnrollment.enrollSuccess", "Successfully enrolled!"));
       navigate("/premium/courses");
     } catch (error) {
-      alert("Enrollment failed. Please try again.");
+      alert(
+        t(
+          "courseEnrollment.enrollFailed",
+          "Enrollment failed. Please try again."
+        )
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -70,7 +85,9 @@ const CourseEnrollmentPage = () => {
 
   return (
     <div className="enrollment-container">
-      <h2>Enroll in {course.title}</h2>
+      <h2>
+        {t("courseEnrollment.title", "Enroll in")} {course.title}
+      </h2>
       <div className="course-info">
         <img
           src={course.image}
@@ -79,25 +96,33 @@ const CourseEnrollmentPage = () => {
         />
         <div className="course-info-details">
           <p>
-            <strong>Description:</strong> {course.desc}
+            <strong>
+              {t("courseEnrollment.label.description", "Description:")}
+            </strong>{" "}
+            {course.desc}
           </p>
           <p>
-            <strong>Duration:</strong> {course.duration}
+            <strong>{t("courseEnrollment.label.duration", "Duration:")}</strong>{" "}
+            {course.duration}
           </p>
           <p>
-            <strong>Level:</strong> {course.level}
+            <strong>{t("courseEnrollment.label.level", "Level:")}</strong>{" "}
+            {course.level}
           </p>
           <p>
-            <strong>Instructor:</strong> {course.instructor}
+            <strong>
+              {t("courseEnrollment.label.instructor", "Instructor:")}
+            </strong>{" "}
+            {course.instructor}
           </p>
           <p>
-            <strong>Price:</strong> ₹499
+            <strong>{t("courseEnrollment.label.price", "Price:")}</strong> ₹499
           </p>
         </div>
       </div>
       <form onSubmit={handleSubmit} className="enrollment-form">
         <div className="form-group">
-          <label>Name:</label>
+          <label>{t("courseEnrollment.form.name", "Name:")}</label>
           <input
             type="text"
             name="name"
@@ -107,7 +132,7 @@ const CourseEnrollmentPage = () => {
           />
         </div>
         <div className="form-group">
-          <label>Email:</label>
+          <label>{t("courseEnrollment.form.email", "Email:")}</label>
           <input
             type="email"
             name="email"
@@ -117,7 +142,7 @@ const CourseEnrollmentPage = () => {
           />
         </div>
         <div className="form-group">
-          <label>Phone:</label>
+          <label>{t("courseEnrollment.form.phone", "Phone:")}</label>
           <input
             type="tel"
             name="phone"
@@ -127,7 +152,7 @@ const CourseEnrollmentPage = () => {
           />
         </div>
         <div className="form-group">
-          <label>Address:</label>
+          <label>{t("courseEnrollment.form.address", "Address:")}</label>
           <textarea
             name="address"
             value={formData.address}
@@ -136,17 +161,24 @@ const CourseEnrollmentPage = () => {
           />
         </div>
         <div className="form-group">
-          <label>Qualification:</label>
+          <label>
+            {t("courseEnrollment.form.qualification", "Qualification:")}
+          </label>
           <input
             type="text"
             name="qualification"
             value={formData.qualification}
             onChange={handleFormChange}
-            placeholder="e.g., B.Tech Computer Science"
+            placeholder={t(
+              "courseEnrollment.placeholder.qualification",
+              "e.g., B.Tech Computer Science"
+            )}
           />
         </div>
         <div className="form-group">
-          <label>Payment Screenshot:</label>
+          <label>
+            {t("courseEnrollment.form.screenshot", "Payment Screenshot")}
+          </label>
           <input
             type="file"
             name="screenshot"
@@ -156,14 +188,16 @@ const CourseEnrollmentPage = () => {
           />
         </div>
         <div className="qr-section">
-          <p>Scan QR code to pay:</p>
+          <p>{t("courseEnrollment.qrPrompt", "Scan QR code to pay:")}</p>
           <img
             src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=merchant@upi&pn=Course%20Enrollment&am=499&cu=INR`}
             alt="QR Code"
           />
         </div>
         <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Enrolling..." : "Complete Enrollment"}
+          {isSubmitting
+            ? t("courseEnrollment.enrolling", "Enrolling...")
+            : t("courseEnrollment.complete", "Complete Enrollment")}
         </button>
       </form>
     </div>

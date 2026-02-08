@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useI18n } from "../i18n/I18nProvider";
 import { Button } from "../components/ui/button";
 import {
   Card,
@@ -69,6 +70,7 @@ import {
 } from "../components/ui/dialog";
 
 const MockInterview = () => {
+  const { t } = useI18n();
   const user = getUser();
   const interviewHistoryKey =
     user?.id || user?._id || user?.email
@@ -1180,7 +1182,7 @@ const MockInterview = () => {
                       className="border-zinc-700 text-white hover:bg-zinc-800 gap-2"
                     >
                       <ChevronLeft className="w-4 h-4" />
-                      Previous
+                      {t("mockInterview.prev", "Previous")}
                     </Button>
 
                     <div className="flex gap-3">
@@ -1193,7 +1195,7 @@ const MockInterview = () => {
                           disabled={!(answers[currentQuestion] || "").trim()}
                           className="bg-white text-black hover:bg-zinc-200 gap-2"
                         >
-                          Next
+                          {t("mockInterview.next", "Next")}
                           <ChevronRight className="w-4 h-4" />
                         </Button>
                       ) : (
@@ -1206,12 +1208,12 @@ const MockInterview = () => {
                           {loading ? (
                             <>
                               <Loader2 className="w-4 h-4 animate-spin" />
-                              Evaluating...
+                              {t("mockInterview.evaluating", "Evaluating...")}
                             </>
                           ) : (
                             <>
                               <Send className="w-4 h-4" />
-                              Submit Interview
+                              {t("mockInterview.submit", "Submit Interview")}
                             </>
                           )}
                         </Button>
@@ -1227,7 +1229,9 @@ const MockInterview = () => {
                   <div className="flex items-center gap-3">
                     <Lightbulb className="w-5 h-5 text-orange-400" />
                     <p className="text-sm text-zinc-400">
-                      <span className="text-orange-400 font-medium">Tip: </span>
+                      <span className="text-orange-400 font-medium">
+                        {t("mockInterview.tipLabel", "Tip:")}&nbsp;
+                      </span>
                       {
                         interviewTips[interviewType][
                           currentQuestion % interviewTips[interviewType].length
@@ -1394,9 +1398,11 @@ const MockInterview = () => {
               <CardContent className="p-8">
                 <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                   <div className="text-center md:text-left">
-                    <p className="text-zinc-400 mb-2">Interview Complete!</p>
+                    <p className="text-zinc-400 mb-2">
+                      {t("mockInterview.complete", "Interview Complete!")}
+                    </p>
                     <h2 className="text-3xl font-bold text-white mb-1">
-                      Your Readiness Score
+                      {t("mockInterview.yourReadiness", "Your Readiness Score")}
                     </h2>
                     <p className="text-zinc-400">
                       {getScoreLabel(evaluation.readiness_score)}
@@ -1427,19 +1433,25 @@ const MockInterview = () => {
                     <p className="text-2xl font-bold text-white">
                       {questions.length}
                     </p>
-                    <p className="text-xs text-zinc-400">Questions</p>
+                    <p className="text-xs text-zinc-400">
+                      {t("mockInterview.stats.questions", "Questions")}
+                    </p>
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-bold text-white">
                       {formatTime(timer)}
                     </p>
-                    <p className="text-xs text-zinc-400">Duration</p>
+                    <p className="text-xs text-zinc-400">
+                      {t("mockInterview.stats.duration", "Duration")}
+                    </p>
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-bold text-white capitalize">
                       {interviewType}
                     </p>
-                    <p className="text-xs text-zinc-400">Type</p>
+                    <p className="text-xs text-zinc-400">
+                      {t("mockInterview.stats.type", "Type")}
+                    </p>
                   </div>
                 </div>
               </CardContent>

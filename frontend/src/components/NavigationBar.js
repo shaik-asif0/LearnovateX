@@ -512,13 +512,13 @@ const NavigationBar = () => {
                   className="w-80 bg-zinc-900 border-zinc-800"
                 >
                   <DropdownMenuLabel className="text-zinc-300">
-                    Notifications
+                    {t("nav.notifications", "Notifications")}
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-zinc-800" />
                   <div className="max-h-80 overflow-auto p-1">
                     {notifications.length === 0 ? (
                       <div className="px-3 py-6 text-sm text-zinc-500 text-center">
-                        No notifications
+                        {t("notifications.none", "No notifications")}
                       </div>
                     ) : (
                       notifications.slice(0, 25).map((n) => {
@@ -546,7 +546,8 @@ const NavigationBar = () => {
                           >
                             <div className="w-full flex items-center justify-between gap-2">
                               <span className="text-sm font-medium text-white">
-                                {n?.title || "Notification"}
+                                {n?.title ||
+                                  t("common.notification", "Notification")}
                               </span>
                               <div className="flex items-center gap-2">
                                 {notifContextId === n?.id && (
@@ -694,14 +695,14 @@ const NavigationBar = () => {
                     className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg cursor-pointer"
                   >
                     <Trophy className="w-4 h-4" />
-                    <span>Leaderboard</span>
+                    <span>{t("nav.leaderboard", "Leaderboard")}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => navigate("/achievements")}
                     className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg cursor-pointer"
                   >
                     <Award className="w-4 h-4" />
-                    <span>Achievements</span>
+                    <span>{t("nav.achievements", "Achievements")}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => navigate("/resources")}
@@ -767,7 +768,9 @@ const NavigationBar = () => {
                 className="bg-zinc-950 border-zinc-800 text-white p-4"
               >
                 <SheetHeader className="text-left">
-                  <SheetTitle className="text-white">Menu</SheetTitle>
+                  <SheetTitle className="text-white">
+                    {t("nav.menu", "Menu")}
+                  </SheetTitle>
                 </SheetHeader>
 
                 <div className="mt-4 space-y-1 overflow-auto max-h-[calc(100vh-6rem)] pr-1">
@@ -819,7 +822,9 @@ const NavigationBar = () => {
                       className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm text-zinc-300 hover:text-white hover:bg-white/5 transition-colors"
                     >
                       <User className="w-5 h-5" />
-                      <span className="font-medium">My Profile</span>
+                      <span className="font-medium">
+                        {t("nav.myProfile", "My Profile")}
+                      </span>
                     </button>
                     <button
                       onClick={() => {
@@ -829,7 +834,9 @@ const NavigationBar = () => {
                       className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm text-zinc-300 hover:text-white hover:bg-white/5 transition-colors"
                     >
                       <Settings className="w-5 h-5" />
-                      <span className="font-medium">Settings</span>
+                      <span className="font-medium">
+                        {t("nav.settings", "Settings")}
+                      </span>
                     </button>
                     <button
                       onClick={() => {
@@ -839,7 +846,9 @@ const NavigationBar = () => {
                       className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm text-zinc-300 hover:text-white hover:bg-white/5 transition-colors"
                     >
                       <LogOut className="w-5 h-5" />
-                      <span className="font-medium">Sign Out</span>
+                      <span className="font-medium">
+                        {t("nav.logout", "Sign Out")}
+                      </span>
                     </button>
                   </div>
                 </div>

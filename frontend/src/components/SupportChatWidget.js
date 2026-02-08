@@ -1,18 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useI18n } from "../i18n/I18nProvider";
 import { useLocation } from "react-router-dom";
 import { Bot, Send, X } from "lucide-react";
 import axiosInstance from "../lib/axios";
 
-const DEFAULT_GREETING = {
-  role: "assistant",
-  content: "Hi! I’m LearnovateX Assistant. How can I help you with the app?",
-};
+const DEFAULT_GREETING = { role: "assistant" };
 
-const quickQuestions = [
-  "What is LearnovateX?",
-  "How do I start a Learning Path?",
-  "Where can I update my Settings?",
-  "How do I apply for internships?",
+const QUICK_QUESTION_KEYS = [
+  "support.q1",
+  "support.q2",
+  "support.q3",
+  "support.q4",
 ];
 
 const toApiHistory = (messages) =>
@@ -26,6 +24,7 @@ const toApiHistory = (messages) =>
 
 const SupportChatWidget = () => {
   const location = useLocation();
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [messages, setMessages] = useState([DEFAULT_GREETING]);
@@ -52,6 +51,19 @@ const SupportChatWidget = () => {
     if (!el) return;
     el.scrollTop = el.scrollHeight;
   }, [open, messages.length]);
+
+  // initialize translated greeting and quick questions
+  useEffect(() => {
+    setMessages([
+      {
+        role: "assistant",
+        content: t(
+          "support.greeting",
+          "Hi! I’m LearnovateX Assistant. How can I help you with the app?"
+        ),
+      },
+    ]);
+  }, [t]);
 
   const sendMessage = async (value) => {
     const trimmed = String(value || "").trim();
@@ -163,18 +175,21 @@ const SupportChatWidget = () => {
             {messages.length <= 1 && (
               <div className="mt-2">
                 <div className="text-xs text-zinc-400 mb-2">
-                  Quick questions
+                  {t("support.quickTitle", "Quick questions")}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {quickQuestions.map((q) => (
-                    <button
-                      key={q}
-                      onClick={() => sendMessage(q)}
-                      className="text-xs px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-200 hover:bg-zinc-800"
-                    >
-                      {q}
-                    </button>
-                  ))}
+                  {QUICK_QUESTION_KEYS.map((k) => {
+                    const label = t(k, k);
+                    return (
+                      <button
+                        key={k}
+                        onClick={() => sendMessage(label)}
+                        className="text-xs px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-200 hover:bg-zinc-800"
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -192,7 +207,7 @@ const SupportChatWidget = () => {
             <input
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Ask about the app…"
+              placeholder={t("support.placeholder", "Ask about the app…")}
               disabled={sending}
               className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-white placeholder:text-zinc-500 outline-none focus:ring-2"
               style={{

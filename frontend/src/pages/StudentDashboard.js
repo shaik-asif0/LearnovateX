@@ -60,10 +60,14 @@ const StudentDashboard = () => {
     {
       icon: <Bot className="w-8 h-8" />,
       title: t("nav.aiTutor", "AI Tutor"),
-      description:
-        "Get personalized explanations and learn concepts with our advanced AI tutor that adapts to your learning style.",
-      detailedContent:
-        "Interactive AI-powered tutoring sessions, instant doubt clearing, personalized learning paths, and progress tracking.",
+      description: t(
+        "dashboard.feature.aiTutor.description",
+        "Get personalized explanations and learn concepts with our advanced AI tutor that adapts to your learning style."
+      ),
+      detailedContent: t(
+        "dashboard.feature.aiTutor.detailed",
+        "Interactive AI-powered tutoring sessions, instant doubt clearing, personalized learning paths, and progress tracking."
+      ),
       path: "/tutor",
       testId: "nav-tutor-btn",
       color: "bg-gradient-to-br from-orange-500 to-orange-600",
@@ -75,10 +79,14 @@ const StudentDashboard = () => {
     {
       icon: <FileText className="w-8 h-8" />,
       title: t("nav.resumeAnalyzer", "Resume Analyzer"),
-      description:
-        "AI-powered resume analysis with actionable tips to improve your job prospects.",
-      detailedContent:
-        "ATS-friendly resume scoring, keyword optimization, industry-specific suggestions, and comparison with top resumes.",
+      description: t(
+        "dashboard.feature.resumeAnalyzer.description",
+        "AI-powered resume analysis with actionable tips to improve your job prospects."
+      ),
+      detailedContent: t(
+        "dashboard.feature.resumeAnalyzer.detailed",
+        "ATS-friendly resume scoring, keyword optimization, industry-specific suggestions, and comparison with top resumes."
+      ),
       path: "/resume",
       testId: "nav-resume-btn",
       color: "bg-gradient-to-br from-orange-500 to-orange-600",
@@ -89,10 +97,14 @@ const StudentDashboard = () => {
     {
       icon: <MessageSquare className="w-8 h-8" />,
       title: t("nav.mockInterview", "Mock Interview"),
-      description:
-        "Practice interviews with AI feedback and improve your communication skills.",
-      detailedContent:
-        "Realistic interview scenarios, voice analysis, body language tips, and personalized improvement plans.",
+      description: t(
+        "dashboard.feature.mockInterview.description",
+        "Practice interviews with AI feedback and improve your communication skills."
+      ),
+      detailedContent: t(
+        "dashboard.feature.mockInterview.detailed",
+        "Realistic interview scenarios, voice analysis, body language tips, and personalized improvement plans."
+      ),
       path: "/interview",
       testId: "nav-interview-btn",
       color: "bg-gradient-to-br from-orange-500 to-orange-600",
@@ -103,10 +115,14 @@ const StudentDashboard = () => {
     {
       icon: <Target className="w-8 h-8" />,
       title: t("nav.learningPath", "Learning Path"),
-      description:
-        "Structured learning curriculum tailored to your goals and skill level.",
-      detailedContent:
-        "Customized learning journeys, milestone tracking, resource recommendations, and progress visualization.",
+      description: t(
+        "dashboard.feature.learningPath.description",
+        "Structured learning curriculum tailored to your goals and skill level."
+      ),
+      detailedContent: t(
+        "dashboard.feature.learningPath.detailed",
+        "Customized learning journeys, milestone tracking, resource recommendations, and progress visualization."
+      ),
       path: "/learning-path",
       testId: "nav-learning-btn",
       color: "bg-gradient-to-br from-orange-500 to-orange-600",
@@ -117,10 +133,14 @@ const StudentDashboard = () => {
     {
       icon: <Building2 className="w-8 h-8" />,
       title: t("nav.companyPortal", "Company Portal"),
-      description:
-        "Explore company opportunities, internships, and job openings tailored for students.",
-      detailedContent:
-        "Direct company connections, internship matching, job application tracking, and career event notifications.",
+      description: t(
+        "dashboard.feature.companyPortal.description",
+        "Explore company opportunities, internships, and job openings tailored for students."
+      ),
+      detailedContent: t(
+        "dashboard.feature.companyPortal.detailed",
+        "Direct company connections, internship matching, job application tracking, and career event notifications."
+      ),
       path: "/company",
       testId: "nav-company-btn",
       color: "bg-gradient-to-br from-orange-500 to-orange-600",
@@ -131,10 +151,14 @@ const StudentDashboard = () => {
     {
       icon: <GraduationCap className="w-8 h-8" />,
       title: t("nav.collegeAdmin", "College Admin"),
-      description:
-        "College administration panel for managing academic records and campus activities.",
-      detailedContent:
-        "Academic performance tracking, event management, student services, and administrative tools.",
+      description: t(
+        "dashboard.feature.collegeAdmin.description",
+        "College administration panel for managing academic records and campus activities."
+      ),
+      detailedContent: t(
+        "dashboard.feature.collegeAdmin.detailed",
+        "Academic performance tracking, event management, student services, and administrative tools."
+      ),
       path: "/college",
       testId: "nav-college-btn",
       color: "bg-gradient-to-br from-orange-500 to-orange-600",
@@ -145,10 +169,14 @@ const StudentDashboard = () => {
     {
       icon: <Map className="w-8 h-8" />,
       title: t("nav.roadmap", "Roadmap"),
-      description:
-        "Explore course-based roadmaps to guide your learning journey.",
-      detailedContent:
-        "Structured course sequences, prerequisite mapping, skill progression paths, and career-aligned learning tracks.",
+      description: t(
+        "dashboard.feature.roadmap.description",
+        "Explore course-based roadmaps to guide your learning journey."
+      ),
+      detailedContent: t(
+        "dashboard.feature.roadmap.detailed",
+        "Structured course sequences, prerequisite mapping, skill progression paths, and career-aligned learning tracks."
+      ),
       path: "/roadmap",
       testId: "nav-roadmap-btn",
       color: "bg-gradient-to-br from-orange-500 to-orange-600",
@@ -160,10 +188,14 @@ const StudentDashboard = () => {
     {
       icon: <Sparkles className="w-8 h-8" />,
       title: t("dashboard.feature.premiumAccess", "Premium Access"),
-      description:
-        "Unlock exclusive premium features, advanced AI tools, and personalized mentorship.",
-      detailedContent:
-        "Access to premium courses, internships, advanced analytics, priority support, and exclusive networking opportunities.",
+      description: t(
+        "dashboard.feature.premium.description",
+        "Unlock exclusive premium features, advanced AI tools, and personalized mentorship."
+      ),
+      detailedContent: t(
+        "dashboard.feature.premium.detailed",
+        "Access to premium courses, internships, advanced analytics, priority support, and exclusive networking opportunities."
+      ),
       path: "/premium",
       testId: "nav-premium-btn",
       color: "bg-gradient-to-br from-orange-500 to-orange-600",
@@ -174,18 +206,25 @@ const StudentDashboard = () => {
     },
     {
       icon: <Zap className="w-8 h-8" />,
-      title: "3D Interactive Coding Game",
-      description:
-        "A real-time 3D coding game where your code controls the world.",
-      detailedContent:
-        "Language-agnostic logic control, live actions, visual consequences, and game-style XP/rank feedback.",
+      title: t(
+        "dashboard.feature.coding3d.title",
+        "3D Interactive Coding Game"
+      ),
+      description: t(
+        "dashboard.feature.coding3d.description",
+        "A real-time 3D coding game where your code controls the world."
+      ),
+      detailedContent: t(
+        "dashboard.feature.coding3d.detailed",
+        "Language-agnostic logic control, live actions, visual consequences, and game-style XP/rank feedback."
+      ),
       path: "/coding-game-3d",
       testId: "nav-3d-coding-game-btn",
       color: "bg-gradient-to-br from-orange-500 to-orange-600",
       iconColor: "text-white",
       image:
         "https://images.unsplash.com/photo-1552820728-8b83bb6b773f?w=400&h=250&fit=crop&crop=center",
-      badge: "Future",
+      badge: t("dashboard.feature.coding3d.badge", "Future"),
     },
   ];
 
@@ -217,7 +256,7 @@ const StudentDashboard = () => {
       <div className="relative overflow-hidden min-h-[100dvh] md:h-screen flex items-center">
         <img
           src={backgroundImages[currentImageIndex]}
-          alt="Background"
+          alt={t("dashboard.hero.backgroundAlt", "Background")}
           className="absolute inset-0 w-full h-full object-cover"
           style={{
             opacity: imageOpacity,
@@ -488,7 +527,7 @@ const StudentDashboard = () => {
         <div>
           <h3 className="text-2xl font-bold mb-8 text-white flex items-center">
             <Star className="w-6 h-6 mr-3 text-orange-400" />
-            Explore All Features
+            {t("dashboard.features.title", "Explore All Features")}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => (

@@ -21,6 +21,7 @@ import {
   BookOpen,
   Bookmark,
 } from "lucide-react";
+import { useI18n } from "../i18n/I18nProvider";
 
 // Dummy Data
 const getCourseData = (courseId) => {
@@ -344,6 +345,7 @@ const typeIcon = (type) => {
 
 export default function CourseLearnPage() {
   const location = useLocation();
+  const { t } = useI18n();
   // State
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeModule, setActiveModule] = useState(0);
@@ -386,9 +388,14 @@ export default function CourseLearnPage() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-black text-white">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">No Course Selected</h2>
+          <h2 className="text-2xl font-bold mb-2">
+            {t("courseLearn.noCourseSelected", "No Course Selected")}
+          </h2>
           <p className="text-zinc-400">
-            Please open a course from the Premium Courses page.
+            {t(
+              "courseLearn.openFromPremium",
+              "Please open a course from the Premium Courses page."
+            )}
           </p>
         </div>
       </div>
@@ -400,7 +407,9 @@ export default function CourseLearnPage() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-black text-white">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">Loading Course...</h2>
+          <h2 className="text-2xl font-bold mb-2">
+            {t("courseLearn.loading", "Loading Course...")}
+          </h2>
         </div>
       </div>
     );
@@ -454,7 +463,9 @@ export default function CourseLearnPage() {
       <header className="sticky top-0 z-30 bg-[#0B0B0B]/90 backdrop-blur border-b border-zinc-800 flex items-center px-4 md:px-8 h-16 shadow-sm">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <Sparkles className="w-7 h-7 text-transparent bg-gradient-to-r from-orange-400 to-orange-500 bg-clip-text" />
-          <span className="font-bold text-lg tracking-tight">AI LearnX</span>
+          <span className="font-bold text-lg tracking-tight">
+            {t("courseLearn.brand", "AI LearnX")}
+          </span>
         </div>
         <div className="flex-1 flex justify-center items-center min-w-0 px-2">
           <span className="font-semibold text-base sm:text-xl truncate max-w-[60vw]">
@@ -465,7 +476,7 @@ export default function CourseLearnPage() {
           <button
             className="p-2 rounded hover:bg-zinc-800 transition"
             onClick={() => setSidebarOpen((v) => !v)}
-            aria-label="Toggle sidebar"
+            aria-label={t("courseLearn.aria.toggle_sidebar", "Toggle sidebar")}
           >
             <ChevronsRight className="w-5 h-5 text-zinc-400" />
           </button>
@@ -498,12 +509,16 @@ export default function CourseLearnPage() {
                 sidebarOpen ? "" : "opacity-0 w-0"
               }`}
             >
-              Modules
+              {t("courseLearn.modules", "Modules")}
             </span>
             <button
               className="p-1 rounded hover:bg-zinc-800 transition"
               onClick={() => setSidebarOpen((v) => !v)}
-              aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+              aria-label={
+                sidebarOpen
+                  ? t("courseLearn.aria.collapse_sidebar", "Collapse sidebar")
+                  : t("courseLearn.aria.expand_sidebar", "Expand sidebar")
+              }
             >
               {sidebarOpen ? (
                 <ChevronsLeft className="w-5 h-5 text-zinc-400" />
@@ -584,7 +599,9 @@ export default function CourseLearnPage() {
           {videoLoading && (
             <div className="flex flex-col items-center justify-center h-96 bg-zinc-900/80 animate-pulse rounded-xl m-6">
               <Loader2 className="w-12 h-12 text-orange-500 animate-spin mb-4" />
-              <span className="text-zinc-400">Loading lesson...</span>
+              <span className="text-zinc-400">
+                {t("courseLearn.loadingLesson", "Loading lesson...")}
+              </span>
             </div>
           )}
 
@@ -605,7 +622,9 @@ export default function CourseLearnPage() {
                     }`}
                     onClick={() => setBookmarked(!bookmarked)}
                     title={
-                      bookmarked ? "Remove bookmark" : "Bookmark this lesson"
+                      bookmarked
+                        ? t("courseLearn.bookmark.remove", "Remove bookmark")
+                        : t("courseLearn.bookmark.add", "Bookmark this lesson")
                     }
                   >
                     <Bookmark
@@ -615,7 +634,8 @@ export default function CourseLearnPage() {
                   </button>
                   {lesson.locked && (
                     <span className="ml-2 px-2 py-1 rounded bg-zinc-800 text-xs text-zinc-400 flex items-center gap-1">
-                      <Lock className="w-3 h-3" /> Premium
+                      <Lock className="w-3 h-3" />{" "}
+                      {t("courseLearn.premium", "Premium")}
                     </span>
                   )}
                 </div>
@@ -652,7 +672,10 @@ export default function CourseLearnPage() {
                         onClick={() =>
                           videoRef.current && videoRef.current.play()
                         }
-                        aria-label="Play video"
+                        aria-label={t(
+                          "courseLearn.aria.play_video",
+                          "Play video"
+                        )}
                       >
                         <Play className="w-16 h-16 text-orange-500 drop-shadow-lg" />
                       </button>
@@ -663,7 +686,7 @@ export default function CourseLearnPage() {
                 {lesson.type === "video" && (
                   <div className="mb-4">
                     <div className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
-                      <span>Progress</span>
+                      <span>{t("courseLearn.progress", "Progress")}</span>
                       <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden">
                         <div
                           className="h-2 bg-gradient-to-r from-orange-500 to-orange-500 rounded-full transition-all"
@@ -673,7 +696,9 @@ export default function CourseLearnPage() {
                       <span>{Math.round(videoProgress)}%</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-zinc-400">Speed:</span>
+                      <span className="text-sm text-zinc-400">
+                        {t("courseLearn.speed", "Speed:")}
+                      </span>
                       <select
                         value={playbackSpeed}
                         onChange={(e) =>
@@ -706,7 +731,7 @@ export default function CourseLearnPage() {
                         className="flex items-center gap-2 text-orange-400 hover:text-orange-200 transition"
                       >
                         <Download className="w-5 h-5" />
-                        Download PDF
+                        {t("courseLearn.downloadPdf", "Download PDF")}
                       </a>
                     </div>
                   </div>
@@ -715,7 +740,7 @@ export default function CourseLearnPage() {
                 {lesson.description && (
                   <div className="mb-4">
                     <h3 className="text-lg font-semibold mb-1 text-zinc-200">
-                      Description
+                      {t("courseLearn.descriptionTitle", "Description")}
                     </h3>
                     <p className="text-zinc-400">{lesson.description}</p>
                   </div>
@@ -723,12 +748,27 @@ export default function CourseLearnPage() {
                 {/* Key Points */}
                 <div className="mb-4">
                   <h3 className="text-lg font-semibold mb-1 text-zinc-200">
-                    Key Points
+                    {t("courseLearn.keyPointsTitle", "Key Points")}
                   </h3>
                   <ul className="list-disc list-inside text-zinc-400 space-y-1">
-                    <li>Auto-save progress</li>
-                    <li>Resume from last watched timestamp</li>
-                    <li>Completion badge on finish</li>
+                    <li>
+                      {t(
+                        "courseLearn.keypoint.auto_save",
+                        "Auto-save progress"
+                      )}
+                    </li>
+                    <li>
+                      {t(
+                        "courseLearn.keypoint.resume_last",
+                        "Resume from last watched timestamp"
+                      )}
+                    </li>
+                    <li>
+                      {t(
+                        "courseLearn.keypoint.completion_badge",
+                        "Completion badge on finish"
+                      )}
+                    </li>
                   </ul>
                 </div>
                 {/* Navigation Buttons */}
@@ -739,15 +779,18 @@ export default function CourseLearnPage() {
                     disabled={activeModule === 0 && activeLesson === 0}
                   >
                     <ChevronsLeft className="w-5 h-5" />
-                    Previous
+                    {t("courseLearn.previous", "Previous")}
                   </button>
                   <button
                     className="flex items-center gap-2 px-5 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-orange-500 hover:from-orange-600 hover:to-orange-600 hover:scale-105 transition text-white shadow focus:outline-none focus:ring-2 focus:ring-orange-500"
                     onClick={handleMarkCompleted}
-                    aria-label="Mark as completed"
+                    aria-label={t(
+                      "courseLearn.aria.mark_completed",
+                      "Mark as completed"
+                    )}
                   >
                     <CheckCircle className="w-5 h-5" />
-                    Mark as Completed
+                    {t("courseLearn.markCompleted", "Mark as Completed")}
                   </button>
                   <button
                     className="flex items-center gap-2 px-5 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 hover:scale-105 transition text-zinc-200 shadow focus:outline-none focus:ring-2 focus:ring-orange-500"
@@ -758,7 +801,7 @@ export default function CourseLearnPage() {
                         courseData.modules[activeModule].lessons.length - 1
                     }
                   >
-                    Next
+                    {t("courseLearn.next", "Next")}
                     <ChevronsRight className="w-5 h-5" />
                   </button>
                 </div>
@@ -768,7 +811,7 @@ export default function CourseLearnPage() {
                     <div className="bg-gradient-to-br from-orange-500 to-orange-500 p-8 rounded-3xl shadow-2xl animate-bounce-in">
                       <CheckCircle className="w-16 h-16 text-white mb-2 animate-pulse" />
                       <div className="text-2xl font-bold text-white">
-                        Lesson Completed!
+                        {t("courseLearn.lessonCompleted", "Lesson Completed!")}
                       </div>
                     </div>
                   </div>
