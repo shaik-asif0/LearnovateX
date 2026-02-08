@@ -34,8 +34,8 @@ from openai import AzureOpenAI, OpenAI
 
 
 from fastapi.middleware.cors import CORSMiddleware
-app = FastAPI()
-app.add_middleware(
+# app = FastAPI()
+app.add_middleware( # pyright: ignore[reportUndefinedVariable]
     CORSMiddleware,
     allow_origins=["*"],  # allow all for now
     allow_credentials=True,

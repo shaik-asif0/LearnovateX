@@ -267,12 +267,7 @@ const CareerReadinessPage = () => {
         trend: lastActivityAtForUi ? "up" : "stable",
       },
     ];
-  }, [
-    activityTracking,
-    formatDuration,
-    lastActivityAtForUi,
-    stats,
-  ]);
+  }, [activityTracking, formatDuration, lastActivityAtForUi, stats]);
 
   // Dynamic career insights computed from real student data
   const careerInsights = useMemo(() => {
@@ -1167,7 +1162,7 @@ const CareerReadinessPage = () => {
             {/* Enhanced Main Score Card */}
             <Card className="bg-zinc-900 border-zinc-700 mb-8 overflow-hidden relative">
               <div
-                className="absolute inset-0"
+                className="absolute inset-0 pointer-events-none"
                 style={{ background: `rgba(var(--accent-rgb), 0.05)` }}
               ></div>
               <CardContent className="p-8 relative">

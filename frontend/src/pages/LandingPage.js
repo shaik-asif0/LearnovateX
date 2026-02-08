@@ -253,11 +253,16 @@ const LandingPage = () => {
                   <Sparkles className="w-4 h-4 animate-spin" />
                   {t("landing.hero.small", "AI-Powered Learning Platform")}
                 </div>
-                <h1 className="text-3xl sm:text-4xl md:text-7xl font-bold tracking-tight text-white leading-tight">
-                  {t(
-                    "landing.hero.title",
-                    "Master Skills. Ace Interviews. Build Your Career."
-                  )}
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white leading-tight">
+                  <span className="block">
+                    {t("landing.hero.title.line1", "Master Skills.")}
+                  </span>
+                  <span className="block">
+                    {t("landing.hero.title.line2", "Ace Interviews.")}
+                  </span>
+                  <span className="block">
+                    {t("landing.hero.title.line3", "Build Your Career.")}
+                  </span>
                 </h1>
               </div>
               <p className="text-lg md:text-xl text-zinc-400 leading-relaxed max-w-2xl animate-fade-in">
@@ -275,10 +280,7 @@ const LandingPage = () => {
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                   <Zap className="w-5 h-5 mr-2 animate-pulse group-hover:animate-spin" />
-                  {t(
-                    "landing.cta.start",
-                    "Start Learning Free (No Credit Card)"
-                  )}
+                  {t("landing.cta.start", "Start Learning Free")}
                 </Button>
                 <Button
                   data-testid="learn-more-btn"
@@ -289,7 +291,7 @@ const LandingPage = () => {
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-orange-500/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                   <BookOpen className="w-5 h-5 mr-2 group-hover:animate-pulse" />
-                  {t("landing.cta.explore", "Explore Features")}
+                  {t("landing.cta.explore", "Login")}
                 </Button>
               </div>
 
@@ -297,19 +299,19 @@ const LandingPage = () => {
               <div className="flex flex-wrap gap-6 sm:gap-8 pt-8 justify-center md:justify-start">
                 <div className="text-center">
                   <div className="text-2xl md:text-3xl font-bold text-white">
-                    10K+
+                    40+
                   </div>
                   <div className="text-sm text-zinc-400">Active Learners</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl md:text-3xl font-bold text-white">
-                    500+
+                    100+
                   </div>
                   <div className="text-sm text-zinc-400">Coding Problems</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl md:text-3xl font-bold text-white">
-                    50+
+                    1+
                   </div>
                   <div className="text-sm text-zinc-400">Companies</div>
                 </div>
@@ -668,8 +670,8 @@ const LandingPage = () => {
               {t("landing.joinBanner", "Join the AI Learning Revolution")}
             </div>
           </div>
-          <h2 className="text-3xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-black via-gray-800 to-black bg-clip-text text-transparent">
-            {t("landing.hero.title", "Ready to Transform Your Career?")}
+          <h2 className="text-3xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-black via-gray-800 to-black bg-clip-text text-transparent">
+            {t("landing.cta.title", "Ready to Transform Your Career?")}
           </h2>
           <p className="text-lg md:text-xl mb-8 text-zinc-600 max-w-3xl mx-auto leading-relaxed">
             {t(
