@@ -20,6 +20,36 @@ const isLocalhost = Boolean(
     )
 );
 
+// Enhance service worker to cache API responses and static assets
+import { precacheAndRoute } from "workbox-precaching";
+import { registerRoute } from "workbox-routing";
+import { NetworkFirst, CacheFirst } from "workbox-strategies";
+
+// Precache static assets
+precacheAndRoute(self.__WB_MANIFEST || []);
+
+// Cache API responses
+registerRoute(
+  ({ url }) =>
+    url.origin.includes("localhost") || url.origin.includes("127.0.0.1"),
+  new NetworkFirst({
+    cacheName: "api-cache",
+    plugins: [],
+  })
+);
+
+// Cache static assets
+registerRoute(
+  ({ request }) =>
+    request.destination === "image" ||
+    request.destination === "script" ||
+    request.destination === "style",
+  new CacheFirst({
+    cacheName: "static-assets",
+    plugins: [],
+  })
+);
+
 export function register(config) {
   if ("serviceWorker" in navigator) {
     // The URL constructor is available in all browsers that support SW.

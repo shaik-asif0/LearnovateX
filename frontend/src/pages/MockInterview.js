@@ -61,6 +61,12 @@ import {
 import axiosInstance from "../lib/axios";
 import { getUser } from "../lib/utils";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+} from "../components/ui/dialog";
 
 const MockInterview = () => {
   const user = getUser();
@@ -370,27 +376,30 @@ const MockInterview = () => {
   };
 
   const startInterview = async () => {
-    setLoading(true);
-    try {
-      // Try to start camera + dictation at the moment the user clicks Start.
-      // If the browser blocks due to permissions, user can enable from sidebar.
-      await startCamera();
-      if (dictationSupported) startDictation();
+    if (!micEnabled || !videoEnabled) {
+      toast.error("Please enable your microphone and camera to proceed.");
+      return;
+    }
 
-      const response = await axiosInstance.post(
-        `/interview/start?interview_type=${interviewType}`
-      );
-      setQuestions(response.data.questions);
-      setAnswers(new Array(response.data.questions.length).fill(""));
+    try {
+      setLoading(true);
+      setShowInstructions(false);
+
+      // Start camera
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+      mediaStreamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+
       setStarted(true);
-      setTimer(0);
-      setIsTimerRunning(true);
-      setLastSavedAt(null);
-      setHasDraft(false);
       setDraftMeta(null);
       toast.success("Interview started! Good luck! 🎯");
     } catch (error) {
-      // If starting interview fails, stop any media we may have started.
       stopDictation();
       stopCamera();
       toast.error("Failed to start interview");
@@ -653,6 +662,29 @@ const MockInterview = () => {
   const answeredCount = answers.filter((a) => a.trim()).length;
   const progressPercent =
     questions.length > 0 ? (answeredCount / questions.length) * 100 : 0;
+
+  const [showInstructions, setShowInstructions] = useState(false);
+
+  const enableCameraAndMic = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+      mediaStreamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+      setMicEnabled(true);
+      setVideoEnabled(true);
+      toast.success("Camera and microphone enabled.");
+    } catch (error) {
+      toast.error(
+        "Failed to enable camera or microphone. Please check your permissions."
+      );
+    }
+  };
 
   return (
     <div className="min-h-screen bg-black text-white">
