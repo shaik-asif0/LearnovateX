@@ -405,14 +405,14 @@ const NavigationBar = () => {
                 className="w-10 h-10 rounded-full"
               />
             </div>
-            <div className="hidden sm:block">
+            {/* <div className="hidden sm:block">
               <p className="text-xs text-zinc-500 font-medium tracking-wider uppercase">
                 AI Learning Platform
               </p>
               <p className="text-lg font-bold bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
                 LearnovateX
               </p>
-            </div>
+            </div> */}
           </div>
 
           {/* Search Bar - always visible */}
