@@ -32,6 +32,18 @@ import shutil
 # - OpenAI: for OpenAI Platform (openai.com) API keys
 from openai import AzureOpenAI, OpenAI
 
+
+# from fastapi.middleware.cors import CORSMiddleware
+# app = FastAPI()
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["*"],  # allow all for now
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
+
+
 # ==================== DATA MODELS ====================
 class AchievementItem(BaseModel):
     id: int
@@ -67,14 +79,21 @@ default_cors_origins = [
     "https://purple-river-029d38c00.2.azurestaticapps.net",
 ]
 
-cors_origins_env = os.environ.get("CORS_ORIGINS")
-if cors_origins_env:
-    cors_origins = [o.strip() for o in cors_origins_env.split(",") if o.strip()]
-else:
-    cors_origins = default_cors_origins
+# Add a function to detect offline or online mode
+def is_offline_mode():
+    return os.environ.get("APP_MODE", "offline").lower() == "offline"
 
-# Allow preview environments on Azure Static Web Apps unless overridden.
-cors_origin_regex = os.environ.get("CORS_ORIGIN_REGEX", r"https://.*\.azurestaticapps\.net")
+# Update CORS origins based on mode
+if is_offline_mode():
+    cors_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    cors_origin_regex = None
+else:
+    cors_origins_env = os.environ.get("CORS_ORIGINS")
+    if cors_origins_env:
+        cors_origins = [o.strip() for o in cors_origins_env.split(",") if o.strip()]
+    else:
+        cors_origins = default_cors_origins
+    cors_origin_regex = os.environ.get("CORS_ORIGIN_REGEX", r"https://.*\.azurestaticapps\.net")
 
 app.add_middleware(
     CORSMiddleware,
@@ -1108,6 +1127,22 @@ def _init_sqlite_db():
                 created_at TEXT NOT NULL,
                 used_at TEXT,
                 attempts INTEGER DEFAULT 0
+            );
+            """
+        )
+
+        # Personal goals tracking (real-time SaaS tracking)
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS personal_goals (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                category TEXT NOT NULL DEFAULT 'custom',
+                target REAL NOT NULL DEFAULT 1,
+                deadline TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
             );
             """
         )
@@ -5479,6 +5514,222 @@ async def delete_apply_tracker_item(item_id: str, current_user: dict = Depends(g
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to delete apply tracker item")
     return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Personal Goals – real-time SaaS tracking
+# ---------------------------------------------------------------------------
+
+class PersonalGoalCreate(BaseModel):
+    title: str
+    category: str = "custom"
+    target: float = 1
+    deadline: Optional[str] = None
+
+class PersonalGoalUpdate(BaseModel):
+    title: Optional[str] = None
+    target: Optional[float] = None
+    deadline: Optional[str] = None
+
+def _list_personal_goals(user_id: str) -> list:
+    with _sqlite_connection() as conn:
+        rows = conn.execute(
+            "SELECT id, user_id, title, category, target, deadline, created_at, updated_at FROM personal_goals WHERE user_id = ? ORDER BY created_at DESC",
+            (user_id,),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+def _create_personal_goal(user_id: str, payload: PersonalGoalCreate) -> dict:
+    gid = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    with _sqlite_connection() as conn:
+        conn.execute(
+            "INSERT INTO personal_goals (id, user_id, title, category, target, deadline, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)",
+            (gid, user_id, payload.title, payload.category, float(payload.target), payload.deadline, now, now),
+        )
+        conn.commit()
+    return {"id": gid, "user_id": user_id, "title": payload.title, "category": payload.category, "target": float(payload.target), "deadline": payload.deadline, "created_at": now, "updated_at": now}
+
+def _update_personal_goal(user_id: str, goal_id: str, payload: PersonalGoalUpdate) -> dict:
+    with _sqlite_connection() as conn:
+        existing = conn.execute("SELECT * FROM personal_goals WHERE id = ? AND user_id = ?", (goal_id, user_id)).fetchone()
+        if not existing:
+            raise ValueError("Goal not found")
+        updates = []
+        params = []
+        if payload.title is not None:
+            updates.append("title = ?")
+            params.append(payload.title)
+        if payload.target is not None:
+            updates.append("target = ?")
+            params.append(float(payload.target))
+        if payload.deadline is not None:
+            updates.append("deadline = ?")
+            params.append(payload.deadline)
+        now = datetime.now(timezone.utc).isoformat()
+        updates.append("updated_at = ?")
+        params.append(now)
+        params.extend([goal_id, user_id])
+        conn.execute(f"UPDATE personal_goals SET {', '.join(updates)} WHERE id = ? AND user_id = ?", params)
+        conn.commit()
+        row = conn.execute("SELECT * FROM personal_goals WHERE id = ?", (goal_id,)).fetchone()
+    return dict(row)
+
+def _delete_personal_goal(user_id: str, goal_id: str) -> None:
+    with _sqlite_connection() as conn:
+        existing = conn.execute("SELECT 1 FROM personal_goals WHERE id = ? AND user_id = ?", (goal_id, user_id)).fetchone()
+        if not existing:
+            raise ValueError("Goal not found")
+        conn.execute("DELETE FROM personal_goals WHERE id = ? AND user_id = ?", (goal_id, user_id))
+        conn.commit()
+
+def _compute_goal_progress(goal: dict, stats: dict) -> dict:
+    """Compute real-time progress for a personal goal based on actual student data."""
+    category = (goal.get("category") or "custom").lower()
+    target = float(goal.get("target") or 1)
+    progress = 0.0
+
+    if category == "coding":
+        progress = float(stats.get("code_submissions", 0))
+    elif category == "resume":
+        progress = float(stats.get("avg_resume_score", 0))
+    elif category == "interview":
+        progress = float(stats.get("interviews_taken", 0))
+    elif category == "learning":
+        progress = float(stats.get("learning_sessions", 0))
+    elif category == "streak":
+        progress = float(stats.get("current_streak", 0))
+    elif category == "readiness":
+        progress = float(stats.get("career_readiness_score", 0))
+    else:
+        progress = 0.0
+
+    pct = min(100.0, (progress / target) * 100.0) if target > 0 else 0.0
+
+    return {
+        **goal,
+        "progress": round(progress, 2),
+        "percentage": round(pct, 2),
+        "completed": progress >= target,
+    }
+
+
+@api_router.get("/career/personal-goals")
+async def get_personal_goals(current_user: dict = Depends(get_current_user)):
+    user_id = current_user["id"]
+    goals = await asyncio.to_thread(_list_personal_goals, user_id)
+
+    # Gather real stats for progress computation
+    code_subs = await count_code_submissions(user_id)
+    avg_resume = await get_avg_resume_credibility(user_id)
+    interviews = await count_interview_evaluations(user_id)
+    learning = await count_learning_sessions(user_id)
+    crs = await calculate_career_readiness_score(user_id)
+    streak = await get_learning_streak_stats(user_id)
+
+    stats_map = {
+        "code_submissions": code_subs,
+        "avg_resume_score": avg_resume,
+        "interviews_taken": interviews,
+        "learning_sessions": learning,
+        "career_readiness_score": crs,
+        "current_streak": streak.get("current_streak", 0),
+    }
+
+    # If user has no custom goals yet, provide smart defaults
+    if not goals:
+        now_iso = datetime.now(timezone.utc).isoformat()
+        default_goals = [
+            {"id": "default-coding", "user_id": user_id, "title": "Solve 50 coding problems", "category": "coding", "target": 50, "deadline": None, "created_at": now_iso, "updated_at": now_iso},
+            {"id": "default-resume", "user_id": user_id, "title": "Resume score above 85%", "category": "resume", "target": 85, "deadline": None, "created_at": now_iso, "updated_at": now_iso},
+            {"id": "default-interview", "user_id": user_id, "title": "Complete 10 mock interviews", "category": "interview", "target": 10, "deadline": None, "created_at": now_iso, "updated_at": now_iso},
+            {"id": "default-learning", "user_id": user_id, "title": "Complete 30 learning sessions", "category": "learning", "target": 30, "deadline": None, "created_at": now_iso, "updated_at": now_iso},
+        ]
+        return [_compute_goal_progress(g, stats_map) for g in default_goals]
+
+    return [_compute_goal_progress(g, stats_map) for g in goals]
+
+
+@api_router.post("/career/personal-goals")
+async def create_personal_goal(payload: PersonalGoalCreate, current_user: dict = Depends(get_current_user)):
+    user_id = current_user["id"]
+    goal = await asyncio.to_thread(_create_personal_goal, user_id, payload)
+    return goal
+
+
+@api_router.patch("/career/personal-goals/{goal_id}")
+async def update_personal_goal(goal_id: str, payload: PersonalGoalUpdate, current_user: dict = Depends(get_current_user)):
+    user_id = current_user["id"]
+    try:
+        goal = await asyncio.to_thread(_update_personal_goal, user_id, goal_id, payload)
+        return goal
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@api_router.delete("/career/personal-goals/{goal_id}")
+async def delete_personal_goal_endpoint(goal_id: str, current_user: dict = Depends(get_current_user)):
+    user_id = current_user["id"]
+    try:
+        await asyncio.to_thread(_delete_personal_goal, user_id, goal_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return {"ok": True}
+
+
+@api_router.get("/career/progress-delta")
+async def get_progress_delta(current_user: dict = Depends(get_current_user)):
+    """Compute real week-over-week and day-over-day progress deltas from snapshots."""
+    user_id = current_user["id"]
+    history = await asyncio.to_thread(_fetch_snapshots, user_id, 30)
+
+    today_str = _today_iso_date()
+    seven_days_ago = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%d")
+    fourteen_days_ago = (datetime.now(timezone.utc) - timedelta(days=14)).strftime("%Y-%m-%d")
+
+    current_score = None
+    week_ago_score = None
+    two_weeks_ago_score = None
+
+    for snap in reversed(history):
+        d = snap.get("date", "")
+        s = snap.get("readiness_score", 0)
+        if d == today_str:
+            current_score = s
+        if d <= seven_days_ago and (week_ago_score is None or d >= seven_days_ago):
+            week_ago_score = s
+        if d <= fourteen_days_ago and (two_weeks_ago_score is None or d >= fourteen_days_ago):
+            two_weeks_ago_score = s
+
+    if current_score is None and history:
+        current_score = history[-1].get("readiness_score", 0)
+
+    weekly_delta = round(current_score - week_ago_score, 2) if current_score is not None and week_ago_score is not None else None
+    prev_weekly_delta = round(week_ago_score - two_weeks_ago_score, 2) if week_ago_score is not None and two_weeks_ago_score is not None else None
+
+    # Category-level deltas
+    current_breakdown = history[-1].get("breakdown") if history else None
+    week_ago_breakdown = None
+    for snap in history:
+        if snap.get("date", "") <= seven_days_ago:
+            week_ago_breakdown = snap.get("breakdown")
+
+    category_deltas = {}
+    if current_breakdown and week_ago_breakdown:
+        for cat in ["coding", "resume", "interview", "learning"]:
+            cur = current_breakdown.get(cat, {}).get("score", 0) if isinstance(current_breakdown, dict) else 0
+            prev = week_ago_breakdown.get(cat, {}).get("score", 0) if isinstance(week_ago_breakdown, dict) else 0
+            category_deltas[cat] = round(cur - prev, 2)
+
+    return {
+        "current_score": current_score,
+        "weekly_delta": weekly_delta,
+        "previous_weekly_delta": prev_weekly_delta,
+        "trend": "up" if weekly_delta and weekly_delta > 0 else ("down" if weekly_delta and weekly_delta < 0 else "stable"),
+        "category_deltas": category_deltas,
+        "history": history,
+    }
+
 
 @api_router.get("/achievements", response_model=List[AchievementCategory])
 async def get_achievements(current_user: dict = Depends(get_current_user)):

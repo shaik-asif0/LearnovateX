@@ -49,28 +49,8 @@ import { toast } from "sonner";
 import { getUser } from "../lib/utils";
 import { useI18n } from "../i18n/I18nProvider";
 
-// ------------------------------
-// Demo / viva-friendly mock data
-// ------------------------------
-// This is only used as a fallback if the backend is unavailable.
-// It also serves as sample mock data for the "AI Career Digital Twin".
-const MOCK_TWIN_SNAPSHOT = {
-  career_readiness_score: 21.5,
-  avg_code_score: 46,
-  code_submissions: 12,
-  resume_analyses: 6,
-  interviews_taken: 1,
-  learning_sessions: 4,
-  learning_consistency_score: 32,
-  active_days_30: 6,
-  current_streak: 1,
-  longest_streak: 5,
-  // Backward compatibility with older frontend UI keys
-  total_problems_solved: 12,
-  last_activity_at: new Date(
-    Date.now() - 4 * 24 * 60 * 60 * 1000
-  ).toISOString(),
-};
+// Real-time SaaS tracking mode — no mock/demo data.
+// All metrics are fetched live from backend endpoints.
 
 const CareerReadinessPage = () => {
   const navigate = useNavigate();
@@ -100,6 +80,14 @@ const CareerReadinessPage = () => {
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [showMarketModal, setShowMarketModal] = useState(false);
   const [showTwinInfoModal, setShowTwinInfoModal] = useState(false);
+  // Real-time SaaS tracking state
+  const [progressDelta, setProgressDelta] = useState(null);
+  const [historyData, setHistoryData] = useState([]);
+  const [connectionStatus, setConnectionStatus] = useState("connecting");
+  const [dataFetchError, setDataFetchError] = useState(null);
+  const [newGoalTitle, setNewGoalTitle] = useState("");
+  const [newGoalCategory, setNewGoalCategory] = useState("coding");
+  const [newGoalTarget, setNewGoalTarget] = useState("");
 
   const formatDuration = useCallback((seconds) => {
     if (typeof seconds !== "number" || Number.isNaN(seconds) || seconds < 0)
@@ -284,37 +272,80 @@ const CareerReadinessPage = () => {
     formatDuration,
     lastActivityAtForUi,
     stats,
-    streakData.current,
   ]);
 
-  const careerInsights = [
-    {
+  // Dynamic career insights computed from real student data
+  const careerInsights = useMemo(() => {
+    const insights = [];
+    const codingScore = crsBreakdown?.coding?.score || 0;
+    const resumeScore = crsBreakdown?.resume?.score || 0;
+    const interviewScore = crsBreakdown?.interview?.score || 0;
+    const learningScore = crsBreakdown?.learning?.score || 0;
+
+    // Identify actual skill gaps
+    const gaps = [];
+    if (codingScore < 70) gaps.push("coding practice");
+    if (resumeScore < 70) gaps.push("resume optimization");
+    if (interviewScore < 70) gaps.push("interview preparation");
+    if (learningScore < 50) gaps.push("learning consistency");
+    const backendGaps = mentorData?.insights?.skill_gaps || [];
+
+    insights.push({
       title: "Skill Gaps Identified",
       description:
-        "Based on your performance, focus on system design and cloud technologies",
+        gaps.length > 0
+          ? `Based on your real performance: focus on ${gaps.join(", ")}${
+              backendGaps.length > 0
+                ? ` and ${backendGaps.slice(0, 2).join(", ")}`
+                : ""
+            }`
+          : "Great job! No major skill gaps detected. Keep maintaining your momentum.",
       icon: Target,
-      type: "warning",
-      action: "View Details",
+      type: gaps.length > 0 ? "warning" : "success",
+      action: "View Learning Path",
       path: "/learning-path",
-    },
-    {
-      title: "Market Demand High",
-      description:
-        "Your current skills align with 85% of available software engineering roles",
+    });
+
+    // Real market demand alignment from role eligibility
+    const topRole = mentorData?.role_eligibility?.[0];
+    const matchPct = topRole ? Number(topRole.eligibility_percentage || 0) : 0;
+    insights.push({
+      title: "Market Demand Alignment",
+      description: topRole
+        ? `Your skills align ${matchPct.toFixed(0)}% with "${
+            topRole.role
+          }" roles. ${
+            matchPct >= 80
+              ? "Strong match!"
+              : matchPct >= 60
+              ? "Build missing skills to improve."
+              : "Focus on core requirements."
+          }`
+        : "Complete more activities to get market demand analysis.",
       icon: TrendingUp,
-      type: "success",
+      type: matchPct >= 80 ? "success" : matchPct >= 60 ? "info" : "warning",
       action: "Explore Jobs",
       path: "/resources",
-    },
-    {
-      title: "Networking Opportunity",
-      description: "Connect with 3 senior developers in your target companies",
+    });
+
+    // Activity-based networking suggestion
+    const activeDays =
+      activityTracking?.active_days_30 || stats?.active_days_30 || 0;
+    insights.push({
+      title:
+        activeDays >= 20 ? "Strong Activity Record" : "Boost Your Activity",
+      description:
+        activeDays >= 20
+          ? `${activeDays} active days in the last 30 days. Your consistency will impress recruiters.`
+          : `Only ${activeDays} active days in the last 30 days. Aim for at least 20 to strengthen your profile.`,
       icon: Network,
-      type: "info",
-      action: "Find Connections",
-      path: "/resources",
-    },
-  ];
+      type: activeDays >= 20 ? "success" : "info",
+      action: activeDays >= 20 ? "Find Connections" : "Start Learning",
+      path: activeDays >= 20 ? "/resources" : "/learning-path",
+    });
+
+    return insights;
+  }, [crsBreakdown, mentorData, activityTracking, stats]);
 
   const fetchStats = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -363,6 +394,8 @@ const CareerReadinessPage = () => {
 
       setCrsBreakdown(breakdown);
       setLastUpdated(new Date());
+      setConnectionStatus("connected");
+      setDataFetchError(null);
 
       // Prefer login-based streak (server-side, cross-device). Fallback to learning streak.
       const loginDisplayCurrent =
@@ -389,94 +422,25 @@ const CareerReadinessPage = () => {
         });
       }
 
-      setPersonalGoals([
-        {
-          id: 1,
-          title: t(
-            "careerReadiness.goals.completeCodingProblems",
-            "Complete 50 coding problems"
-          ),
-          progress: 32,
-          target: 50,
-          deadline: "2024-02-15",
-        },
-        {
-          id: 2,
-          title: t(
-            "careerReadiness.goals.improveResumeScore",
-            "Get resume score above 85%"
-          ),
-          progress: 78,
-          target: 85,
-          deadline: "2024-02-01",
-        },
-        {
-          id: 3,
-          title: t(
-            "careerReadiness.goals.practiceMockInterviews",
-            "Practice 10 mock interviews"
-          ),
-          progress: 6,
-          target: 10,
-          deadline: "2024-02-28",
-        },
-      ]);
-
       if (silent) {
         toast.success(t("careerReadiness.toasts.dataUpdated", "Data updated"));
       }
     } catch (error) {
-      // Fallback to demo data to keep the dashboard usable for demos/viva.
-      // The UI/logic is still the same (weighted scoring + rule-based prediction).
-      const fallback = MOCK_TWIN_SNAPSHOT;
-      setStats(fallback);
-
-      const codingScore = fallback.avg_code_score;
-      const resumeScore = Math.min(fallback.resume_analyses * 10, 100);
-      const interviewScore = Math.min(fallback.interviews_taken * 15, 100);
-      const learningScore =
-        typeof fallback.learning_consistency_score === "number"
-          ? fallback.learning_consistency_score
-          : Math.min(fallback.learning_sessions * (100.0 / 30.0), 100);
-
-      setCrsBreakdown({
-        coding: {
-          score: codingScore,
-          weight: 30,
-          contribution: codingScore * 0.3,
-          trend: "up",
-        },
-        resume: {
-          score: resumeScore,
-          weight: 25,
-          contribution: resumeScore * 0.25,
-          trend: "up",
-        },
-        interview: {
-          score: interviewScore,
-          weight: 25,
-          contribution: interviewScore * 0.25,
-          trend: "stable",
-        },
-        learning: {
-          score: learningScore,
-          weight: 20,
-          contribution: learningScore * 0.2,
-          trend: "up",
-        },
-      });
-
-      setStreakData({
-        current: fallback.current_streak || 0,
-        longest: fallback.longest_streak || 0,
-      });
-
-      toast.error(
-        t(
-          "careerReadiness.toasts.loadFailedShowingDemo",
-          "Failed to load career readiness data (showing demo snapshot)"
-        )
+      // Real-time mode: show error state, never use demo/mock data
+      setConnectionStatus("error");
+      setDataFetchError(
+        error?.response?.data?.detail ||
+          error?.message ||
+          "Failed to connect to tracking server"
       );
+      if (!silent) {
+        toast.error(
+          t(
+            "careerReadiness.toasts.loadFailed",
+            "Failed to load career readiness data. Check your connection."
+          )
+        );
+      }
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -513,9 +477,9 @@ const CareerReadinessPage = () => {
       const response = await axiosInstance.get("/career/readiness");
       const data = response.data;
       setMentorData(data);
+      setConnectionStatus("connected");
 
       // Keep the main UI consistent with the authoritative mentor payload.
-      // This prevents mismatches between /dashboard/stats (summary) and /career/readiness (full aggregation).
       if (data && typeof data === "object") {
         if (typeof data.career_readiness_score === "number") {
           setStats((prev) => ({
@@ -530,6 +494,12 @@ const CareerReadinessPage = () => {
             code_submissions:
               data?.tracking?.coding?.total_problems_solved ??
               prev?.code_submissions,
+            // Real-time accuracy and interview data
+            accuracy_rate:
+              data?.tracking?.coding?.accuracy_rate ?? prev?.accuracy_rate,
+            avg_interview_readiness:
+              data?.tracking?.mock_interview?.avg_readiness_score ??
+              prev?.avg_interview_readiness,
           }));
           setLastUpdated(new Date());
         }
@@ -537,9 +507,13 @@ const CareerReadinessPage = () => {
         if (data.breakdown && typeof data.breakdown === "object") {
           setCrsBreakdown(data.breakdown);
         }
+
+        // Extract history data from mentor endpoint
+        if (Array.isArray(data.history)) {
+          setHistoryData(data.history);
+        }
       }
     } catch {
-      // Keep page functional if backend endpoint is unavailable.
       setMentorData(null);
     }
   }, []);
@@ -672,20 +646,94 @@ const CareerReadinessPage = () => {
     [fetchApplyTracker]
   );
 
+  // Fetch real personal goals from backend (auto-computed progress)
+  const fetchPersonalGoals = useCallback(async () => {
+    try {
+      const response = await axiosInstance.get("/career/personal-goals");
+      if (Array.isArray(response.data)) {
+        setPersonalGoals(response.data);
+      }
+    } catch {
+      // Goals endpoint unavailable, keep existing state
+    }
+  }, []);
+
+  // Fetch real progress delta (week-over-week changes)
+  const fetchProgressDelta = useCallback(async () => {
+    try {
+      const response = await axiosInstance.get("/career/progress-delta");
+      setProgressDelta(response.data);
+      if (Array.isArray(response.data?.history)) {
+        setHistoryData(response.data.history);
+      }
+    } catch {
+      // Progress delta endpoint unavailable
+    }
+  }, []);
+
+  // Create a new personal goal
+  const createPersonalGoal = useCallback(
+    async (title, category, target) => {
+      try {
+        await axiosInstance.post("/career/personal-goals", {
+          title,
+          category,
+          target: Number(target),
+        });
+        await fetchPersonalGoals();
+        toast.success("Goal created successfully");
+      } catch (error) {
+        toast.error(error?.response?.data?.detail || "Failed to create goal");
+      }
+    },
+    [fetchPersonalGoals]
+  );
+
+  // Delete a personal goal
+  const deletePersonalGoal = useCallback(
+    async (goalId) => {
+      try {
+        await axiosInstance.delete(`/career/personal-goals/${goalId}`);
+        await fetchPersonalGoals();
+        toast.success("Goal removed");
+      } catch (error) {
+        toast.error(error?.response?.data?.detail || "Failed to delete goal");
+      }
+    },
+    [fetchPersonalGoals]
+  );
+
   useEffect(() => {
     fetchStats();
     fetchMentorData();
     fetchApplyTracker();
+    fetchPersonalGoals();
+    fetchProgressDelta();
 
-    // Set up real-time updates every 30 seconds
+    // Real-time updates every 15 seconds for SaaS-grade tracking
     const interval = setInterval(() => {
       fetchStats(true);
       fetchMentorData();
       fetchApplyTracker(true);
-    }, 30000);
+      fetchPersonalGoals();
+    }, 15000);
 
-    return () => clearInterval(interval);
-  }, [fetchStats, fetchMentorData, fetchApplyTracker]);
+    // Progress delta refresh every 60 seconds (heavier query)
+    const deltaInterval = setInterval(() => {
+      fetchProgressDelta();
+    }, 60000);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(deltaInterval);
+    };
+  }, [
+    fetchStats,
+    fetchMentorData,
+    fetchApplyTracker,
+    fetchPersonalGoals,
+    fetchProgressDelta,
+  ]);
 
   const topRoles = useMemo(() => {
     const roles = mentorData?.role_eligibility;
@@ -751,6 +799,30 @@ const CareerReadinessPage = () => {
     (Number(problemsSolvedCount) / 100) * 100,
     100
   );
+
+  // Real-time derived values from tracking data
+  const accuracyRate =
+    mentorData?.tracking?.coding?.accuracy_rate ?? stats?.accuracy_rate ?? null;
+  const resumeSections = mentorData?.tracking?.resume?.sections || null;
+  const resumeTrackingScore =
+    mentorData?.tracking?.resume?.resume_score ?? null;
+  const interviewTypes = mentorData?.tracking?.mock_interview?.types || {};
+  const interviewAvgReadiness =
+    mentorData?.tracking?.mock_interview?.avg_readiness_score ?? null;
+  const lastResumeDate =
+    mentorData?.tracking?.resume?.last_resume_review_date || null;
+  const lastInterviewDate =
+    mentorData?.tracking?.mock_interview?.last_mock_interview_date || null;
+  const confidenceData = mentorData?.confidence || null;
+  const levelBadge = mentorData?.level_badge || crsLevel?.level || "Novice";
+  const serverPrediction = mentorData?.prediction || null;
+  const whatIfScenarios = mentorData?.what_if || [];
+  const backendInsights = mentorData?.insights || {};
+
+  // Weekly progress delta from real snapshots
+  const weeklyDeltaValue = progressDelta?.weekly_delta ?? null;
+  const weeklyTrend = progressDelta?.trend || "stable";
+  const categoryDeltas = progressDelta?.category_deltas || {};
 
   // -------------------------------------------------------------------
   // AI Career Digital Twin logic (rule-based; no ML training required)
@@ -949,14 +1021,49 @@ const CareerReadinessPage = () => {
                 {lastUpdated.toLocaleTimeString()}
               </div>
               <div className="flex items-center gap-2">
-                <Activity className="w-4 h-4" />
-                {t("careerReadiness.liveTracking", "Live tracking active")}
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    connectionStatus === "connected"
+                      ? "bg-green-500 animate-pulse"
+                      : connectionStatus === "error"
+                      ? "bg-red-500"
+                      : "bg-yellow-500 animate-pulse"
+                  }`}
+                ></div>
+                {connectionStatus === "connected"
+                  ? t("careerReadiness.liveTracking", "Live tracking active")
+                  : connectionStatus === "error"
+                  ? "Connection error"
+                  : "Connecting..."}
               </div>
               <div className="flex items-center gap-2">
                 <Flame className="w-4 h-4 text-accent" />
                 {streakData.current}{" "}
                 {t("careerReadiness.dayStreak", "day streak")}
               </div>
+              {weeklyDeltaValue !== null && (
+                <div className="flex items-center gap-2">
+                  {weeklyTrend === "up" ? (
+                    <TrendingUp className="w-4 h-4 text-green-400" />
+                  ) : weeklyTrend === "down" ? (
+                    <TrendingDown className="w-4 h-4 text-red-400" />
+                  ) : (
+                    <BarChart3 className="w-4 h-4 text-zinc-400" />
+                  )}
+                  <span
+                    className={
+                      weeklyDeltaValue > 0
+                        ? "text-green-400"
+                        : weeklyDeltaValue < 0
+                        ? "text-red-400"
+                        : "text-zinc-400"
+                    }
+                  >
+                    {weeklyDeltaValue > 0 ? "+" : ""}
+                    {weeklyDeltaValue.toFixed(1)}% this week
+                  </span>
+                </div>
+              )}
             </div>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -998,6 +1105,8 @@ const CareerReadinessPage = () => {
                 fetchStats(true);
                 fetchMentorData();
                 fetchApplyTracker(true);
+                fetchPersonalGoals();
+                fetchProgressDelta();
               }}
               disabled={isRefreshing}
               className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 w-full sm:w-auto"
@@ -1023,9 +1132,34 @@ const CareerReadinessPage = () => {
               <p className="text-zinc-400">
                 {t(
                   "careerReadiness.loading",
-                  "Loading your career insights..."
+                  "Connecting to real-time tracking server..."
                 )}
               </p>
+            </div>
+          </div>
+        ) : dataFetchError && !stats ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="text-center max-w-md">
+              <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-white mb-2">
+                Unable to Connect
+              </h3>
+              <p className="text-zinc-400 mb-4">{dataFetchError}</p>
+              <p className="text-zinc-500 text-sm mb-4">
+                Real-time tracking requires a connection to the backend server.
+                No demo data is shown — all metrics are from your actual
+                activity.
+              </p>
+              <Button
+                onClick={() => {
+                  fetchStats();
+                  fetchMentorData();
+                }}
+                className="bg-accent hover:bg-accent"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Retry Connection
+              </Button>
             </div>
           </div>
         ) : stats && crsBreakdown ? (
@@ -1085,14 +1219,30 @@ const CareerReadinessPage = () => {
                     />
                     <div className="space-y-2">
                       <p className="text-zinc-300 text-lg font-medium">
-                        Prediction: At your current learning pace, you may be
-                        job-ready in ~{twin.daysToJobReady} days.
+                        {serverPrediction
+                          ? `Prediction: At your current pace, estimated ~${
+                              serverPrediction.estimated_days_to_job_ready ||
+                              twin.daysToJobReady
+                            } days to job-ready.`
+                          : `Prediction: At your current learning pace, you may be job-ready in ~${twin.daysToJobReady} days.`}
                       </p>
                       <p className="text-zinc-400 text-sm">
-                        Explainability: weighted scoring + rule-based prediction
-                        using coding, resume, interview, and consistency
-                        signals.
+                        {confidenceData
+                          ? `Confidence: ${confidenceData.indicator} (${
+                              confidenceData.score
+                            }%) — Based on ${problemsSolvedCount} submissions, ${
+                              stats?.resume_analyses || 0
+                            } resumes, ${
+                              stats?.interviews_taken || 0
+                            } interviews`
+                          : "Explainability: weighted scoring + rule-based prediction using coding, resume, interview, and consistency signals."}
                       </p>
+                      {accuracyRate !== null && (
+                        <p className="text-zinc-400 text-sm flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-accent" />
+                          Code accuracy rate: {Number(accuracyRate).toFixed(1)}%
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -1275,7 +1425,11 @@ const CareerReadinessPage = () => {
                         Next Milestone
                       </div>
                       <div className="text-white font-semibold">
-                        {twin.nextMilestone} ({twin.milestoneDays} days)
+                        {serverPrediction?.next_career_milestone ||
+                          twin.nextMilestone}{" "}
+                        (
+                        {serverPrediction?.milestone_days || twin.milestoneDays}{" "}
+                        days)
                       </div>
                     </div>
                     <div className="flex items-center justify-between bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
@@ -1283,7 +1437,8 @@ const CareerReadinessPage = () => {
                         Biggest Blocker
                       </div>
                       <div className="text-white font-semibold">
-                        {twin.biggestBlocker}
+                        {serverPrediction?.biggest_blocker ||
+                          twin.biggestBlocker}
                       </div>
                     </div>
                   </div>
@@ -1291,8 +1446,18 @@ const CareerReadinessPage = () => {
                     <div className="flex items-center justify-between bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
                       <div className="text-sm text-zinc-400">Risk Level</div>
                       <div className="flex items-center gap-2">
-                        <Badge className="bg-zinc-800 border-zinc-600 text-white">
-                          {twin.riskLevel}
+                        <Badge
+                          className={`border-zinc-600 text-white ${
+                            (serverPrediction?.risk_level || twin.riskLevel) ===
+                            "High"
+                              ? "bg-red-900/50 border-red-700"
+                              : (serverPrediction?.risk_level ||
+                                  twin.riskLevel) === "Medium"
+                              ? "bg-yellow-900/50 border-yellow-700"
+                              : "bg-green-900/50 border-green-700"
+                          }`}
+                        >
+                          {serverPrediction?.risk_level || twin.riskLevel}
                         </Badge>
                         {twin.aiRiskAlert && (
                           <div className="text-xs text-zinc-400 flex items-center gap-1">
@@ -1307,25 +1472,45 @@ const CareerReadinessPage = () => {
                         Confidence Score
                       </div>
                       <div className="text-white font-semibold">
-                        {twin.confidenceScore}%
+                        {confidenceData?.score || twin.confidenceScore}%
+                        {confidenceData?.indicator && (
+                          <span className="text-xs text-zinc-400 ml-2">
+                            ({confidenceData.indicator})
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* What-if simulation (lightweight, rule-based) */}
+                {/* What-if simulation from real server data */}
                 <div className="mt-6 p-4 bg-zinc-800/50 rounded-lg border border-zinc-700">
                   <div className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-accent" />
                     What-if Simulation
                   </div>
-                  <div className="text-sm text-zinc-400">
-                    If you practice coding daily for 14 days:
-                    <div className="mt-2 text-zinc-300">
-                      → Job readiness increases to {twin.whatIfJobReadiness}%
-                      <br />→ Interview readiness improves significantly
+                  {whatIfScenarios.length > 0 ? (
+                    <div className="space-y-2">
+                      {whatIfScenarios.map((scenario, idx) => (
+                        <div key={idx} className="text-sm text-zinc-400">
+                          <span className="text-zinc-300 font-medium">
+                            {scenario.scenario}:
+                          </span>
+                          <div className="mt-1 text-zinc-300 ml-4">
+                            → {scenario.effect}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </div>
+                  ) : (
+                    <div className="text-sm text-zinc-400">
+                      If you practice coding daily for 14 days:
+                      <div className="mt-2 text-zinc-300">
+                        → Job readiness increases to {twin.whatIfJobReadiness}%
+                        <br />→ Interview readiness improves significantly
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -1351,43 +1536,75 @@ const CareerReadinessPage = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {personalGoals.map((goal) => (
-                    <div
-                      key={goal.id}
-                      className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700"
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-semibold text-white">
-                          {goal.title}
-                        </h4>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-zinc-400">
-                            {goal.progress}/{goal.target}
+                  {personalGoals.length > 0 ? (
+                    personalGoals.map((goal) => (
+                      <div
+                        key={goal.id}
+                        className={`bg-zinc-800/50 rounded-lg p-4 border ${
+                          goal.completed
+                            ? "border-green-700"
+                            : "border-zinc-700"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-semibold text-white flex items-center gap-2">
+                            {goal.completed && (
+                              <CheckCircle className="w-4 h-4 text-green-400" />
+                            )}
+                            {goal.title}
+                          </h4>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-zinc-400">
+                              {Number(goal.progress || 0).toFixed(0)}/
+                              {Number(goal.target || 1).toFixed(0)}
+                            </span>
+                            <Badge
+                              variant="outline"
+                              className={`text-xs ${
+                                goal.completed
+                                  ? "border-green-600 text-green-400"
+                                  : ""
+                              }`}
+                            >
+                              {Number(goal.percentage || 0).toFixed(0)}%
+                            </Badge>
+                            <Badge className="bg-zinc-800 border-zinc-600 text-zinc-300 text-xs capitalize">
+                              {goal.category}
+                            </Badge>
+                            {!goal.id?.startsWith("default-") && (
+                              <button
+                                onClick={() => deletePersonalGoal(goal.id)}
+                                className="text-zinc-500 hover:text-red-400 text-xs"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <Progress
+                          value={Math.min(goal.percentage || 0, 100)}
+                          className="mb-2"
+                        />
+                        <div className="flex items-center justify-between text-sm text-zinc-400">
+                          <span className="text-xs">
+                            Real-time progress from your actual activity
                           </span>
-                          <Badge variant="outline" className="text-xs">
-                            {Math.round((goal.progress / goal.target) * 100)}%
-                          </Badge>
+                          {goal.deadline && (
+                            <span className="flex items-center gap-1">
+                              <CalendarDays className="w-3 h-3" />
+                              Due:{" "}
+                              {new Date(goal.deadline).toLocaleDateString()}
+                            </span>
+                          )}
                         </div>
                       </div>
-                      <Progress
-                        value={(goal.progress / goal.target) * 100}
-                        className="mb-2"
-                      />
-                      <div className="flex items-center justify-between text-sm text-zinc-400">
-                        <span>
-                          Due: {new Date(goal.deadline).toLocaleDateString()}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <CalendarDays className="w-3 h-3" />
-                          {Math.ceil(
-                            (new Date(goal.deadline) - new Date()) /
-                              (1000 * 60 * 60 * 24)
-                          )}{" "}
-                          days left
-                        </span>
-                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sm text-zinc-400 text-center py-4">
+                      No goals set yet. Goals will track your real progress
+                      automatically.
                     </div>
-                  ))}
+                  )}
                   <Button
                     variant="outline"
                     className="w-full border-dashed border-zinc-600 text-zinc-400 hover:border-zinc-500 hover:text-zinc-300"
@@ -1640,6 +1857,275 @@ const CareerReadinessPage = () => {
                 </Card>
               </div>
 
+              {/* Resume Section Scores + Interview Breakdown — real-time from tracking */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <Card className="bg-zinc-900 border-zinc-800">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="w-5 h-5" />
+                      Resume Section Analysis
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {resumeSections ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm text-zinc-400">
+                            Overall Resume Score
+                          </span>
+                          <span className="text-lg font-bold text-accent">
+                            {resumeTrackingScore !== null
+                              ? Number(resumeTrackingScore).toFixed(0)
+                              : "—"}
+                            %
+                          </span>
+                        </div>
+                        {[
+                          { label: "Projects", key: "projects", icon: "🔨" },
+                          { label: "Skills", key: "skills", icon: "⚡" },
+                          {
+                            label: "Experience",
+                            key: "experience",
+                            icon: "💼",
+                          },
+                          {
+                            label: "ATS Optimization",
+                            key: "ats_optimization",
+                            icon: "🎯",
+                          },
+                        ].map(({ label, key, icon }) => {
+                          const score = Number(resumeSections[key] || 0);
+                          return (
+                            <div
+                              key={key}
+                              className="bg-zinc-800/50 rounded-lg p-3 border border-zinc-700"
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm text-zinc-300">
+                                  {icon} {label}
+                                </span>
+                                <span
+                                  className={`text-sm font-semibold ${
+                                    score >= 70
+                                      ? "text-green-400"
+                                      : score >= 50
+                                      ? "text-yellow-400"
+                                      : "text-red-400"
+                                  }`}
+                                >
+                                  {score}%
+                                </span>
+                              </div>
+                              <div className="w-full bg-zinc-700 rounded-full h-1.5">
+                                <div
+                                  className={`h-1.5 rounded-full transition-all duration-500 ${
+                                    score >= 70
+                                      ? "bg-green-500"
+                                      : score >= 50
+                                      ? "bg-yellow-500"
+                                      : "bg-red-500"
+                                  }`}
+                                  style={{ width: `${Math.min(score, 100)}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {lastResumeDate && (
+                          <div className="text-xs text-zinc-500 mt-2 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            Last reviewed:{" "}
+                            {new Date(lastResumeDate).toLocaleDateString()}
+                          </div>
+                        )}
+                        <div className="text-xs text-zinc-500">
+                          Analyzed from {stats?.resume_analyses || 0} resume
+                          review{(stats?.resume_analyses || 0) !== 1 ? "s" : ""}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-zinc-400 text-center py-4">
+                        <FileText className="w-8 h-8 mx-auto mb-2 text-zinc-600" />
+                        Upload and analyze your resume to see section-level
+                        scores.
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="mt-3 border-zinc-600 text-zinc-300 hover:bg-zinc-800"
+                          onClick={() => navigate("/resume")}
+                        >
+                          Upload Resume
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-zinc-900 border-zinc-800">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageSquare className="w-5 h-5" />
+                      Interview Performance Breakdown
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {(stats?.interviews_taken || 0) > 0 ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm text-zinc-400">
+                            Avg Readiness Score
+                          </span>
+                          <span className="text-lg font-bold text-accent">
+                            {interviewAvgReadiness !== null
+                              ? Number(interviewAvgReadiness).toFixed(0)
+                              : "—"}
+                            %
+                          </span>
+                        </div>
+                        <div className="bg-zinc-800/50 rounded-lg p-3 border border-zinc-700">
+                          <div className="text-sm font-semibold text-white mb-2">
+                            Interview Types Completed
+                          </div>
+                          {Object.keys(interviewTypes).length > 0 ? (
+                            <div className="space-y-2">
+                              {Object.entries(interviewTypes).map(
+                                ([type, count]) => (
+                                  <div
+                                    key={type}
+                                    className="flex items-center justify-between"
+                                  >
+                                    <span className="text-sm text-zinc-300 capitalize">
+                                      {type}
+                                    </span>
+                                    <Badge className="bg-zinc-800 border-zinc-600 text-zinc-200">
+                                      {count}x
+                                    </Badge>
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-sm text-zinc-400">
+                              No type breakdown available
+                            </div>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-zinc-800/50 rounded-lg p-3 border border-zinc-700 text-center">
+                            <div className="text-2xl font-bold text-accent">
+                              {stats?.interviews_taken || 0}
+                            </div>
+                            <div className="text-xs text-zinc-400">
+                              Total Interviews
+                            </div>
+                          </div>
+                          <div className="bg-zinc-800/50 rounded-lg p-3 border border-zinc-700 text-center">
+                            <div className="text-2xl font-bold text-accent">
+                              {interviewAvgReadiness !== null
+                                ? Number(interviewAvgReadiness).toFixed(0)
+                                : "—"}
+                              %
+                            </div>
+                            <div className="text-xs text-zinc-400">
+                              Readiness
+                            </div>
+                          </div>
+                        </div>
+                        {lastInterviewDate && (
+                          <div className="text-xs text-zinc-500 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            Last interview:{" "}
+                            {new Date(lastInterviewDate).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-zinc-400 text-center py-4">
+                        <MessageSquare className="w-8 h-8 mx-auto mb-2 text-zinc-600" />
+                        Complete mock interviews to see your performance
+                        breakdown.
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="mt-3 border-zinc-600 text-zinc-300 hover:bg-zinc-800"
+                          onClick={() => navigate("/interview")}
+                        >
+                          Start Interview
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* CRS History Trend — real data from snapshots */}
+              {historyData.length > 1 && (
+                <Card className="bg-zinc-900 border-zinc-800 mb-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Activity className="w-5 h-5" />
+                      Career Readiness Score Trend
+                      {weeklyDeltaValue !== null && (
+                        <Badge
+                          className={`ml-2 ${
+                            weeklyDeltaValue > 0
+                              ? "bg-green-900/50 border-green-700 text-green-400"
+                              : weeklyDeltaValue < 0
+                              ? "bg-red-900/50 border-red-700 text-red-400"
+                              : "bg-zinc-800 border-zinc-600 text-zinc-400"
+                          }`}
+                        >
+                          {weeklyDeltaValue > 0 ? "+" : ""}
+                          {weeklyDeltaValue.toFixed(1)}% weekly
+                        </Badge>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1">
+                      <div className="flex items-end gap-1 h-32">
+                        {historyData.slice(-14).map((snap, idx) => {
+                          const score = Number(snap.readiness_score || 0);
+                          const maxScore = Math.max(
+                            ...historyData
+                              .slice(-14)
+                              .map((s) => Number(s.readiness_score || 0)),
+                            1
+                          );
+                          const heightPct =
+                            (score / Math.max(maxScore, 1)) * 100;
+                          return (
+                            <div
+                              key={idx}
+                              className="flex-1 flex flex-col items-center gap-1"
+                            >
+                              <div className="text-xs text-zinc-500">
+                                {score.toFixed(0)}
+                              </div>
+                              <div
+                                className="w-full rounded-t transition-all duration-300 bg-accent hover:bg-accent/80"
+                                style={{
+                                  height: `${Math.max(heightPct, 5)}%`,
+                                  minHeight: "4px",
+                                }}
+                                title={`${snap.date}: ${score.toFixed(1)}%`}
+                              ></div>
+                              <div className="text-xs text-zinc-600 truncate w-full text-center">
+                                {snap.date?.slice(5)}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="mt-3 text-xs text-zinc-500 text-center">
+                      Daily CRS snapshots from real tracking data (
+                      {historyData.length} data points)
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {showAdvancedMetrics && (
                 <Card className="bg-zinc-900 border-zinc-800">
                   <CardHeader>
@@ -1683,28 +2169,114 @@ const CareerReadinessPage = () => {
                           Improvement Areas
                         </h4>
                         <div className="space-y-3">
-                          <div className="flex items-center gap-3 p-3 bg-zinc-800 rounded-lg">
-                            <TrendingUp className="w-4 h-4 text-accent" />
-                            <div>
-                              <div className="text-sm font-medium text-white">
-                                Strong Performance
+                          {(() => {
+                            const areas = [];
+                            const cs = crsBreakdown?.coding?.score || 0;
+                            const rs = crsBreakdown?.resume?.score || 0;
+                            const is_ = crsBreakdown?.interview?.score || 0;
+                            const ls = crsBreakdown?.learning?.score || 0;
+
+                            if (cs >= 70)
+                              areas.push({
+                                icon: TrendingUp,
+                                label: "Coding Performance",
+                                desc: `Strong at ${cs.toFixed(0)}% — ${
+                                  categoryDeltas?.coding
+                                    ? categoryDeltas.coding > 0
+                                      ? `+${categoryDeltas.coding.toFixed(
+                                          1
+                                        )}% this week`
+                                      : `${categoryDeltas.coding.toFixed(
+                                          1
+                                        )}% this week`
+                                    : "keep it up"
+                                }`,
+                              });
+                            else
+                              areas.push({
+                                icon: Target,
+                                label: "Coding Practice",
+                                desc: `At ${cs.toFixed(
+                                  0
+                                )}% — solve more problems to improve`,
+                              });
+
+                            if (rs >= 70)
+                              areas.push({
+                                icon: TrendingUp,
+                                label: "Resume Quality",
+                                desc: `Resume at ${rs.toFixed(0)}% — ${
+                                  categoryDeltas?.resume
+                                    ? categoryDeltas.resume > 0
+                                      ? `+${categoryDeltas.resume.toFixed(
+                                          1
+                                        )}% this week`
+                                      : `${categoryDeltas.resume.toFixed(
+                                          1
+                                        )}% this week`
+                                    : "well optimized"
+                                }`,
+                              });
+                            else
+                              areas.push({
+                                icon: Target,
+                                label: "Resume Needs Work",
+                                desc: `At ${rs.toFixed(
+                                  0
+                                )}% — refine bullet points and add metrics`,
+                              });
+
+                            if (is_ >= 70)
+                              areas.push({
+                                icon: TrendingUp,
+                                label: "Interview Ready",
+                                desc: `At ${is_.toFixed(
+                                  0
+                                )}% — maintain through regular practice`,
+                              });
+                            else
+                              areas.push({
+                                icon: Target,
+                                label: "Interview Practice",
+                                desc: `At ${is_.toFixed(
+                                  0
+                                )}% — take more mock interviews`,
+                              });
+
+                            if (ls >= 50)
+                              areas.push({
+                                icon: TrendingUp,
+                                label: "Learning Active",
+                                desc: `Consistency at ${ls.toFixed(
+                                  0
+                                )}% — great engagement`,
+                              });
+                            else
+                              areas.push({
+                                icon: Target,
+                                label: "Learning Gap",
+                                desc: `Consistency at ${ls.toFixed(
+                                  0
+                                )}% — study more regularly`,
+                              });
+
+                            return areas.map((area, idx) => (
+                              <div
+                                key={idx}
+                                className="flex items-center gap-3 p-3 bg-zinc-800 rounded-lg"
+                              >
+                                <area.icon className="w-4 h-4 text-accent" />
+                                <div>
+                                  <div className="text-sm font-medium text-white">
+                                    {area.label}
+                                  </div>
+                                  <div className="text-xs text-zinc-400">
+                                    {area.desc}
+                                  </div>
+                                </div>
                               </div>
-                              <div className="text-xs text-zinc-400">
-                                Coding skills showing consistent growth
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3 p-3 bg-zinc-800 rounded-lg">
-                            <Target className="w-4 h-4 text-accent" />
-                            <div>
-                              <div className="text-sm font-medium text-white">
-                                Focus Area
-                              </div>
-                              <div className="text-xs text-zinc-400">
-                                Interview practice needs attention
-                              </div>
-                            </div>
-                          </div>
+                            ));
+                          })()}
                         </div>
                       </div>
                     </div>
@@ -2458,76 +3030,153 @@ const CareerReadinessPage = () => {
                       <div>
                         <h4 className="font-semibold mb-4 text-white flex items-center gap-2">
                           <Rocket className="w-4 h-4 text-accent" />
-                          Next Steps
+                          Next Steps (from your data)
                         </h4>
                         <div className="space-y-3">
-                          <div className="flex items-start gap-3 p-3 bg-zinc-800 rounded-lg">
-                            <div className="w-2 h-2 bg-accent rounded-full mt-2 flex-shrink-0"></div>
-                            <div>
-                              <div className="text-sm font-medium text-white">
-                                Build Portfolio Projects
+                          {(() => {
+                            const steps = [];
+
+                            // Real portfolio project suggestions from backend
+                            const portfolioProjects =
+                              backendInsights?.suggested_portfolio_projects ||
+                              [];
+                            if (portfolioProjects.length > 0) {
+                              steps.push({
+                                label: "Build Portfolio Projects",
+                                desc: portfolioProjects.slice(0, 2).join(", "),
+                              });
+                            }
+
+                            // Networking suggestions
+                            const networking =
+                              backendInsights?.networking_suggestions || [];
+                            if (networking.length > 0) {
+                              steps.push({
+                                label: "Network Actively",
+                                desc: networking[0],
+                              });
+                            }
+
+                            // Certifications
+                            const certs =
+                              backendInsights?.suggested_certifications || [];
+                            if (certs.length > 0) {
+                              steps.push({
+                                label: "Certifications",
+                                desc: certs.slice(0, 2).join(", "),
+                              });
+                            }
+
+                            // Skill gaps
+                            const skillGaps = backendInsights?.skill_gaps || [];
+                            if (skillGaps.length > 0) {
+                              steps.push({
+                                label: "Fill Skill Gaps",
+                                desc: skillGaps.slice(0, 3).join(", "),
+                              });
+                            }
+
+                            // High demand skills
+                            const highDemand =
+                              backendInsights?.high_demand_skills || [];
+                            if (highDemand.length > 0 && steps.length < 4) {
+                              steps.push({
+                                label: "In-Demand Skills",
+                                desc: highDemand.slice(0, 3).join(", "),
+                              });
+                            }
+
+                            if (steps.length === 0) {
+                              steps.push({
+                                label: "Keep Learning",
+                                desc: "Complete more activities to unlock personalized recommendations",
+                              });
+                            }
+
+                            return steps.slice(0, 4).map((step, idx) => (
+                              <div
+                                key={idx}
+                                className="flex items-start gap-3 p-3 bg-zinc-800 rounded-lg"
+                              >
+                                <div className="w-2 h-2 bg-accent rounded-full mt-2 flex-shrink-0"></div>
+                                <div>
+                                  <div className="text-sm font-medium text-white">
+                                    {step.label}
+                                  </div>
+                                  <div className="text-xs text-zinc-400">
+                                    {step.desc}
+                                  </div>
+                                </div>
                               </div>
-                              <div className="text-xs text-zinc-400">
-                                Create 2-3 showcase projects in the next month
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-start gap-3 p-3 bg-zinc-800 rounded-lg">
-                            <div className="w-2 h-2 bg-accent rounded-full mt-2 flex-shrink-0"></div>
-                            <div>
-                              <div className="text-sm font-medium text-white">
-                                Network Actively
-                              </div>
-                              <div className="text-xs text-zinc-400">
-                                Connect with 5 professionals in your target
-                                field
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-start gap-3 p-3 bg-zinc-800 rounded-lg">
-                            <div className="w-2 h-2 bg-accent rounded-full mt-2 flex-shrink-0"></div>
-                            <div>
-                              <div className="text-sm font-medium text-white">
-                                Certifications
-                              </div>
-                              <div className="text-xs text-zinc-400">
-                                Consider AWS Cloud Practitioner or Google Cloud
-                                Associate
-                              </div>
-                            </div>
-                          </div>
+                            ));
+                          })()}
                         </div>
                       </div>
                       <div>
                         <h4 className="font-semibold mb-4 text-white flex items-center gap-2">
                           <Briefcase className="w-4 h-4 text-accent" />
-                          Job Market Fit
+                          Job Market Fit (from your profile)
                         </h4>
                         <div className="space-y-3">
-                          <div className="p-3 bg-accent-20 border border-accent rounded-lg">
-                            <div className="text-sm font-medium text-accent mb-1">
-                              High Match
+                          {topRoles.length > 0 ? (
+                            <>
+                              {topRoles.slice(0, 2).map((role) => {
+                                const pct = Number(
+                                  role.eligibility_percentage || 0
+                                );
+                                const matchLevel =
+                                  pct >= 80
+                                    ? "High Match"
+                                    : pct >= 60
+                                    ? "Medium Match"
+                                    : "Building Towards";
+                                return (
+                                  <div
+                                    key={role.role}
+                                    className="p-3 bg-accent-20 border border-accent rounded-lg"
+                                  >
+                                    <div className="text-sm font-medium text-accent mb-1">
+                                      {matchLevel} ({pct.toFixed(0)}%)
+                                    </div>
+                                    <div className="text-xs text-zinc-400">
+                                      {role.role}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                              {(() => {
+                                const allMissing = topRoles.flatMap(
+                                  (r) => r.missing_skills || []
+                                );
+                                const uniqueMissing = [
+                                  ...new Set(allMissing),
+                                ].slice(0, 4);
+                                if (uniqueMissing.length > 0) {
+                                  return (
+                                    <div className="p-3 bg-zinc-800 rounded-lg">
+                                      <div className="text-sm font-medium text-white mb-1">
+                                        Key Skill Gaps
+                                      </div>
+                                      <div className="text-xs text-zinc-400">
+                                        {uniqueMissing.join(", ")}
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })()}
+                            </>
+                          ) : (
+                            <div className="p-3 bg-zinc-800 rounded-lg">
+                              <div className="text-sm font-medium text-white mb-1">
+                                Role Analysis Pending
+                              </div>
+                              <div className="text-xs text-zinc-400">
+                                Complete more activities to see your job market
+                                fit
+                              </div>
                             </div>
-                            <div className="text-xs text-zinc-400">
-                              Full-Stack Developer, Backend Engineer
-                            </div>
-                          </div>
-                          <div className="p-3 bg-accent-20 border border-accent rounded-lg">
-                            <div className="text-sm font-medium text-accent mb-1">
-                              Medium Match
-                            </div>
-                            <div className="text-xs text-zinc-400">
-                              DevOps Engineer, Data Analyst
-                            </div>
-                          </div>
-                          <div className="p-3 bg-zinc-800 rounded-lg">
-                            <div className="text-sm font-medium text-white mb-1">
-                              Skill Gap Areas
-                            </div>
-                            <div className="text-xs text-zinc-400">
-                              Cloud platforms, System design
-                            </div>
-                          </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -2614,32 +3263,112 @@ const CareerReadinessPage = () => {
         )}
       </div>
 
-      {/* Goals Modal */}
+      {/* Goals Modal — Real CRUD */}
       {showGoalsModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 w-full max-w-md">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
             <h3 className="text-xl font-bold text-white mb-4">
-              Set Career Goals
+              Manage Career Goals
             </h3>
-            <div className="space-y-4">
+            <p className="text-sm text-zinc-400 mb-4">
+              Goals track your real progress automatically from your activities.
+            </p>
+
+            {/* New Goal Form */}
+            <div className="bg-zinc-800 p-4 rounded-lg mb-4">
+              <div className="text-sm font-semibold text-white mb-3">
+                Add New Goal
+              </div>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Goal title (e.g., Solve 100 problems)"
+                  value={newGoalTitle}
+                  onChange={(e) => setNewGoalTitle(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-500"
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <select
+                    value={newGoalCategory}
+                    onChange={(e) => setNewGoalCategory(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200"
+                  >
+                    <option value="coding">Coding (problems solved)</option>
+                    <option value="resume">Resume (score %)</option>
+                    <option value="interview">Interview (count)</option>
+                    <option value="learning">Learning (sessions)</option>
+                    <option value="streak">Streak (days)</option>
+                    <option value="readiness">Readiness (score %)</option>
+                  </select>
+                  <input
+                    type="number"
+                    placeholder="Target"
+                    value={newGoalTarget}
+                    onChange={(e) => setNewGoalTarget(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-500"
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  className="w-full bg-accent hover:bg-accent"
+                  disabled={!newGoalTitle.trim() || !newGoalTarget}
+                  onClick={async () => {
+                    await createPersonalGoal(
+                      newGoalTitle,
+                      newGoalCategory,
+                      newGoalTarget
+                    );
+                    setNewGoalTitle("");
+                    setNewGoalTarget("");
+                  }}
+                >
+                  Create Goal
+                </Button>
+              </div>
+            </div>
+
+            {/* Existing Goals */}
+            <div className="space-y-3">
               {personalGoals.map((goal) => (
-                <div key={goal.id} className="bg-zinc-800 p-4 rounded-lg">
+                <div
+                  key={goal.id}
+                  className={`bg-zinc-800 p-4 rounded-lg ${
+                    goal.completed ? "border border-green-700" : ""
+                  }`}
+                >
                   <div className="flex justify-between items-start mb-2">
-                    <h4 className="text-white font-medium">{goal.title}</h4>
+                    <h4 className="text-white font-medium text-sm flex items-center gap-2">
+                      {goal.completed && (
+                        <CheckCircle className="w-4 h-4 text-green-400" />
+                      )}
+                      {goal.title}
+                    </h4>
                     <span className="text-sm text-zinc-400">
-                      {goal.progress}/{goal.target}
+                      {Number(goal.progress || 0).toFixed(0)}/
+                      {Number(goal.target || 1).toFixed(0)}
                     </span>
                   </div>
                   <Progress
-                    value={(goal.progress / goal.target) * 100}
+                    value={Math.min(goal.percentage || 0, 100)}
                     className="mb-2"
                   />
-                  <div className="text-xs text-zinc-500">
-                    Deadline: {goal.deadline}
+                  <div className="flex items-center justify-between">
+                    <Badge className="bg-zinc-900 border-zinc-600 text-zinc-300 text-xs capitalize">
+                      {goal.category}
+                    </Badge>
+                    {!goal.id?.startsWith("default-") && (
+                      <button
+                        onClick={() => deletePersonalGoal(goal.id)}
+                        className="text-xs text-zinc-500 hover:text-red-400"
+                      >
+                        Remove
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
+
             <div className="flex gap-2 mt-6">
               <Button
                 onClick={() => setShowGoalsModal(false)}
@@ -2652,11 +3381,13 @@ const CareerReadinessPage = () => {
         </div>
       )}
 
-      {/* Progress Modal */}
+      {/* Progress Modal — Real data from snapshots */}
       {showProgressModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-xl font-bold text-white mb-4">Your Progress</h3>
+            <h3 className="text-xl font-bold text-white mb-4">
+              Your Real Progress
+            </h3>
             <div className="space-y-4">
               <div className="bg-zinc-800 p-4 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
@@ -2665,11 +3396,61 @@ const CareerReadinessPage = () => {
                     Weekly Progress
                   </span>
                 </div>
-                <div className="text-2xl font-bold text-accent">+8.5%</div>
+                <div
+                  className={`text-2xl font-bold ${
+                    weeklyDeltaValue !== null && weeklyDeltaValue > 0
+                      ? "text-green-400"
+                      : weeklyDeltaValue !== null && weeklyDeltaValue < 0
+                      ? "text-red-400"
+                      : "text-accent"
+                  }`}
+                >
+                  {weeklyDeltaValue !== null
+                    ? `${
+                        weeklyDeltaValue > 0 ? "+" : ""
+                      }${weeklyDeltaValue.toFixed(1)}%`
+                    : "N/A"}
+                </div>
                 <div className="text-sm text-zinc-400">
-                  Improvement this week
+                  {weeklyDeltaValue !== null
+                    ? "Actual change from last week's snapshot"
+                    : "Need at least a week of data"}
                 </div>
               </div>
+
+              {/* Category-level deltas */}
+              {Object.keys(categoryDeltas).length > 0 && (
+                <div className="bg-zinc-800 p-4 rounded-lg">
+                  <div className="text-sm font-semibold text-white mb-3">
+                    Category Progress (this week)
+                  </div>
+                  <div className="space-y-2">
+                    {Object.entries(categoryDeltas).map(([cat, delta]) => (
+                      <div
+                        key={cat}
+                        className="flex items-center justify-between"
+                      >
+                        <span className="text-sm text-zinc-300 capitalize">
+                          {cat}
+                        </span>
+                        <span
+                          className={`text-sm font-semibold ${
+                            delta > 0
+                              ? "text-green-400"
+                              : delta < 0
+                              ? "text-red-400"
+                              : "text-zinc-400"
+                          }`}
+                        >
+                          {delta > 0 ? "+" : ""}
+                          {delta.toFixed(1)}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="bg-zinc-800 p-4 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <Flame className="w-5 h-5 text-accent" />
@@ -2684,6 +3465,21 @@ const CareerReadinessPage = () => {
                   Longest: {streakData.longest} days
                 </div>
               </div>
+
+              <div className="bg-zinc-800 p-4 rounded-lg">
+                <div className="text-sm font-semibold text-white mb-2">
+                  Snapshot History
+                </div>
+                <div className="text-sm text-zinc-400">
+                  {historyData.length} daily snapshots recorded
+                </div>
+                {historyData.length > 0 && (
+                  <div className="mt-2 text-xs text-zinc-500">
+                    First: {historyData[0]?.date} • Latest:{" "}
+                    {historyData[historyData.length - 1]?.date}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex gap-2 mt-6">
               <Button
@@ -2697,7 +3493,7 @@ const CareerReadinessPage = () => {
         </div>
       )}
 
-      {/* Market Insights Modal */}
+      {/* Market Insights Modal — Real data */}
       {showMarketModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 w-full max-w-md">
@@ -2713,20 +3509,67 @@ const CareerReadinessPage = () => {
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Badge className="bg-accent-20 text-accent">React</Badge>
-                  <Badge className="bg-accent-20 text-accent">Python</Badge>
-                  <Badge className="bg-accent-20 text-accent">AI/ML</Badge>
+                  {(
+                    backendInsights?.high_demand_skills || [
+                      "React",
+                      "Python",
+                      "AI/ML",
+                    ]
+                  ).map((skill) => (
+                    <Badge key={skill} className="bg-accent-20 text-accent">
+                      {skill}
+                    </Badge>
+                  ))}
                 </div>
               </div>
               <div className="bg-zinc-800 p-4 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <Briefcase className="w-5 h-5 text-accent" />
-                  <span className="text-white font-medium">Top Industries</span>
+                  <span className="text-white font-medium">
+                    Your Top Matched Roles
+                  </span>
                 </div>
-                <div className="text-sm text-zinc-400">
-                  Tech, Finance, Healthcare, E-commerce
+                <div className="space-y-2">
+                  {topRoles.length > 0 ? (
+                    topRoles.slice(0, 4).map((role) => (
+                      <div
+                        key={role.role}
+                        className="flex items-center justify-between text-sm"
+                      >
+                        <span className="text-zinc-300">{role.role}</span>
+                        <span className="text-accent font-semibold">
+                          {Number(role.eligibility_percentage || 0).toFixed(0)}%
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sm text-zinc-400">
+                      Complete more activities to see role matches
+                    </div>
+                  )}
                 </div>
               </div>
+              {(backendInsights?.suggested_certifications || []).length > 0 && (
+                <div className="bg-zinc-800 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Award className="w-5 h-5 text-accent" />
+                    <span className="text-white font-medium">
+                      Suggested Certifications
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    {backendInsights.suggested_certifications.map((cert) => (
+                      <div
+                        key={cert}
+                        className="text-sm text-zinc-400 flex items-center gap-2"
+                      >
+                        <CheckCircle className="w-3 h-3 text-accent" />
+                        {cert}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex gap-2 mt-6">
               <Button
