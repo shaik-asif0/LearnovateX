@@ -46,19 +46,6 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
-
-origins = os.getenv("CORS_ORIGINS", "").split(",")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins if origins != [""] else ["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
 # ==================== DATA MODELS ====================
 class AchievementItem(BaseModel):
     id: int
@@ -127,6 +114,8 @@ api_router = APIRouter(prefix="/api")
 
 # Global preflight handler to ensure OPTIONS requests return 200 (avoid 400 Bad Request)
 from fastapi import Response
+
+from fastapi import Request
 
 
 @api_router.options("/{rest_of_path:path}")
@@ -7138,6 +7127,21 @@ def root():
 #     allow_headers=["*"],
 # )
 
+
+
+@app.middleware("http")
+async def _catch_options(request: Request, call_next):
+    if request.method == "OPTIONS":
+        origin = request.headers.get("origin", "*")
+        ac_req_headers = request.headers.get("access-control-request-headers", "*")
+        headers = {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
+            "Access-Control-Allow-Headers": ac_req_headers,
+            "Access-Control-Allow-Credentials": "true",
+        }
+        return Response(status_code=200, headers=headers)
+    return await call_next(request)
 _init_sqlite_db()
 
 # Configure logging
