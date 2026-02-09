@@ -124,6 +124,15 @@ app.add_middleware(
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+
+# Global preflight handler to ensure OPTIONS requests return 200 (avoid 400 Bad Request)
+from fastapi import Response
+
+
+@api_router.options("/{rest_of_path:path}")
+async def _handle_preflight(rest_of_path: str):
+    return Response(status_code=200)
+
 # Security
 security = HTTPBearer()
 
