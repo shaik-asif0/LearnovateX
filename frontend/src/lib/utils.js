@@ -24,31 +24,31 @@ const getApiBaseUrl = () => {
 
   return trimmed;
 };
-
+export  const API = `${getApiBaseUrl()}/api`;
 // Prefer a relative API path when the app is not running on localhost and
 // the configured REACT_APP_API_BASE_URL points to localhost (common when
 // the app was built with a local dev .env). This avoids mixed-content
 // errors in production and lets the browser call the same origin `/api`.
-const getApiBaseUrlSafe = () => {
-  const raw = process.env.REACT_APP_API_BASE_URL;
-  // If no env var, default behavior uses trimmed from getApiBaseUrl()
-  if (!raw) return getApiBaseUrl();
+// const getApiBaseUrlSafe = () => {
+//   const raw = process.env.REACT_APP_API_BASE_URL;
+//   // If no env var, default behavior uses trimmed from getApiBaseUrl()
+//   if (!raw) return getApiBaseUrl();
 
-  const isLocalhostConfig =
-    raw.includes("localhost") || raw.includes("127.0.0.1");
-  const runningOnLocalhost =
-    typeof window !== "undefined" &&
-    (window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1");
+//   const isLocalhostConfig =
+//     raw.includes("localhost") || raw.includes("127.0.0.1");
+//   const runningOnLocalhost =
+//     typeof window !== "undefined" &&
+//     (window.location.hostname === "localhost" ||
+//       window.location.hostname === "127.0.0.1");
 
-  // If the config points to localhost but the app is NOT served from localhost,
-  // return empty so API becomes a relative `/api` path.
-  if (isLocalhostConfig && !runningOnLocalhost) return "";
+//   // If the config points to localhost but the app is NOT served from localhost,
+//   // return empty so API becomes a relative `/api` path.
+//   if (isLocalhostConfig && !runningOnLocalhost) return "";
 
-  return getApiBaseUrl();
-};
+//   return getApiBaseUrl();
+// };
 
-export const API = `${getApiBaseUrlSafe()}/api`.replace(/\/+$/, "");
+// export const API = `${getApiBaseUrlSafe()}/api`.replace(/\/+$/, "");
 
 export const toAbsoluteUploadsUrl = (maybeUrl) => {
   if (!maybeUrl) return "";
