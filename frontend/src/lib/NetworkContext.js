@@ -1,7 +1,5 @@
 import React from "react";
 
-const NetworkContext = React.createContext({
-  isOnline: true, // Default to online mode
-});
+const NetworkContext = React.createContext({ isOnline: true });
 
 export default NetworkContext;

@@ -66,39 +66,45 @@ const webpackConfig = {
         webpackConfig.plugins.push(healthPluginInstance);
       }
 
-      // Add Workbox for offline support
-      webpackConfig.plugins.push(
-        new GenerateSW({
-          clientsClaim: true,
-          skipWaiting: true,
-          runtimeCaching: [
-            {
-              urlPattern: ({ url }) =>
-                url.origin === "http://localhost:5000" ||
-                url.origin === process.env.REACT_APP_BACKEND_URL,
-              handler: "NetworkFirst",
-              options: {
-                cacheName: "api-cache",
-                expiration: {
-                  maxEntries: 100,
-                  maxAgeSeconds: 24 * 60 * 60,
+      // Add Workbox for offline support only in production builds.
+      // Avoid generating service worker during dev server (watch mode), which
+      // can cause duplicate-GenerateSW warnings and an inaccurate precache.
+      if (process.env.NODE_ENV === "production") {
+        webpackConfig.plugins.push(
+          new GenerateSW({
+            clientsClaim: true,
+            skipWaiting: true,
+            // Allow larger bundles to be precached if needed (default is small).
+            maximumFileSizeToCacheInBytes: 15 * 1024 * 1024, // 15 MB
+            runtimeCaching: [
+              {
+                urlPattern: ({ url }) =>
+                  url.origin === "http://localhost:5000" ||
+                  url.origin === process.env.REACT_APP_BACKEND_URL,
+                handler: "NetworkFirst",
+                options: {
+                  cacheName: "api-cache",
+                  expiration: {
+                    maxEntries: 100,
+                    maxAgeSeconds: 24 * 60 * 60,
+                  },
                 },
               },
-            },
-            {
-              urlPattern: ({ request }) => request.destination === "image",
-              handler: "CacheFirst",
-              options: {
-                cacheName: "images",
-                expiration: {
-                  maxEntries: 50,
-                  maxAgeSeconds: 7 * 24 * 60 * 60,
+              {
+                urlPattern: ({ request }) => request.destination === "image",
+                handler: "CacheFirst",
+                options: {
+                  cacheName: "images",
+                  expiration: {
+                    maxEntries: 50,
+                    maxAgeSeconds: 7 * 24 * 60 * 60,
+                  },
                 },
               },
-            },
-          ],
-        })
-      );
+            ],
+          })
+        );
+      }
 
       return webpackConfig;
     },
