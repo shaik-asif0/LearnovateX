@@ -14,7 +14,6 @@ on:
 
 env:
   AZURE_WEBAPP_NAME: learnovatex-backend
-  AZURE_WEBAPP_PACKAGE_PATH: "./backend"
   PYTHON_VERSION: "3.11"
 
 permissions:
@@ -28,42 +27,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # If AZURE_WEBAPP_PUBLISH_PROFILE is configured, this workflow can deploy without azure/login.
-      # If it's missing/empty, we use OIDC login (recommended) like the portal-generated workflow.
       - name: Login to Azure (OIDC)
-        if: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE == '' }}
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_D3581CD740E74C8CB014742ADC6EB364 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_ADB37AF9E39844C8BA16FD541E3EFCDC }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_2C36DA2924FF44B6BFF118190DF921C8 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID }}
 
-      - name: Set up Python version
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Create and start virtual environment
+      - name: Install dependencies
         run: |
           python -m venv venv
           source venv/bin/activate
-          python -m pip install --upgrade pip
+          pip install --upgrade pip
           pip install -r backend/requirements.txt
-
-      - name: Upload artifact for deployment jobs
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-app
-          path: |
-            backend/
-            !backend/venv/
-            !backend/__pycache__/
-            !backend/*.pyc
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: backend
-          startup-command: "gunicorn -k uvicorn.workers.UvicornWorker --bind=0.0.0.0:8000 --timeout 600 server:app"
+          startup-command: gunicorn -k uvicorn.workers.UvicornWorker --bind=0.0.0.0:8000 --timeout 600 server:app
