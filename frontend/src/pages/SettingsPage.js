@@ -587,48 +587,84 @@ const SettingsPage = () => {
                       category="privacy"
                       settingKey="profileVisible"
                       icon={Eye}
-                      title="Public Profile"
-                      description="Make your profile visible to other users"
+                      title={t(
+                        "settings.privacy.publicProfile.title",
+                        "Public Profile"
+                      )}
+                      description={t(
+                        "settings.privacy.publicProfile.description",
+                        "Make your profile visible to other users"
+                      )}
                       color="orange"
                     />
                     <SettingToggle
                       category="privacy"
                       settingKey="showProgress"
                       icon={Target}
-                      title="Show Progress"
-                      description="Display your learning progress publicly"
+                      title={t(
+                        "settings.privacy.showProgress.title",
+                        "Show Progress"
+                      )}
+                      description={t(
+                        "settings.privacy.showProgress.description",
+                        "Display your learning progress publicly"
+                      )}
                       color="orange"
                     />
                     <SettingToggle
                       category="privacy"
                       settingKey="showAchievements"
                       icon={Trophy}
-                      title="Show Achievements"
-                      description="Display earned achievements on your profile"
+                      title={t(
+                        "settings.privacy.showAchievements.title",
+                        "Show Achievements"
+                      )}
+                      description={t(
+                        "settings.privacy.showAchievements.description",
+                        "Display earned achievements on your profile"
+                      )}
                       color="orange"
                     />
                     <SettingToggle
                       category="privacy"
                       settingKey="showActivity"
                       icon={History}
-                      title="Show Activity"
-                      description="Let others see your recent activity"
+                      title={t(
+                        "settings.privacy.showActivity.title",
+                        "Show Activity"
+                      )}
+                      description={t(
+                        "settings.privacy.showActivity.description",
+                        "Let others see your recent activity"
+                      )}
                       color="orange"
                     />
                     <SettingToggle
                       category="privacy"
                       settingKey="allowMessages"
                       icon={MessageSquare}
-                      title="Allow Messages"
-                      description="Let other users send you messages"
+                      title={t(
+                        "settings.privacy.allowMessages.title",
+                        "Allow Messages"
+                      )}
+                      description={t(
+                        "settings.privacy.allowMessages.description",
+                        "Let other users send you messages"
+                      )}
                       color="orange"
                     />
                     <SettingToggle
                       category="privacy"
                       settingKey="shareData"
                       icon={Share2}
-                      title="Share Analytics"
-                      description="Help improve the platform with anonymous usage data"
+                      title={t(
+                        "settings.privacy.shareAnalytics.title",
+                        "Share Analytics"
+                      )}
+                      description={t(
+                        "settings.privacy.shareAnalytics.description",
+                        "Help improve the platform with anonymous usage data"
+                      )}
                       color="orange"
                     />
                   </div>
@@ -728,11 +764,6 @@ const SettingsPage = () => {
                       <SelectContent className="bg-zinc-800 border-zinc-700">
                         <SelectItem value="en">🇺🇸 English</SelectItem>
                         <SelectItem value="te">🇮🇳 తెలుగు</SelectItem>
-                        <SelectItem value="es">🇪🇸 Spanish</SelectItem>
-                        <SelectItem value="fr">🇫🇷 French</SelectItem>
-                        <SelectItem value="de">🇩🇪 German</SelectItem>
-                        <SelectItem value="ja">🇯🇵 Japanese</SelectItem>
-                        <SelectItem value="zh">🇨🇳 Chinese</SelectItem>
                         <SelectItem value="hi">🇮🇳 Hindi</SelectItem>
                       </SelectContent>
                     </Select>
@@ -763,7 +794,9 @@ const SettingsPage = () => {
 
                   {/* Font Size */}
                   <div className="space-y-3">
-                    <Label className="text-zinc-300">Font Size</Label>
+                    <Label className="text-zinc-300">
+                      {t("settings.preferences.fontSize.label", "Font Size")}
+                    </Label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {["small", "medium", "large", "xlarge"].map((size) => (
                         <button
@@ -788,16 +821,28 @@ const SettingsPage = () => {
                       category="preferences"
                       settingKey="autoSave"
                       icon={Save}
-                      title="Auto Save"
-                      description="Automatically save your work"
+                      title={t(
+                        "settings.preferences.autoSave.title",
+                        "Auto Save"
+                      )}
+                      description={t(
+                        "settings.preferences.autoSave.description",
+                        "Automatically save your work"
+                      )}
                       color="orange"
                     />
                     <SettingToggle
                       category="preferences"
                       settingKey="compactMode"
                       icon={Monitor}
-                      title="Compact Mode"
-                      description="Use a more compact interface layout"
+                      title={t(
+                        "settings.preferences.compactMode.title",
+                        "Compact Mode"
+                      )}
+                      description={t(
+                        "settings.preferences.compactMode.description",
+                        "Use a more compact interface layout"
+                      )}
                       color="orange"
                     />
                   </div>
@@ -831,7 +876,10 @@ const SettingsPage = () => {
                   <div className="space-y-3">
                     <Label className="text-zinc-300 flex items-center gap-2">
                       <Target className="w-4 h-4" />
-                      Daily Learning Goal
+                      {t(
+                        "settings.learning.dailyGoal.label",
+                        "Daily Learning Goal"
+                      )}
                     </Label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {[15, 30, 45, 60].map((mins) => (
@@ -914,16 +962,28 @@ const SettingsPage = () => {
                       category="learning"
                       settingKey="weekendReminders"
                       icon={Calendar}
-                      title="Weekend Reminders"
-                      description="Receive learning reminders on weekends"
+                      title={t(
+                        "settings.learning.weekendReminders.title",
+                        "Weekend Reminders"
+                      )}
+                      description={t(
+                        "settings.learning.weekendReminders.description",
+                        "Receive learning reminders on weekends"
+                      )}
                       color="orange"
                     />
                     <SettingToggle
                       category="learning"
                       settingKey="streakNotifications"
                       icon={Sparkles}
-                      title="Streak Notifications"
-                      description="Get notified about your learning streak"
+                      title={t(
+                        "settings.learning.streakNotifications.title",
+                        "Streak Notifications"
+                      )}
+                      description={t(
+                        "settings.learning.streakNotifications.description",
+                        "Get notified about your learning streak"
+                      )}
                       color="orange"
                     />
                   </div>
@@ -958,32 +1018,56 @@ const SettingsPage = () => {
                       category="accessibility"
                       settingKey="reduceMotion"
                       icon={RefreshCw}
-                      title="Reduce Motion"
-                      description="Minimize animations and transitions"
+                      title={t(
+                        "settings.accessibility.reduceMotion.title",
+                        "Reduce Motion"
+                      )}
+                      description={t(
+                        "settings.accessibility.reduceMotion.description",
+                        "Minimize animations and transitions"
+                      )}
                       color="orange"
                     />
                     <SettingToggle
                       category="accessibility"
                       settingKey="highContrast"
                       icon={Eye}
-                      title="High Contrast"
-                      description="Increase contrast for better visibility"
+                      title={t(
+                        "settings.accessibility.highContrast.title",
+                        "High Contrast"
+                      )}
+                      description={t(
+                        "settings.accessibility.highContrast.description",
+                        "Increase contrast for better visibility"
+                      )}
                       color="orange"
                     />
                     <SettingToggle
                       category="accessibility"
                       settingKey="screenReader"
                       icon={Volume2}
-                      title="Screen Reader Support"
-                      description="Optimize for screen readers"
+                      title={t(
+                        "settings.accessibility.screenReader.title",
+                        "Screen Reader Support"
+                      )}
+                      description={t(
+                        "settings.accessibility.screenReader.description",
+                        "Optimize for screen readers"
+                      )}
                       color="orange"
                     />
                     <SettingToggle
                       category="accessibility"
                       settingKey="keyboardNav"
                       icon={Fingerprint}
-                      title="Keyboard Navigation"
-                      description="Enhanced keyboard navigation support"
+                      title={t(
+                        "settings.accessibility.keyboardNav.title",
+                        "Keyboard Navigation"
+                      )}
+                      description={t(
+                        "settings.accessibility.keyboardNav.description",
+                        "Enhanced keyboard navigation support"
+                      )}
                       color="orange"
                     />
                   </div>

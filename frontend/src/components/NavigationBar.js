@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Avatar, AvatarFallback } from "./ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,7 +38,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "./ui/sheet";
-import { getUser, clearAuth } from "../lib/utils";
+import { getUser, clearAuth, toAbsoluteUploadsUrl } from "../lib/utils";
 import axiosInstance from "../lib/axios";
 import { useI18n } from "../i18n/I18nProvider";
 import SearchBar from "./SearchBar";
@@ -46,7 +46,7 @@ import SearchBar from "./SearchBar";
 const NavigationBar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const user = getUser();
+  const [user, setUser] = useState(() => getUser());
   const { t } = useI18n();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isNavVisible, setIsNavVisible] = useState(true);
@@ -212,6 +212,12 @@ const NavigationBar = () => {
     document.documentElement.style.setProperty("--warning", hsl);
     document.documentElement.style.setProperty("--info", hsl);
   };
+
+  useEffect(() => {
+    const onAuthChange = () => setUser(getUser());
+    window.addEventListener("authChange", onAuthChange);
+    return () => window.removeEventListener("authChange", onAuthChange);
+  }, []);
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -400,7 +406,7 @@ const NavigationBar = () => {
           >
             <div className="w-12 h-12 rounded-full bg-black flex items-center justify-center">
               <img
-                src="/logo.jpeg"
+                src="/logo.png"
                 alt="Logo"
                 className="w-10 h-10 rounded-full"
               />
@@ -553,8 +559,11 @@ const NavigationBar = () => {
                                 {notifContextId === n?.id && (
                                   <button
                                     type="button"
-                                    aria-label="Delete notification"
-                                    title="Delete"
+                                    aria-label={t(
+                                      "nav.notifications.delete",
+                                      "Delete notification"
+                                    )}
+                                    title={t("common.delete", "Delete")}
                                     className="p-1 rounded hover:bg-zinc-700"
                                     onClick={(e) => {
                                       e.preventDefault();
@@ -586,7 +595,7 @@ const NavigationBar = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  aria-label="Accent color"
+                  aria-label={t("nav.accentColor", "Accent color")}
                   className="p-2 rounded-lg"
                   style={{
                     background: "transparent",
@@ -604,15 +613,34 @@ const NavigationBar = () => {
                 className="w-40 bg-zinc-900 border-zinc-800 p-3"
               >
                 <DropdownMenuLabel className="text-zinc-400 text-xs mb-2">
-                  Accent Color
+                  {t("nav.accentColorLabel", "Accent Color")}
                 </DropdownMenuLabel>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { name: "Orange", color: "#E66A00" },
-                    { name: "Hot Pink", color: "#C81E6E" }, // pink (bold, clear)
-                    { name: "Aqua Blue", color: "#007C91" }, // aqua (fresh, tech)
-                    { name: "Royal Purple", color: "#5B21B6" }, // purple (AI/innovation)
-                    { name: "Emerald Green", color: "#047857" }, // green (growth)
+                    {
+                      name: t("nav.colors.orange", "Orange"),
+                      color: "#E66A00",
+                    },
+                    {
+                      name: t("nav.colors.hotPink", "Hot Pink"),
+                      color: "#C81E6E",
+                    }, // pink (bold, clear)
+                    {
+                      name: t("nav.colors.aquaBlue", "Aqua Blue"),
+                      color: "#007C91",
+                    },
+                    {
+                      name: t("nav.colors.royalPurple", "Royal Purple"),
+                      color: "#9808a9",
+                    }, // aqua (fresh, tech)
+                    {
+                      name: t("nav.colors.royalPurple", "Royal Purple"),
+                      color: "#5B21B6",
+                    }, // purple (AI/innovation)
+                    {
+                      name: t("nav.colors.emeraldGreen", "Emerald Green"),
+                      color: "#047857",
+                    }, // green (growth)
                   ].map((opt) => (
                     <button
                       key={opt.color}
@@ -634,6 +662,11 @@ const NavigationBar = () => {
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 p-1.5 pr-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-all duration-200">
                   <Avatar className="w-8 h-8 border-2 border-zinc-700">
+                    {user?.avatar_url && (
+                      <AvatarImage
+                        src={toAbsoluteUploadsUrl(user?.avatar_url)}
+                      />
+                    )}
                     <AvatarFallback className="bg-white text-black text-sm font-semibold">
                       {initial}
                     </AvatarFallback>
@@ -656,6 +689,12 @@ const NavigationBar = () => {
                 <DropdownMenuLabel className="p-4 bg-zinc-800/50">
                   <div className="flex items-center gap-3">
                     <Avatar className="w-12 h-12 border-2 border-zinc-700">
+                      {user?.avatar_url && (
+                        <AvatarImage
+                          h
+                          src={toAbsoluteUploadsUrl(user?.avatar_url)}
+                        />
+                      )}
                       <AvatarFallback className="bg-white text-black text-lg font-semibold">
                         {initial}
                       </AvatarFallback>
@@ -758,7 +797,7 @@ const NavigationBar = () => {
               <SheetTrigger asChild>
                 <button
                   className="lg:hidden p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
-                  aria-label="Open menu"
+                  aria-label={t("nav.openMenu", "Open menu")}
                 >
                   <Menu className="w-6 h-6" />
                 </button>
@@ -768,9 +807,26 @@ const NavigationBar = () => {
                 className="bg-zinc-950 border-zinc-800 text-white p-4"
               >
                 <SheetHeader className="text-left">
-                  <SheetTitle className="text-white">
-                    {t("nav.menu", "Menu")}
-                  </SheetTitle>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-12 h-12 border-2 border-zinc-700">
+                      {user?.avatar_url && (
+                        <AvatarImage
+                          src={toAbsoluteUploadsUrl(user?.avatar_url)}
+                        />
+                      )}
+                      <AvatarFallback className="bg-white text-black text-lg font-semibold">
+                        {initial}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <SheetTitle className="text-white text-base">
+                        {user?.name}
+                      </SheetTitle>
+                      <p className="text-xs text-zinc-500">
+                        {user?.role?.replace("_", " ")}
+                      </p>
+                    </div>
+                  </div>
                 </SheetHeader>
 
                 <div className="mt-4 space-y-1 overflow-auto max-h-[calc(100vh-6rem)] pr-1">
@@ -821,7 +877,16 @@ const NavigationBar = () => {
                       }}
                       className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm text-zinc-300 hover:text-white hover:bg-white/5 transition-colors"
                     >
-                      <User className="w-5 h-5" />
+                      <Avatar className="w-5 h-5 border-2 border-zinc-700">
+                        {user?.avatar_url && (
+                          <AvatarImage
+                            src={toAbsoluteUploadsUrl(user?.avatar_url)}
+                          />
+                        )}
+                        <AvatarFallback className="bg-white text-black text-xs font-semibold">
+                          {initial}
+                        </AvatarFallback>
+                      </Avatar>
                       <span className="font-medium">
                         {t("nav.myProfile", "My Profile")}
                       </span>

@@ -8,11 +8,23 @@ import {
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
+import { useI18n } from "../i18n/I18nProvider";
 
 const StudentGroups = ({ students }) => {
+  const { t } = useI18n();
   const [groups, setGroups] = useState([
-    { id: 1, name: "Web Development", students: [1, 2], color: "orange" },
-    { id: 2, name: "Data Science", students: [3, 4], color: "orange" },
+    {
+      id: 1,
+      name: t("studentGroups.default.webDev", "Web Development"),
+      students: [1, 2],
+      color: "orange",
+    },
+    {
+      id: 2,
+      name: t("studentGroups.default.dataScience", "Data Science"),
+      students: [3, 4],
+      color: "orange",
+    },
   ]);
   const [newGroup, setNewGroup] = useState("");
 
@@ -47,13 +59,16 @@ const StudentGroups = ({ students }) => {
         <Card className="bg-zinc-900 border-zinc-800 mb-6">
           <CardHeader>
             <CardTitle className="text-white">
-              Student Groups Management
+              {t("studentGroups.title", "Student Groups Management")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
               <Input
-                placeholder="New group name"
+                placeholder={t(
+                  "studentGroups.placeholder.newGroup",
+                  "New group name"
+                )}
                 value={newGroup}
                 onChange={(e) => setNewGroup(e.target.value)}
                 className="bg-zinc-800 border-zinc-700 text-white"
@@ -62,7 +77,7 @@ const StudentGroups = ({ students }) => {
                 onClick={addGroup}
                 className="bg-white text-black hover:bg-zinc-200 w-full sm:w-auto"
               >
-                Add Group
+                {t("studentGroups.addGroup", "Add Group")}
               </Button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -74,7 +89,8 @@ const StudentGroups = ({ students }) => {
                       <Badge
                         className={`bg-${group.color}-500/20 text-${group.color}-400`}
                       >
-                        {group.students.length} students
+                        {group.students.length}{" "}
+                        {t("studentGroups.students", "students")}
                       </Badge>
                     </CardTitle>
                   </CardHeader>
@@ -95,7 +111,7 @@ const StudentGroups = ({ students }) => {
                                 assignStudent(group.id, student.id)
                               }
                             >
-                              Remove
+                              {t("studentGroups.remove", "Remove")}
                             </Button>
                           </div>
                         ))}
@@ -108,7 +124,9 @@ const StudentGroups = ({ students }) => {
                           }
                         }}
                       >
-                        <option value="">Add student...</option>
+                        <option value="">
+                          {t("studentGroups.addStudent", "Add student...")}
+                        </option>
                         {students
                           .filter((s) => !group.students.includes(s.id))
                           .map((student) => (

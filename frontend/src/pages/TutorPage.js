@@ -1262,7 +1262,11 @@ const TutorPage = () => {
                           if (!loading && input.trim()) handleSend();
                         }
                       }}
-                      placeholder={`Ask about ${currentTopic?.label}...`}
+                      placeholder={t(
+                        "tutor.askAboutTopic",
+                        "Ask about {topic}...",
+                        { topic: currentTopic?.label || "anything" }
+                      )}
                       disabled={false}
                       className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-[var(--accent-color)] pr-10 sm:pr-12 h-10 sm:h-12"
                     />

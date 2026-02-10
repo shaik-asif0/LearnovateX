@@ -202,20 +202,54 @@ const ResumeAnalyzer = () => {
     { label: "Extracting Text", icon: Search, duration: 1500 },
     { label: "AI Content Analysis", icon: Brain, duration: 2000 },
     { label: "Skill Verification", icon: Shield, duration: 1500 },
-    { label: "ATS Compatibility Check", icon: Target, duration: 1200 },
-    { label: "Keyword Optimization", icon: Search, duration: 1000 },
-    { label: "Industry Matching", icon: Briefcase, duration: 1200 },
-    { label: "Career Path Analysis", icon: TrendingUp, duration: 1500 },
-    { label: "Competitor Benchmarking", icon: Users, duration: 1200 },
-    { label: "Generating Recommendations", icon: Lightbulb, duration: 1800 },
-    { label: "Final Scoring", icon: BarChart3, duration: 1000 },
+    {
+      label: t("resume.analysis.atsCheck", "ATS Compatibility Check"),
+      icon: Target,
+      duration: 1200,
+    },
+    {
+      label: t("resume.analysis.keywordOpt", "Keyword Optimization"),
+      icon: Search,
+      duration: 1000,
+    },
+    {
+      label: t("resume.analysis.industryMatch", "Industry Matching"),
+      icon: Briefcase,
+      duration: 1200,
+    },
+    {
+      label: t("resume.analysis.careerPath", "Career Path Analysis"),
+      icon: TrendingUp,
+      duration: 1500,
+    },
+    {
+      label: t("resume.analysis.competitorBench", "Competitor Benchmarking"),
+      icon: Users,
+      duration: 1200,
+    },
+    {
+      label: t("resume.analysis.generatingRecs", "Generating Recommendations"),
+      icon: Lightbulb,
+      duration: 1800,
+    },
+    {
+      label: t("resume.analysis.finalScoring", "Final Scoring"),
+      icon: BarChart3,
+      duration: 1000,
+    },
   ];
 
   const features = [
     {
       icon: BarChart3,
-      title: "AI Credibility Score",
-      desc: "Advanced ML model analyzes resume quality, authenticity, and market competitiveness",
+      title: t(
+        "resume.features.credibilityScore.title",
+        "AI Credibility Score"
+      ),
+      desc: t(
+        "resume.features.credibilityScore.desc",
+        "Advanced ML model analyzes resume quality, authenticity, and market competitiveness"
+      ),
       color: "text-orange-400 bg-orange-500/20",
       premium: false,
     },
@@ -263,8 +297,11 @@ const ResumeAnalyzer = () => {
     },
     {
       icon: Sparkles,
-      title: "Smart Recommendations",
-      desc: "Personalized suggestions to improve your resume's impact",
+      title: t("resume.features.smartRecs.title", "Smart Recommendations"),
+      desc: t(
+        "resume.features.smartRecs.desc",
+        "Personalized suggestions to improve your resume's impact"
+      ),
       color: "text-orange-400 bg-orange-500/20",
       premium: false,
     },

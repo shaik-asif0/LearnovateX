@@ -1137,13 +1137,17 @@ const CareerReadinessPage = () => {
             <div className="text-center max-w-md">
               <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
               <h3 className="text-xl font-bold text-white mb-2">
-                Unable to Connect
+                {t(
+                  "careerReadiness.connectionError.title",
+                  "Unable to Connect"
+                )}
               </h3>
               <p className="text-zinc-400 mb-4">{dataFetchError}</p>
               <p className="text-zinc-500 text-sm mb-4">
-                Real-time tracking requires a connection to the backend server.
-                No demo data is shown — all metrics are from your actual
-                activity.
+                {t(
+                  "careerReadiness.connectionError.description",
+                  "Real-time tracking requires a connection to the backend server. No demo data is shown — all metrics are from your actual activity."
+                )}
               </p>
               <Button
                 onClick={() => {
@@ -1215,27 +1219,66 @@ const CareerReadinessPage = () => {
                     <div className="space-y-2">
                       <p className="text-zinc-300 text-lg font-medium">
                         {serverPrediction
-                          ? `Prediction: At your current pace, estimated ~${
+                          ? `${t(
+                              "careerReadiness.prediction",
+                              "Prediction"
+                            )}: ${t(
+                              "careerReadiness.atCurrentPace",
+                              "At your current pace, estimated"
+                            )} ~${
                               serverPrediction.estimated_days_to_job_ready ||
                               twin.daysToJobReady
-                            } days to job-ready.`
-                          : `Prediction: At your current learning pace, you may be job-ready in ~${twin.daysToJobReady} days.`}
+                            } ${t(
+                              "careerReadiness.daysToJobReady",
+                              "days to job-ready"
+                            )}.`
+                          : `${t(
+                              "careerReadiness.prediction",
+                              "Prediction"
+                            )}: ${t(
+                              "careerReadiness.atCurrentPace",
+                              "At your current learning pace, you may be job-ready in"
+                            )} ~${twin.daysToJobReady} ${t(
+                              "careerReadiness.days",
+                              "days"
+                            )}.`}
                       </p>
                       <p className="text-zinc-400 text-sm">
                         {confidenceData
-                          ? `Confidence: ${confidenceData.indicator} (${
+                          ? `${t(
+                              "careerReadiness.confidence",
+                              "Confidence"
+                            )}: ${confidenceData.indicator} (${
                               confidenceData.score
-                            }%) — Based on ${problemsSolvedCount} submissions, ${
-                              stats?.resume_analyses || 0
-                            } resumes, ${
-                              stats?.interviews_taken || 0
-                            } interviews`
-                          : "Explainability: weighted scoring + rule-based prediction using coding, resume, interview, and consistency signals."}
+                            }%) — ${t(
+                              "careerReadiness.basedOn",
+                              "Based on"
+                            )} ${problemsSolvedCount} ${t(
+                              "careerReadiness.submissions",
+                              "submissions"
+                            )}, ${stats?.resume_analyses || 0} ${t(
+                              "careerReadiness.resumes",
+                              "resumes"
+                            )}, ${stats?.interviews_taken || 0} ${t(
+                              "careerReadiness.interviews",
+                              "interviews"
+                            )}`
+                          : `${t(
+                              "careerReadiness.explainability",
+                              "Explainability"
+                            )}: ${t(
+                              "careerReadiness.weightedScoring",
+                              "weighted scoring + rule-based prediction using coding, resume, interview, and consistency signals"
+                            )}.`}
                       </p>
                       {accuracyRate !== null && (
                         <p className="text-zinc-400 text-sm flex items-center gap-2">
                           <CheckCircle className="w-4 h-4 text-accent" />
-                          Code accuracy rate: {Number(accuracyRate).toFixed(1)}%
+                          {t(
+                            "careerReadiness.codeAccuracyRate",
+                            "Code accuracy rate"
+                          )}
+                          : {Number(accuracyRate).toFixed(1)}%
                         </p>
                       )}
                     </div>
@@ -1303,7 +1346,7 @@ const CareerReadinessPage = () => {
                       </div>
                       <div className="text-sm text-zinc-400 flex items-center gap-1">
                         <FileText className="w-3 h-3" />
-                        Resume Reviews
+                        {t("careerReadiness.resumeReviews", "Resume Reviews")}
                       </div>
                       <div className="w-full bg-zinc-700 rounded-full h-1 mt-2">
                         <div
@@ -1344,7 +1387,7 @@ const CareerReadinessPage = () => {
                       </div>
                       <div className="text-sm text-zinc-400 flex items-center gap-1">
                         <MessageSquare className="w-3 h-3" />
-                        Mock Interviews
+                        {t("careerReadiness.mockInterviews", "Mock Interviews")}
                       </div>
                       <div className="w-full bg-zinc-700 rounded-full h-1 mt-2">
                         <div
@@ -1409,7 +1452,10 @@ const CareerReadinessPage = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Rocket className="w-5 h-5" />
-                  AI Career Twin Prediction
+                  {t(
+                    "careerReadiness.aiCareerTwin",
+                    "AI Career Twin Prediction"
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1417,19 +1463,19 @@ const CareerReadinessPage = () => {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
                       <div className="text-sm text-zinc-400">
-                        Next Milestone
+                        {t("careerReadiness.nextMilestone", "Next Milestone")}
                       </div>
                       <div className="text-white font-semibold">
                         {serverPrediction?.next_career_milestone ||
                           twin.nextMilestone}{" "}
                         (
                         {serverPrediction?.milestone_days || twin.milestoneDays}{" "}
-                        days)
+                        {t("careerReadiness.days", "days")})
                       </div>
                     </div>
                     <div className="flex items-center justify-between bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
                       <div className="text-sm text-zinc-400">
-                        Biggest Blocker
+                        {t("careerReadiness.biggestBlocker", "Biggest Blocker")}
                       </div>
                       <div className="text-white font-semibold">
                         {serverPrediction?.biggest_blocker ||
@@ -1439,7 +1485,9 @@ const CareerReadinessPage = () => {
                   </div>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
-                      <div className="text-sm text-zinc-400">Risk Level</div>
+                      <div className="text-sm text-zinc-400">
+                        {t("careerReadiness.riskLevel", "Risk Level")}
+                      </div>
                       <div className="flex items-center gap-2">
                         <Badge
                           className={`border-zinc-600 text-white ${
@@ -1499,10 +1547,23 @@ const CareerReadinessPage = () => {
                     </div>
                   ) : (
                     <div className="text-sm text-zinc-400">
-                      If you practice coding daily for 14 days:
+                      {t(
+                        "careerReadiness.whatIfCoding",
+                        "If you practice coding daily for 14 days"
+                      )}
+                      :
                       <div className="mt-2 text-zinc-300">
-                        → Job readiness increases to {twin.whatIfJobReadiness}%
-                        <br />→ Interview readiness improves significantly
+                        →{" "}
+                        {t(
+                          "careerReadiness.jobReadinessIncreases",
+                          "Job readiness increases to"
+                        )}{" "}
+                        {twin.whatIfJobReadiness}%
+                        <br />→{" "}
+                        {t(
+                          "careerReadiness.interviewReadinessImproves",
+                          "Interview readiness improves significantly"
+                        )}
                       </div>
                     </div>
                   )}
@@ -1516,7 +1577,10 @@ const CareerReadinessPage = () => {
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Goal className="w-5 h-5" />
-                    Personal Goals & Milestones
+                    {t(
+                      "careerReadiness.personalGoals",
+                      "Personal Goals & Milestones"
+                    )}
                   </div>
                   <Button
                     onClick={() => setShowGoalsModal(true)}
@@ -1525,7 +1589,7 @@ const CareerReadinessPage = () => {
                     className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
                   >
                     <Settings className="w-4 h-4 mr-2" />
-                    Manage Goals
+                    {t("careerReadiness.manageGoals", "Manage Goals")}
                   </Button>
                 </CardTitle>
               </CardHeader>
@@ -1606,7 +1670,7 @@ const CareerReadinessPage = () => {
                     onClick={() => setShowGoalsModal(true)}
                   >
                     <Goal className="w-4 h-4 mr-2" />
-                    Add New Goal
+                    {t("careerReadiness.addNewGoal", "Add New Goal")}
                   </Button>
                 </div>
               </CardContent>
@@ -1617,7 +1681,7 @@ const CareerReadinessPage = () => {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold flex items-center gap-2">
                   <BarChart3 className="w-6 h-6" />
-                  Advanced Analytics
+                  {t("careerReadiness.advancedAnalytics", "Advanced Analytics")}
                 </h2>
                 <Button
                   variant="outline"
@@ -1630,7 +1694,10 @@ const CareerReadinessPage = () => {
                   ) : (
                     <Eye className="w-4 h-4 mr-2" />
                   )}
-                  {showAdvancedMetrics ? "Hide" : "Show"} Details
+                  {showAdvancedMetrics
+                    ? t("common.hide", "Hide")
+                    : t("common.show", "Show")}{" "}
+                  {t("careerReadiness.details", "Details")}
                 </Button>
               </div>
 

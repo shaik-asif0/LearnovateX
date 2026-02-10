@@ -39,12 +39,30 @@ export const TRANSLATIONS = {
     "nav.logout": "Logout",
     "nav.home": "Home",
 
+    "nav.notifications": "Notifications",
+    "nav.notifications.delete": "Delete notification",
+    "nav.accentColor": "Accent color",
+    "nav.accentColorLabel": "Accent Color",
+    "nav.colors.orange": "Orange",
+    "nav.colors.hotPink": "Hot Pink",
+    "nav.colors.aquaBlue": "Aqua Blue",
+    "nav.colors.royalPurple": "Royal Purple",
+    "nav.colors.emeraldGreen": "Emerald Green",
+    "nav.openMenu": "Open menu",
+
+    "notifications.none": "No notifications",
+
     "nav.learningPath": "Learning Path",
     "nav.roadmap": "Roadmap",
+    "nav.leaderboard": "Leaderboard",
+    "nav.achievements": "Achievements",
+    "nav.codingGame3d": "3D Coding Game",
+    "nav.courseLearn": "Course Learn",
 
     "badge.popular": "Popular",
     "badge.new": "New",
     "badge.premium": "Premium",
+    "search.placeholder": "Search pages, features...",
 
     "dashboard.features.title": "Explore All Features",
     "dashboard.hero.backgroundAlt": "Background",
@@ -56,6 +74,36 @@ export const TRANSLATIONS = {
       "AI-powered resume analysis with actionable tips to improve your job prospects.",
     "dashboard.feature.resumeAnalyzer.detailed":
       "ATS-friendly resume scoring, keyword optimization, industry-specific suggestions, and comparison with top resumes.",
+    "dashboard.feature.mockInterview.description":
+      "Practice interviews with AI feedback and improve your communication skills.",
+    "dashboard.feature.mockInterview.detailed":
+      "Realistic interview scenarios, voice analysis, body language tips, and personalized improvement plans.",
+    "dashboard.feature.learningPath.description":
+      "Structured learning curriculum tailored to your goals and skill level.",
+    "dashboard.feature.learningPath.detailed":
+      "Customized learning journeys, milestone tracking, resource recommendations, and progress visualization.",
+    "dashboard.feature.companyPortal.description":
+      "Explore company opportunities, internships, and job openings tailored for students.",
+    "dashboard.feature.companyPortal.detailed":
+      "Direct company connections, internship matching, job application tracking, and career event notifications.",
+    "dashboard.feature.collegeAdmin.description":
+      "College administration panel for managing academic records and campus activities.",
+    "dashboard.feature.collegeAdmin.detailed":
+      "Academic performance tracking, event management, student services, and administrative tools.",
+    "dashboard.feature.roadmap.description":
+      "Explore course-based roadmaps to guide your learning journey.",
+    "dashboard.feature.roadmap.detailed":
+      "Structured course sequences, prerequisite mapping, skill progression paths, and career-aligned learning tracks.",
+    "dashboard.feature.premium.description":
+      "Unlock exclusive premium features, advanced AI tools, and personalized mentorship.",
+    "dashboard.feature.premium.detailed":
+      "Access to premium courses, internships, advanced analytics, priority support, and exclusive networking opportunities.",
+    "dashboard.feature.coding3d.title": "3D Interactive Coding Game",
+    "dashboard.feature.coding3d.description":
+      "A real-time 3D coding game where your code controls the world.",
+    "dashboard.feature.coding3d.detailed":
+      "Language-agnostic logic control, live actions, visual consequences, and game-style XP/rank feedback.",
+    "dashboard.feature.coding3d.badge": "Future",
 
     "studentForm.edit": "Edit Student",
     "studentForm.add": "Add Student",
@@ -120,6 +168,7 @@ export const TRANSLATIONS = {
     "tutor.toasts.copied": "Copied to clipboard!",
     "tutor.toasts.history_cleared": "Chat history cleared",
     "tutor.loginStreak": "login streak",
+    "tutor.askAboutTopic": "Ask about {topic}...",
 
     "courseLearn.noCourseSelected": "No Course Selected",
     "courseLearn.openFromPremium":
@@ -235,6 +284,77 @@ export const TRANSLATIONS = {
     "common.intermediate": "Intermediate",
     "common.advanced": "Advanced",
     "common.toasts.linkCopied": "Link copied!",
+    "careerReadiness.connectionError.title": "Unable to Connect",
+    "careerReadiness.connectionError.description":
+      "Real-time tracking requires a connection to the backend server. No demo data is shown — all metrics are from your actual activity.",
+    "careerReadiness.prediction": "Prediction",
+    "careerReadiness.atCurrentPace": "At your current pace, estimated",
+    "careerReadiness.daysToJobReady": "days to job-ready",
+    "careerReadiness.atCurrentLearningPace":
+      "At your current learning pace, you may be job-ready in",
+    "careerReadiness.days": "days",
+    "careerReadiness.confidence": "Confidence",
+    "careerReadiness.basedOn": "Based on",
+    "careerReadiness.submissions": "submissions",
+    "careerReadiness.resumes": "resumes",
+    "careerReadiness.interviews": "interviews",
+    "careerReadiness.explainability": "Explainability",
+    "careerReadiness.weightedScoring":
+      "weighted scoring + rule-based prediction using coding, resume, interview, and consistency signals",
+    "careerReadiness.codeAccuracyRate": "Code accuracy rate",
+    "careerReadiness.resumeReviews": "Resume Reviews",
+    "careerReadiness.mockInterviews": "Mock Interviews",
+    "careerReadiness.aiCareerTwin": "AI Career Twin Prediction",
+    "careerReadiness.nextMilestone": "Next Milestone",
+    "careerReadiness.biggestBlocker": "Biggest Blocker",
+    "careerReadiness.riskLevel": "Risk Level",
+    "careerReadiness.personalGoals": "Personal Goals & Milestones",
+    "careerReadiness.manageGoals": "Manage Goals",
+    "careerReadiness.whatIfCoding": "If you practice coding daily for 14 days",
+    "careerReadiness.jobReadinessIncreases": "Job readiness increases to",
+    "careerReadiness.interviewReadinessImproves":
+      "Interview readiness improves significantly",
+    "careerReadiness.addNewGoal": "Add New Goal",
+    "careerReadiness.advancedAnalytics": "Advanced Analytics",
+    "careerReadiness.details": "Details",
+
+    "auth.passwordPolicy":
+      "Min 8 chars, 1 uppercase, 1 number, 1 special character",
+    "auth.validation.passwordMinLength":
+      "Password must be at least 8 characters",
+    "auth.validation.passwordUppercase":
+      "Password must include at least 1 uppercase letter",
+    "auth.validation.passwordNumber": "Password must include at least 1 number",
+    "auth.validation.passwordSpecial":
+      "Password must include at least 1 special character",
+    "auth.validation.passwordsMismatch": "Passwords do not match",
+    "auth.forgotPassword.title": "Reset Password",
+    "auth.forgotPassword.step.email":
+      "Enter your registered email to receive an OTP",
+    "auth.forgotPassword.step.otp": "Enter the 6-digit OTP sent to your email",
+    "auth.forgotPassword.step.reset": "Create a new password",
+    "auth.forgotPassword.otpSent":
+      "If the email is registered, an OTP has been sent.",
+    "auth.forgotPassword.debugOtp": "Debug OTP",
+    "auth.forgotPassword.requestFailed": "Request failed",
+    "auth.forgotPassword.invalidOtp": "Enter the 6-digit OTP",
+    "auth.forgotPassword.otpVerified": "OTP verified",
+    "auth.forgotPassword.verificationFailed": "Verification failed",
+    "auth.forgotPassword.passwordUpdated": "Password updated successfully",
+    "auth.forgotPassword.resetFailed": "Reset failed",
+    "auth.forgotPassword.otpLabel": "OTP",
+    "auth.forgotPassword.otpPlaceholder": "6-digit code",
+    "auth.forgotPassword.sendOtp": "Send OTP",
+    "auth.forgotPassword.sending": "Sending...",
+    "auth.forgotPassword.verifyOtp": "Verify OTP",
+    "auth.forgotPassword.verifying": "Verifying...",
+    "auth.forgotPassword.changeEmail": "Change Email",
+    "auth.forgotPassword.newPassword": "New Password",
+    "auth.forgotPassword.confirmPassword": "Confirm Password",
+    "auth.forgotPassword.updatePassword": "Update Password",
+    "auth.forgotPassword.updating": "Updating...",
+    "auth.backToLogin": "Back to Login",
+    "auth.placeholder.email": "your@email.com",
 
     "auth.toasts.sessionExpiredLoginAgain":
       "Session expired. Please login again.",
@@ -251,6 +371,28 @@ export const TRANSLATIONS = {
     "settings.sidebar.accessibility": "Accessibility",
     "settings.sidebar.security": "Security",
     "settings.sidebar.data": "Data & Storage",
+    "codingArena.streak": "streak",
+    "codingArena.solved": "solved",
+    "codingArena.aiPowered": "AI-powered evaluation",
+    "codingArena.pause": "Pause",
+    "codingArena.start": "Start",
+    "codingArena.programs": "Programs",
+    "codingArena.chooseProblems":
+      "Choose from 1000+ coding problems by category.",
+    "codingArena.searchPlaceholder": "Search problems (title, tag, keyword)",
+    "resume.analysis.atsCheck": "ATS Compatibility Check",
+    "resume.analysis.keywordOpt": "Keyword Optimization",
+    "resume.analysis.industryMatch": "Industry Matching",
+    "resume.analysis.careerPath": "Career Path Analysis",
+    "resume.analysis.competitorBench": "Competitor Benchmarking",
+    "resume.analysis.generatingRecs": "Generating Recommendations",
+    "resume.analysis.finalScoring": "Final Scoring",
+    "resume.features.credibilityScore.title": "AI Credibility Score",
+    "resume.features.credibilityScore.desc":
+      "Advanced ML model analyzes resume quality, authenticity, and market competitiveness",
+    "resume.features.smartRecs.title": "Smart Recommendations",
+    "resume.features.smartRecs.desc":
+      "Personalized suggestions to improve your resume's impact",
     "settings.notifications.title": "Notification Preferences",
     "settings.notifications.subtitle":
       "Choose how and when you want to be notified",
@@ -299,6 +441,76 @@ export const TRANSLATIONS = {
       "Settings exported successfully!",
     "settings.data.toasts.deleteRequiresEmailConfirmation":
       "Account deletion requires confirmation via email",
+
+    "settings.privacy.publicProfile.title": "Public Profile",
+    "settings.privacy.publicProfile.description":
+      "Make your profile visible to other users",
+    "settings.privacy.showProgress.title": "Show Progress",
+    "settings.privacy.showProgress.description":
+      "Display your learning progress publicly",
+    "settings.privacy.showAchievements.title": "Show Achievements",
+    "settings.privacy.showAchievements.description":
+      "Display earned achievements on your profile",
+    "settings.privacy.showActivity.title": "Show Activity",
+    "settings.privacy.showActivity.description":
+      "Let others see your recent activity",
+    "settings.privacy.allowMessages.title": "Allow Messages",
+    "settings.privacy.allowMessages.description":
+      "Let other users send you messages",
+    "settings.privacy.shareAnalytics.title": "Share Analytics",
+    "settings.privacy.shareAnalytics.description":
+      "Help improve the platform with anonymous usage data",
+    "settings.preferences.fontSize.label": "Font Size",
+    "settings.preferences.autoSave.title": "Auto Save",
+    "settings.preferences.autoSave.description": "Automatically save your work",
+    "settings.preferences.compactMode.title": "Compact Mode",
+    "settings.preferences.compactMode.description":
+      "Use a more compact interface layout",
+    "settings.learning.dailyGoal.label": "Daily Learning Goal",
+    "settings.learning.weekendReminders.title": "Weekend Reminders",
+    "settings.learning.weekendReminders.description":
+      "Receive learning reminders on weekends",
+    "settings.learning.streakNotifications.title": "Streak Notifications",
+    "settings.learning.streakNotifications.description":
+      "Get notified about your learning streak",
+    "settings.accessibility.reduceMotion.title": "Reduce Motion",
+    "settings.accessibility.reduceMotion.description":
+      "Minimize animations and transitions",
+    "settings.accessibility.highContrast.title": "High Contrast",
+    "settings.accessibility.highContrast.description":
+      "Increase contrast for better visibility",
+    "settings.accessibility.screenReader.title": "Screen Reader Support",
+    "settings.accessibility.screenReader.description":
+      "Optimize for screen readers",
+    "settings.accessibility.keyboardNav.title": "Keyboard Navigation",
+    "settings.accessibility.keyboardNav.description":
+      "Enhanced keyboard navigation support",
+
+    "footer.brand": "LearnovateX",
+    "footer.description":
+      "Built for learners — tools, roadmaps and AI to help you grow. Join our community and stay updated.",
+    "footer.quickLinks.title": "Quick Links",
+    "footer.recent.title": "Recent",
+    "footer.recent.buildRoadmap": "How to build a roadmap",
+    "footer.recent.aiTools": "AI tools for learners",
+    "footer.recent.resumeTips": "Resume tips for students",
+    "footer.newsletter.title": "Get updates",
+    "footer.newsletter.placeholder": "Your email",
+    "footer.newsletter.subscribe": "Subscribe",
+    "footer.subscribe.success": "Subscribed! Check your inbox",
+    "footer.subscribe.failed": "Subscription failed",
+    "footer.subscribe.invalidEmail": "Please enter a valid email",
+    "footer.contact.title": "Contact",
+    "footer.links.terms": "Terms",
+    "footer.links.privacy": "Privacy",
+    "footer.links.contact": "Contact",
+    "footer.copyright": "All rights reserved.",
+    "footer.social.github": "GitHub",
+    "footer.social.twitter": "Twitter",
+    "footer.social.linkedin": "LinkedIn",
+    "footer.social.youtube": "YouTube",
+    "footer.social.instagram": "Instagram",
+    "footer.email": "support@learnovatex.example",
 
     "dashboard.error.loadStats": "Failed to load statistics",
     "dashboard.hero.title": "Welcome to Your Learning Hub",
@@ -846,6 +1058,98 @@ export const TRANSLATIONS = {
     "landing.feature.careerReadiness.title": "Career Readiness",
     "landing.feature.careerReadiness.description":
       "Comprehensive career preparation with interview tips, salary negotiation, and job search strategies.",
+    "landing.feature.codeEval.detail.1": "Syntax validation",
+    "landing.feature.codeEval.detail.2": "Performance metrics",
+    "landing.feature.codeEval.detail.3": "Best practices",
+    "landing.feature.codingArena.detail.1": "Daily challenges",
+    "landing.feature.codingArena.detail.2": "Competitive coding",
+    "landing.feature.codingArena.detail.3": "Skill assessment",
+    "landing.feature.resume.detail.1": "ATS compatibility",
+    "landing.feature.resume.detail.2": "Keyword optimization",
+    "landing.feature.resume.detail.3": "Impact scoring",
+    "landing.feature.mock.detail.1": "Technical interviews",
+    "landing.feature.mock.detail.2": "Behavioral questions",
+    "landing.feature.mock.detail.3": "Feedback analysis",
+    "landing.feature.careerDashboard.detail.1": "Progress tracking",
+    "landing.feature.careerDashboard.detail.2": "Skill analytics",
+    "landing.feature.careerDashboard.detail.3": "Career insights",
+    "landing.feature.leaderboard.detail.1": "Global rankings",
+    "landing.feature.leaderboard.detail.2": "Achievement badges",
+    "landing.feature.leaderboard.detail.3": "Progress rewards",
+    "landing.feature.roadmaps.detail.1": "Career paths",
+    "landing.feature.roadmaps.detail.2": "Skill progression",
+    "landing.feature.roadmaps.detail.3": "Industry standards",
+    "landing.feature.company.detail.1": "Candidate screening",
+    "landing.feature.company.detail.2": "Assessment creation",
+    "landing.feature.company.detail.3": "Hiring analytics",
+    "landing.feature.tutorSessions.detail.1": "Personalized learning",
+    "landing.feature.tutorSessions.detail.2": "Interactive sessions",
+    "landing.feature.tutorSessions.detail.3": "Concept mastery",
+    "landing.feature.resources.detail.1": "Documentation",
+    "landing.feature.resources.detail.2": "Code examples",
+    "landing.feature.resources.detail.3": "Learning materials",
+    "landing.feature.careerReadiness.detail.1": "Interview prep",
+    "landing.feature.careerReadiness.detail.2": "Salary negotiation",
+    "landing.feature.careerReadiness.detail.3": "Job search tips",
+    "landing.howItWorks.title": "How LearnovateX Works",
+    "landing.howItWorks.subtitle":
+      "Your journey to career success in 3 simple steps",
+    "landing.step1.title": "Learn with AI Tutor",
+    "landing.step1.description":
+      "Get personalized explanations and interactive learning powered by Azure OpenAI. Master concepts at your own pace.",
+    "landing.step2.title": "Practice in Coding Arena",
+    "landing.step2.description":
+      "Challenge yourself with interactive coding problems, get real-time feedback, and improve your problem-solving skills.",
+    "landing.step3.title": "Get Interview-Ready & Hired",
+    "landing.step3.description":
+      "Practice mock interviews, optimize your resume, and track your career readiness to land your dream job.",
+    "landing.features.title": "Everything You Need to Succeed",
+    "landing.features.subtitle":
+      "One platform, unlimited possibilities - powered by AI",
+    "landing.demo.title": "See LearnovateX in Action",
+    "landing.demo.subtitle":
+      "Watch how our AI-powered platform transforms learning and career preparation",
+    "landing.demo.note":
+      "Use the video controls to watch our AI-powered learning platform in action",
+    "landing.forAll.title": "Built for Everyone",
+    "landing.forAll.subtitle":
+      "From students to enterprises - comprehensive career development",
+    "search.dashboard.description": "View your learning progress and stats",
+    "search.aiTutor.description": "Chat with your AI-powered tutor",
+    "search.codingArena.description": "Practice coding challenges and problems",
+    "search.resources.description": "Browse study materials and resources",
+    "search.careerReadiness.description": "Check your career readiness score",
+    "search.premium.description": "Explore premium features and plans",
+    "search.premiumCourses.description": "Browse and enroll in premium courses",
+    "search.premiumInternships.description":
+      "Find and apply for premium internships",
+    "search.resumeAnalyzer.description": "Get AI-powered resume feedback",
+    "search.mockInterview.description": "Practice with AI mock interviews",
+    "search.myProfile.description": "View and edit your profile",
+    "search.settings.description": "Manage your app settings",
+    "search.leaderboard.description": "See where you rank among peers",
+    "search.learningPath.description": "Follow your personalized learning path",
+    "search.category.pages": "Pages",
+    "search.category.premium": "Premium",
+    "search.category.account": "Account",
+    "companyPortal.removedFromShortlist": "Removed from shortlist",
+    "companyPortal.addedToShortlist": "Added to shortlist",
+    "companyPortal.failedToUpdateShortlist": "Failed to update shortlist",
+    "companyPortal.notFitForRequirements": "Not a fit for current requirements",
+    "companyPortal.candidateRejected": "Candidate rejected",
+    "companyPortal.failedToRejectCandidate": "Failed to reject candidate",
+    "companyPortal.candidateHired": "Candidate hired",
+    "companyPortal.offerExtended":
+      "Congratulations! Offer extended to candidate",
+    "companyPortal.failedToProcessHiring": "Failed to process hiring",
+    "studentGroups.title": "Student Groups Management",
+    "studentGroups.placeholder.newGroup": "New group name",
+    "studentGroups.addGroup": "Add Group",
+    "studentGroups.students": "students",
+    "studentGroups.remove": "Remove",
+    "studentGroups.addStudent": "Add student...",
+    "studentGroups.default.webDev": "Web Development",
+    "studentGroups.default.dataScience": "Data Science",
   },
   te: {
     "nav.dashboard": "డాష్‌బోర్డ్",
@@ -866,12 +1170,30 @@ export const TRANSLATIONS = {
     "nav.logout": "లాగౌట్",
     "nav.home": "హోమ్",
 
+    "nav.notifications": "నోటిఫికేషన్లు",
+    "nav.notifications.delete": "నోటిఫికేషన్ తొలగించు",
+    "nav.accentColor": "యాక్సెంట్ కలర్",
+    "nav.accentColorLabel": "యాక్సెంట్ కలర్",
+    "nav.colors.orange": "ఆరంజ్",
+    "nav.colors.hotPink": "హాట్ పింక్",
+    "nav.colors.aquaBlue": "ఆక్వా బ్లూ",
+    "nav.colors.royalPurple": "రాయల్ పర్పుల్",
+    "nav.colors.emeraldGreen": "ఎమరాల్డ్ గ్రీన్",
+    "nav.openMenu": "మెను తెరువు",
+
+    "notifications.none": "నోటిఫికేషన్లు లేవు",
+
     "nav.learningPath": "లెర్నింగ్ పాత్",
     "nav.roadmap": "రోడ్మ్యాప్",
+    "nav.leaderboard": "లీడర్‌బోర్డ్",
+    "nav.achievements": "సాధనలు",
+    "nav.codingGame3d": "3D కోడింగ్ గేమ్",
+    "nav.courseLearn": "కోర్స్ లెర్న్",
 
     "badge.popular": "ప్రముఖం",
     "badge.new": "కొత్త",
     "badge.premium": "ప్రీమియం",
+    "search.placeholder": "పేజీలు, ఫీచర్లను వెతకండి...",
 
     "dashboard.features.title": "అన్ని ఫీచర్లను అన్వేషించండి",
     "dashboard.hero.backgroundAlt": "పిడిభాగం",
@@ -883,6 +1205,36 @@ export const TRANSLATIONS = {
       "AI-సహాయంతో రెజ్యూమ్ విశ్లేషణ మరియు పని అవకాశాలను మెరుగుపరచడానికి చర్యగల సూచనలు.",
     "dashboard.feature.resumeAnalyzer.detailed":
       "ATS-అనుకూల రిజ్యూమ్ స్కోరింగ్, కీవర్డ్ ఆప్టిమైజేషన్, పరిశ్రమ-ప్రత్యేక సూచనలు, మరియు టాపు రెజ్యూమ్‌లతో పోలిక.",
+    "dashboard.feature.mockInterview.description":
+      "AI ఫీడ్‌బ్యాక్‌తో ఇంటర్వ్యూలను అభ్యసించండి మరియు మీ కమ్యూనికేషన్ స్కిల్స్‌ను మెరుగుపరచండి.",
+    "dashboard.feature.mockInterview.detailed":
+      "రియలిస్టిక్ ఇంటర్వ్యూ సినారియోలు, వాయిస్ విశ్లేషణ, బాడీ లాంగ్వేజ్ టిప్స్, మరియు వ్యక్తిగత మెరుగుదల ప్లాన్‌లు.",
+    "dashboard.feature.learningPath.description":
+      "మీ లక్ష్యాలకు మరియు స్కిల్ స్థాయికి అనుగుణంగా నిర్మించిన లెర్నింగ్ కరిక్యులమ్.",
+    "dashboard.feature.learningPath.detailed":
+      "వ్యక్తిగత లెర్నింగ్ జర్నీలు, మైల్‌స్టోన్ ట్రాకింగ్, రిసోర్స్ రికమెండేషన్స్, మరియు పురోగతి విజువలైజేషన్.",
+    "dashboard.feature.companyPortal.description":
+      "స్టూడెంట్స్ కోసం రూపొందించిన కంపెనీ అవకాశాలు, ఇంటర్న్‌షిప్స్ మరియు జాబ్ ఓపెనింగ్స్ అన్వేషించండి.",
+    "dashboard.feature.companyPortal.detailed":
+      "డైరెక్ట్ కంపెనీ కనెక్షన్స్, ఇంటర్న్‌షిప్ మ్యాచింగ్, జాబ్ అప్లికేషన్ ట్రాకింగ్, మరియు కెరీర్ ఈవెంట్ నోటిఫికేషన్స్.",
+    "dashboard.feature.collegeAdmin.description":
+      "అకాడెమిక్ రికార్డ్స్ మరియు క్యాంపస్ యాక్టివిటీలను నిర్వహించడానికి కాలేజ్ అడ్మినిస్ట్రేషన్ ప్యానెల్.",
+    "dashboard.feature.collegeAdmin.detailed":
+      "అకాడెమిక్ పెర్ఫార్మెన్స్ ట్రాకింగ్, ఈవెంట్ మేనేజ్‌మెంట్, స్టూడెంట్ సర్వీసెస్, మరియు అడ్మినిస్ట్రేటివ్ టూల్స్.",
+    "dashboard.feature.roadmap.description":
+      "మీ లెర్నింగ్ జర్నీని గైడ్ చేయడానికి కోర్స్-ఆధారిత రోడ్మ్యాప్‌లను అన్వేషించండి.",
+    "dashboard.feature.roadmap.detailed":
+      "నిర్మించిన కోర్స్ సీక్వెన్సెస్, ప్రిరెక్విజిట్ మ్యాపింగ్, స్కిల్ ప్రోగ్రెషన్ పాత్‌లు, మరియు కెరీర్-అలైన్డ్ లెర్నింగ్ ట్రాక్స్.",
+    "dashboard.feature.premium.description":
+      "ఎక్స్‌క్లూసివ్ ప్రీమియం ఫీచర్స్, అధునాతన AI టూల్స్ మరియు వ్యక్తిగత మెంటార్‌షిప్‌ను అన్‌లాక్ చేయండి.",
+    "dashboard.feature.premium.detailed":
+      "ప్రీమియం కోర్సెస్, ఇంటర్న్‌షిప్స్, అధునాతన అనలిటిక్స్, ప్రయోరిటీ సపోర్ట్, మరియు ఎక్స్‌క్లూసివ్ నెట్‌వర్కింగ్ అవకాశాలకు యాక్సెస్.",
+    "dashboard.feature.coding3d.title": "3D ఇంటరాక్టివ్ కోడింగ్ గేమ్",
+    "dashboard.feature.coding3d.description":
+      "మీ కోడ్ ప్రపంచాన్ని నియంత్రించే రియల్-టైమ్ 3D కోడింగ్ గేమ్.",
+    "dashboard.feature.coding3d.detailed":
+      "లాంగ్వేజ్-అగ్నోస్టిక్ లాజిక్ కంట్రోల్, లైవ్ యాక్షన్స్, విజువల్ కన్‌సిక్వెన్సెస్, మరియు గేమ్-స్టైల్ XP/ర్యాంక్ ఫీడ్‌బ్యాక్.",
+    "dashboard.feature.coding3d.badge": "భవిష్యత్తు",
 
     "studentForm.edit": "స్టూడెంట్ సవరించండి",
     "studentForm.add": "స్టూడెంట్ జోడించండి",
@@ -1091,6 +1443,51 @@ export const TRANSLATIONS = {
       "సెట్టింగ్స్ విజయవంతంగా ఎగుమతి అయ్యాయి!",
     "settings.data.toasts.deleteRequiresEmailConfirmation":
       "ఖాతా తొలగింపుకు ఇమెయిల్ ద్వారా నిర్ధారణ అవసరం",
+
+    "settings.privacy.publicProfile.title": "పబ్లిక్ ప్రొఫైల్",
+    "settings.privacy.publicProfile.description":
+      "మీ ప్రొఫైల్‌ను ఇతర వినియోగదారులకు కనిపించేలా చేయండి",
+    "settings.privacy.showProgress.title": "ప్రోగ్రెస్ చూపించు",
+    "settings.privacy.showProgress.description":
+      "మీ లెర్నింగ్ ప్రోగ్రెస్‌ను పబ్లిక్‌గా ప్రదర్శించండి",
+    "settings.privacy.showAchievements.title": "అచీవ్‌మెంట్స్ చూపించు",
+    "settings.privacy.showAchievements.description":
+      "మీ ప్రొఫైల్‌లో సంపాదించిన అచీవ్‌మెంట్స్‌ను ప్రదర్శించండి",
+    "settings.privacy.showActivity.title": "యాక్టివిటీ చూపించు",
+    "settings.privacy.showActivity.description":
+      "ఇతరులు మీ రీసెంట్ యాక్టివిటీ చూడగలరు",
+    "settings.privacy.allowMessages.title": "మెసేజ్‌లను అనుమతించు",
+    "settings.privacy.allowMessages.description":
+      "ఇతర వినియోగదారులు మీకు మెసేజ్‌లు పంపగలరు",
+    "settings.privacy.shareAnalytics.title": "అనలిటిక్స్ షేర్ చేయి",
+    "settings.privacy.shareAnalytics.description":
+      "అనామక వినియోగ డేటాతో ప్లాట్‌ఫార్మ్‌ను మెరుగుపరచడానికి సహాయం చేయండి",
+    "settings.preferences.fontSize.label": "ఫాంట్ సైజ్",
+    "settings.preferences.autoSave.title": "ఆటో సేవ్",
+    "settings.preferences.autoSave.description":
+      "మీ పనిని ఆటోమేటిక్‌గా సేవ్ చేయండి",
+    "settings.preferences.compactMode.title": "కాంపాక్ట్ మోడ్",
+    "settings.preferences.compactMode.description":
+      "మరింత కాంపాక్ట్ ఇంటర్‌ఫేస్ లేఅవుట్ ఉపయోగించండి",
+    "settings.learning.dailyGoal.label": "రోజువారీ లెర్నింగ్ గోల్",
+    "settings.learning.weekendReminders.title": "వీకెండ్ రిమైండర్స్",
+    "settings.learning.weekendReminders.description":
+      "వీకెండ్‌లలో లెర్నింగ్ రిమైండర్స్ అందుకోండి",
+    "settings.learning.streakNotifications.title": "స్ట్రీక్ నోటిఫికేషన్లు",
+    "settings.learning.streakNotifications.description":
+      "మీ లెర్నింగ్ స్ట్రీక్ గురించి నోటిఫై అవండి",
+    "settings.accessibility.reduceMotion.title": "మోషన్ తగ్గించు",
+    "settings.accessibility.reduceMotion.description":
+      "యానిమేషన్లు మరియు ట్రాన్సిషన్లను తగ్గించండి",
+    "settings.accessibility.highContrast.title": "హై కాంట్రాస్ట్",
+    "settings.accessibility.highContrast.description":
+      "మెరుగైన విజిబిలిటీ కోసం కాంట్రాస్ట్ పెంచండి",
+    "settings.accessibility.screenReader.title": "స్క్రీన్ రీడర్ సపోర్ట్",
+    "settings.accessibility.screenReader.description":
+      "స్క్రీన్ రీడర్ల కోసం ఆప్టిమైజ్ చేయండి",
+    "settings.accessibility.keyboardNav.title": "కీబోర్డ్ నావిగేషన్",
+    "settings.accessibility.keyboardNav.description":
+      "మెరుగైన కీబోర్డ్ నావిగేషన్ సపోర్ట్",
 
     "dashboard.error.loadStats": "గణాంకాలను లోడ్ చేయలేకపోయింది",
     "dashboard.hero.title": "మీ లెర్నింగ్ హబ్‌కు స్వాగతం",
@@ -1487,6 +1884,7 @@ export const TRANSLATIONS = {
     "tutor.toasts.copied": "కాపీ అయింది!",
     "tutor.toasts.history_cleared": "చాట్ చరిత్ర క్లియర్ చేయబడింది",
     "tutor.loginStreak": "లాగిన్ స్ట్రీక్",
+    "tutor.askAboutTopic": "{topic} గురించి అడగండి...",
     "tutor.welcomeDescription":
       "నేను మీ వ్యక్తిగత లెర్నింగ్ అసిస్టెంట్‌ను, Gemini AI ద్వారా శక్తివంతమైనది. నన్ను ఏమీ అడగండి!",
     "tutor.upload.too_large": "ఫైల్ చాలా పెద్దది. గరిష్టం {max}MB",
@@ -1800,6 +2198,232 @@ export const TRANSLATIONS = {
     "learningPath.labels.lessons": "Lessons",
     "learningPath.labels.duration": "Duration",
     "learningPath.courseProgress": "Course Progress",
+    "landing.feature.codeEval.detail.1": "సింటాక్స్ ధ్రువీకరణ",
+    "landing.feature.codeEval.detail.2": "పనితీరు కొలమానాలు",
+    "landing.feature.codeEval.detail.3": "ఉత్తమ పద్ధతులు",
+    "landing.feature.codingArena.detail.1": "రోజువారీ సవాళ్లు",
+    "landing.feature.codingArena.detail.2": "పోటీ కోడింగ్",
+    "landing.feature.codingArena.detail.3": "నైపుణ్య మూల్యాంకనం",
+    "landing.feature.resume.detail.1": "ATS అనుకూలత",
+    "landing.feature.resume.detail.2": "కీవర్డ్ ఆప్టిమైజేషన్",
+    "landing.feature.resume.detail.3": "ప్రభావం స్కోరింగ్",
+    "landing.feature.mock.detail.1": "సాంకేతిక ఇంటర్వ్యూలు",
+    "landing.feature.mock.detail.2": "వ్యవహార ప్రశ్నలు",
+    "landing.feature.mock.detail.3": "ప్రతిస్పందన విశ్లేషణ",
+    "landing.feature.careerDashboard.detail.1": "పురోగతి ట్రాకింగ్",
+    "landing.feature.careerDashboard.detail.2": "నైపుణ్య విశ్లేషణ",
+    "landing.feature.careerDashboard.detail.3": "కెరీర్ అంతర్దృష్టులు",
+    "landing.feature.leaderboard.detail.1": "ప్రపంచ ర్యాంకింగ్స్",
+    "landing.feature.leaderboard.detail.2": "అచీవ్‌మెంట్ బ్యాడ్జెస్",
+    "landing.feature.leaderboard.detail.3": "పురోగతి రివార్డ్స్",
+    "landing.feature.roadmaps.detail.1": "కెరీర్ మార్గాలు",
+    "landing.feature.roadmaps.detail.2": "నైపుణ్య పురోగతి",
+    "landing.feature.roadmaps.detail.3": "పరిశ్రమ ప్రమాణాలు",
+    "landing.feature.company.detail.1": "క్యాండిడేట్ స్క్రీనింగ్",
+    "landing.feature.company.detail.2": "మూల్యాంకన సృష్టి",
+    "landing.feature.company.detail.3": "హైరింగ్ విశ్లేషణ",
+    "landing.feature.tutorSessions.detail.1": "వ్యక్తిగతీకరించిన అభ్యాసం",
+    "landing.feature.tutorSessions.detail.2": "ఇంటరాక్టివ్ సెషన్స్",
+    "landing.feature.tutorSessions.detail.3": "కాన్సెప్ట్ మాస్టరీ",
+    "landing.feature.resources.detail.1": "డాక్యుమెంటేషన్",
+    "landing.feature.resources.detail.2": "కోడ్ ఉదాహరణలు",
+    "landing.feature.resources.detail.3": "లెర్నింగ్ మెటీరియల్స్",
+    "landing.feature.careerReadiness.detail.1": "ఇంటర్వ్యూ ప్రిప్",
+    "landing.feature.careerReadiness.detail.2": "జీతం చర్చలు",
+    "landing.feature.careerReadiness.detail.3": "జాబ్ సెర్చ్ టిప్స్",
+    "landing.howItWorks.title": "LearnovateX ఎలా పనిచేస్తుంది",
+    "landing.howItWorks.subtitle":
+      "మీ కెరీర్ విజయానికి 3 సరళమైన అంచెలలో మీ ప్రయాణం",
+    "landing.step1.title": "AI ట్యూటర్‌తో నేర్చుకోండి",
+    "landing.step1.description":
+      "Azure OpenAI ద్వారా శక్తిపొందిన వ్యక్తిగతీకరించిన వివరణలు మరియు ఇంటరాక్టివ్ లెర్నింగ్ పొందండి. మీ స్వంత వేగంలో కాన్సెప్ట్‌లను మాస్టర్ చేయండి.",
+    "landing.step2.title": "కోడింగ్ అరేనాలో ప్రాక్టీస్ చేయండి",
+    "landing.step2.description":
+      "ఇంటరాక్టివ్ కోడింగ్ సమస్యలతో మిమ్మల్ని సవాలు చేసుకోండి, రియల్-టైమ్ ఫీడ్‌బ్యాక్ పొందండి మరియు మీ ప్రాబ్లెమ్-సాల్వింగ్ నైపుణ్యాలను మెరుగుపరచండి.",
+    "landing.step3.title": "ఇంటర్వ్యూ-రెడీ అవ్వండి & హైర్ అవ్వండి",
+    "landing.step3.description":
+      "మాక్ ఇంటర్వ్యూలలో ప్రాక్టీస్ చేయండి, మీ రెజ్యూమ్‌ను ఆప్టిమైజ్ చేయండి మరియు మీ కెరీర్ రెడినెస్‌ను ట్రాక్ చేసి మీ డ్రీమ్ జాబ్‌ను పొందండి.",
+    "landing.features.title": "విజయం కోసం మీకు అవసరమైన ప్రతిదీ",
+    "landing.features.subtitle":
+      "ఒక ప్లాట్‌ఫారమ్, అపరిమిత అవకాశాలు - AI ద్వారా శక్తిపొందించబడింది",
+    "landing.demo.title": "LearnovateXను చూడండి",
+    "landing.demo.subtitle":
+      "మా AI-పవర్డ్ ప్లాట్‌ఫారమ్ లెర్నింగ్ మరియు కెరీర్ ప్రిపరేషన్‌ను ఎలా మారుస్తుందో చూడండి",
+    "landing.demo.note":
+      "మా AI-పవర్డ్ లెర్నింగ్ ప్లాట్‌ఫారమ్‌ను చూడటానికి వీడియో కంట్రోల్స్‌ను ఉపయోగించండి",
+    "landing.forAll.title": "ప్రతి ఒక్కరికీ నిర్మించబడింది",
+    "landing.forAll.subtitle":
+      "విద్యార్థుల నుండి ఎంటర్‌ప్రైజెస్ వరకు - సమగ్ర కెరీర్ అభివృద్ధి",
+    "codingArena.streak": "స్ట్రీక్",
+    "codingArena.solved": "పరిష్కరించబడింది",
+    "codingArena.aiPowered": "AI-పవర్డ్ విలువాంకనం",
+    "codingArena.pause": "పాజ్",
+    "codingArena.start": "ప్రారంభించు",
+    "codingArena.programs": "ప్రోగ్రామ్స్",
+    "codingArena.chooseProblems":
+      "క్యాటగరీ ద్వారా 1000+ కోడింగ్ సమస్యల నుండి ఎంచుకోండి.",
+    "codingArena.searchPlaceholder":
+      "సమస్యలను శోధించు (శీర్షిక, ట్యాగ్, కీవర్డ్)",
+    "resume.analysis.atsCheck": "ATS అనుకూలత చెక్",
+    "resume.analysis.keywordOpt": "కీవర్డ్ ఆప్టిమైజేషన్",
+    "resume.analysis.industryMatch": "ఇండస్ట్రీ మ్యాచింగ్",
+    "resume.analysis.careerPath": "కెరీర్ పాత్ విశ్లేషణ",
+    "resume.analysis.competitorBench": "కంపెటిటర్ బెంచ్‌మార్కింగ్",
+    "resume.analysis.generatingRecs": "సిఫార్సులను ఉత్పత్తి చేస్తోంది",
+    "resume.analysis.finalScoring": "ఫైనల్ స్కోరింగ్",
+    "resume.features.credibilityScore.title": "AI క్రెడిబిలిటీ స్కోర్",
+    "resume.features.credibilityScore.desc":
+      "అధునాతన ML మోడల్ రెజ్యూమ్ నాణ్యత, ప్రామాణికత మరియు మార్కెట్ పోటీని విశ్లేషిస్తుంది",
+    "resume.features.smartRecs.title": "స్మార్ట్ సిఫార్సులు",
+    "resume.features.smartRecs.desc":
+      "మీ రెజ్యూమ్ యొక్క ప్రభావాన్ని మెరుగుపరచడానికి వ్యక్తిగతీకరించిన సూచనలు",
+    "careerReadiness.connectionError.title": "కనెక్ట్ చేయలేకపోయాం",
+    "careerReadiness.connectionError.description":
+      "రియల్-టైమ్ ట్రాకింగ్‌కు బ్యాకెండ్ సర్వర్‌కు కనెక్షన్ అవసరం. డెమో డేటా చూపించబడదు — అన్ని మెట్రిక్స్ మీ అసలు యాక్టివిటీ నుండి ఉన్నాయి.",
+    "careerReadiness.prediction": "అంచనా",
+    "careerReadiness.atCurrentPace": "మీ ప్రస్తుత వేగంలో, అంచనా",
+    "careerReadiness.daysToJobReady": "జాబ్-రెడీకి రోజులు",
+    "careerReadiness.atCurrentLearningPace":
+      "మీ ప్రస్తుత లెర్నింగ్ వేగంలో, మీరు జాబ్-రెడీ అవ్వవచ్చు",
+    "careerReadiness.days": "రోజులు",
+    "careerReadiness.confidence": "విశ్వాసం",
+    "careerReadiness.basedOn": "దీని ఆధారంగా",
+    "careerReadiness.submissions": "సమర్పణలు",
+    "careerReadiness.resumes": "రెజ్యూమ్‌లు",
+    "careerReadiness.interviews": "ఇంటర్వ్యూలు",
+    "careerReadiness.explainability": "వివరణ",
+    "careerReadiness.weightedScoring":
+      "వెయిటెడ్ స్కోరింగ్ + కోడింగ్, రెజ్యూమ్, ఇంటర్వ్యూ మరియు కన్సిస్టెన్సీ సిగ్నల్స్‌ను ఉపయోగించే రూల్-బేస్డ్ ప్రెడిక్షన్",
+    "careerReadiness.codeAccuracyRate": "కోడ్ ఖచ్చితత్వం రేటు",
+    "careerReadiness.resumeReviews": "రెజ్యూమ్ సమీక్షలు",
+    "careerReadiness.mockInterviews": "మాక్ ఇంటర్వ్యూలు",
+    "careerReadiness.aiCareerTwin": "AI కెరీర్ ట్విన్ అంచనా",
+    "careerReadiness.nextMilestone": "తదుపరి మైల్‌స్టోన్",
+    "careerReadiness.biggestBlocker": "పెద్ద అడ్డంకి",
+    "careerReadiness.riskLevel": "రిస్క్ లెవెల్",
+    "careerReadiness.personalGoals": "వ్యక్తిగత లక్ష్యాలు & మైల్‌స్టోన్స్",
+    "careerReadiness.manageGoals": "లక్ష్యాలను నిర్వహించు",
+    "careerReadiness.whatIfCoding":
+      "మీరు 14 రోజులు రోజువారీ కోడింగ్ ప్రాక్టీస్ చేస్తే",
+    "careerReadiness.jobReadinessIncreases": "జాబ్ రెడినెస్ పెరుగుతుంది",
+    "careerReadiness.interviewReadinessImproves":
+      "ఇంటర్వ్యూ రెడినెస్ గణనీయంగా మెరుగుపడుతుంది",
+    "careerReadiness.addNewGoal": "కొత్త లక్ష్యం జోడించు",
+    "careerReadiness.advancedAnalytics": "అధునాతన విశ్లేషణలు",
+    "careerReadiness.details": "వివరాలు",
+
+    "auth.passwordPolicy":
+      "కనీసం 8 అక్షరాలు, 1 పెద్ద అక్షరం, 1 సంఖ్య, 1 ప్రత్యేక అక్షరం",
+    "auth.validation.passwordMinLength": "పాస్‌వర్డ్ కనీసం 8 అక్షరాలు ఉండాలి",
+    "auth.validation.passwordUppercase":
+      "పాస్‌వర్డ్‌లో కనీసం 1 పెద్ద అక్షరం ఉండాలి",
+    "auth.validation.passwordNumber": "పాస్‌వర్డ్‌లో కనీసం 1 సంఖ్య ఉండాలి",
+    "auth.validation.passwordSpecial":
+      "పాస్‌వర్డ్‌లో కనీసం 1 ప్రత్యేక అక్షరం ఉండాలి",
+    "auth.validation.passwordsMismatch": "పాస్‌వర్డ్‌లు సరిపోలడం లేదు",
+    "auth.forgotPassword.title": "పాస్‌వర్డ్ రీసెట్ చేయండి",
+    "auth.forgotPassword.step.email":
+      "OTP పొందడానికి మీ నమోదిత ఇమెయిల్ నమోదు చేయండి",
+    "auth.forgotPassword.step.otp":
+      "మీ ఇమెయిల్‌కు పంపిన 6-అంకెల OTP నమోదు చేయండి",
+    "auth.forgotPassword.step.reset": "కొత్త పాస్‌వర్డ్ సృష్టించండి",
+    "auth.forgotPassword.otpSent": "ఇమెయిల్ నమోదితం అయితే, OTP పంపబడింది.",
+    "auth.forgotPassword.debugOtp": "డీబగ్ OTP",
+    "auth.forgotPassword.requestFailed": "అభ్యర్థన విఫలమైంది",
+    "auth.forgotPassword.invalidOtp": "6-అంకెల OTP నమోదు చేయండి",
+    "auth.forgotPassword.otpVerified": "OTP నిర్ధారించబడింది",
+    "auth.forgotPassword.verificationFailed": "నిర్ధారణ విఫలమైంది",
+    "auth.forgotPassword.passwordUpdated":
+      "పాస్‌వర్డ్ విజయవంతంగా అప్డేట్ అయ్యింది",
+    "auth.forgotPassword.resetFailed": "రీసెట్ విఫలమైంది",
+    "auth.forgotPassword.otpLabel": "OTP",
+    "auth.forgotPassword.otpPlaceholder": "6-అంకెల కోడ్",
+    "auth.forgotPassword.sendOtp": "OTP పంపు",
+    "auth.forgotPassword.sending": "పంపుతోంది...",
+    "auth.forgotPassword.verifyOtp": "OTP నిర్ధారించు",
+    "auth.forgotPassword.verifying": "నిర్ధారిస్తోంది...",
+    "auth.forgotPassword.changeEmail": "ఇమెయిల్ మార్చు",
+    "auth.forgotPassword.newPassword": "కొత్త పాస్‌వర్డ్",
+    "auth.forgotPassword.confirmPassword": "పాస్‌వర్డ్ నిర్ధారించండి",
+    "auth.forgotPassword.updatePassword": "పాస్‌వర్డ్ అప్డేట్ చేయండి",
+    "auth.forgotPassword.updating": "అప్డేట్ అవుతోంది...",
+    "auth.backToLogin": "లాగిన్‌కు తిరిగి వెళ్ళు",
+    "auth.placeholder.email": "మీ@ఇమెయిల్.కామ్",
+    "search.dashboard.description":
+      "మీ నేర్చుకోవడం పురోగతి మరియు గణాంకాలను చూడండి",
+    "search.aiTutor.description": "మీ AI-శక్తిసమ్మత ట్యూటర్‌తో చాట్ చేయండి",
+    "search.codingArena.description":
+      "కోడింగ్ సవాళ్లు మరియు సమస్యలతో అభ్యసించండి",
+    "search.resources.description":
+      "అధ్యయన సామాగ్రి మరియు వనరులను బ్రౌజ్ చేయండి",
+    "search.careerReadiness.description":
+      "మీ కెరీర్ సిద్ధత స్కోర్ తనిఖీ చేయండి",
+    "search.premium.description":
+      "ప్రీమియం ఫీచర్‌లు మరియు ప్లాన్‌లను అన్వేషించండి",
+    "search.premiumCourses.description":
+      "ప్రీమియం కోర్సులను బ్రౌజ్ చేసి నమోదు చేయండి",
+    "search.premiumInternships.description":
+      "ప్రీమియం ఇంటర్న్‌షిప్‌లను కనుగొని దరఖాస్తు చేయండి",
+    "search.resumeAnalyzer.description":
+      "AI-శక్తిసమ్మత రెజ్యూమ్ ఫీడ్‌బ్యాక్ పొందండి",
+    "search.mockInterview.description": "AI మాక్ ఇంటర్వ్యూలతో అభ్యసించండి",
+    "search.myProfile.description": "మీ ప్రొఫైల్ చూడండి మరియు సవరించండి",
+    "search.settings.description": "మీ యాప్ సెట్టింగులను నిర్వహించండి",
+    "search.leaderboard.description":
+      "మీరు మీ సహపాఠులలో ఎక్కడ ర్యాంక్ అయ్యారో చూడండి",
+    "search.learningPath.description":
+      "మీ వ్యక్తిగత నేర్చుకోవడం మార్గాన్ని అనుసరించండి",
+    "search.category.pages": "పేజీలు",
+    "search.category.premium": "ప్రీమియం",
+    "search.category.account": "ఖాతా",
+    "companyPortal.removedFromShortlist": "షార్ట్‌లిస్ట్ నుండి తీసివేయబడింది",
+    "companyPortal.addedToShortlist": "షార్ట్‌లిస్ట్‌కు జోడించబడింది",
+    "companyPortal.failedToUpdateShortlist":
+      "షార్ట్‌లిస్ట్ అప్‌డేట్ చేయడం విఫలమైంది",
+    "companyPortal.notFitForRequirements": "ప్రస్తుత అవసరాలకు సరిపోలేదు",
+    "companyPortal.candidateRejected": "క్యాండిడేట్ తిరస్కరించబడ్డారు",
+    "companyPortal.failedToRejectCandidate":
+      "క్యాండిడేట్‌ను తిరస్కరించడం విఫలమైంది",
+    "companyPortal.candidateHired": "క్యాండిడేట్ నియమించబడ్డారు",
+    "companyPortal.offerExtended":
+      "అభినందనలు! క్యాండిడేట్‌కు ఆఫర్ పొందించబడింది",
+    "companyPortal.failedToProcessHiring":
+      "నియామకాన్ని ప్రాసెస్ చేయడం విఫలమైంది",
+    "footer.brand": "లెర్నోవేటెక్స్",
+    "footer.description":
+      "విద్యార్థులు, వృత్తిపరులు మరియు సంస్థల కోసం నిర్మించబడింది. మా AI-శక్తిసమ్మత సాధనాలతో మీ నైపుణ్యాలను మెరుగుపరచండి మరియు మీ కెరీర్‌ను ముందుకు తీసుకెళ్ళండి.",
+    "footer.quickLinks.title": "త్వరిత లింకులు",
+    "footer.recent.title": "ఇటీవలి",
+    "footer.recent.buildRoadmap": "రోడ్‌మ్యాప్‌ను ఎలా నిర్మించాలి",
+    "footer.recent.aiTools": "విద్యార్థుల కోసం AI సాధనాలు",
+    "footer.recent.resumeTips": "విద్యార్థుల కోసం రెజ్యూమ్ చిట్కాలు",
+    "footer.newsletter.title": "నవీకరణలు పొందండి",
+    "footer.newsletter.placeholder": "మీ ఇమెయిల్",
+    "footer.newsletter.subscribe": "సబ్‌స్క్రైబ్ చేయండి",
+    "footer.subscribe.success":
+      "సబ్‌స్క్రైబ్ చేయబడింది! మీ ఇన్‌బాక్స్‌ను తనిఖీ చేయండి",
+    "footer.subscribe.failed": "సబ్‌స్క్రిప్షన్ విఫలమైంది",
+    "footer.subscribe.invalidEmail":
+      "దయచేసి చెల్లుబాటు అయ్యే ఇమెయిల్‌ను నమోదు చేయండి",
+    "footer.contact.title": "సంప్రదించండి",
+    "footer.links.terms": "నిబంధనలు",
+    "footer.links.privacy": "గోప్యత",
+    "footer.links.contact": "సంప్రదించండి",
+    "footer.copyright": "అన్ని హక్కులు రిజర్వ్ చేయబడ్డాయి.",
+    "footer.social.github": "GitHub",
+    "footer.social.twitter": "Twitter",
+    "footer.social.linkedin": "LinkedIn",
+    "footer.social.youtube": "YouTube",
+    "footer.social.instagram": "Instagram",
+    "footer.email": "support@learnovatex.example",
+    "studentGroups.title": "విద్యార్థుల సమూహాల నిర్వహణ",
+    "studentGroups.placeholder.newGroup": "కొత్త సమూహం పేరు",
+    "studentGroups.addGroup": "సమూహం జోడించు",
+    "studentGroups.students": "విద్యార్థులు",
+    "studentGroups.remove": "తీసివేయు",
+    "studentGroups.addStudent": "విద్యార్థిని జోడించు...",
+    "studentGroups.default.webDev": "వెబ్ డెవలప్‌మెంట్",
+    "studentGroups.default.dataScience": "డేటా సైన్స్",
   },
   hi: {
     "nav.dashboard": "डैशबोर्ड",
@@ -1820,12 +2444,30 @@ export const TRANSLATIONS = {
     "nav.logout": "लॉग आउट",
     "nav.home": "होम",
 
+    "nav.notifications": "सूचनाएँ",
+    "nav.notifications.delete": "सूचना हटाएं",
+    "nav.accentColor": "एक्सेंट कलर",
+    "nav.accentColorLabel": "एक्सेंट कलर",
+    "nav.colors.orange": "ऑरेंज",
+    "nav.colors.hotPink": "हॉट पिंक",
+    "nav.colors.aquaBlue": "एक्वा ब्लू",
+    "nav.colors.royalPurple": "रॉयल पर्पल",
+    "nav.colors.emeraldGreen": "एमराल्ड ग्रीन",
+    "nav.openMenu": "मेनू खोलें",
+
+    "notifications.none": "कोई सूचना नहीं",
+
     "nav.learningPath": "लर्निंग पाथ",
     "nav.roadmap": "रोडमैप",
+    "nav.leaderboard": "लीडरबोर्ड",
+    "nav.achievements": "उपलब्धियाँ",
+    "nav.codingGame3d": "3D कोडिंग गेम",
+    "nav.courseLearn": "कोर्स लर्न",
 
     "badge.popular": "लोकप्रिय",
     "badge.new": "नया",
     "badge.premium": "प्रीमियम",
+    "search.placeholder": "पेज, फीचर्स खोजें...",
     "profile.labels.fullName": "पूरा नाम",
     "profile.labels.email": "ईमेल",
     "profile.labels.phone": "फ़ोन",
@@ -1947,6 +2589,36 @@ export const TRANSLATIONS = {
       "AI-समर्थित रिज़्यूमे विश्लेषण के साथ उपयोगी सुझाव जो आपके नौकरी के अवसरों को बेहतर बनाते हैं।",
     "dashboard.feature.resumeAnalyzer.detailed":
       "ATS-फ्रेंडली रिज्यूमे स्कोरिंग, कीवर्ड अनुकूलन, उद्योग-विशिष्ट सुझाव और शीर्ष रिज्यूमे के साथ तुलना।",
+    "dashboard.feature.mockInterview.description":
+      "AI फीडबैक के साथ इंटरव्यू अभ्यास करें और अपनी संचार कौशल में सुधार करें।",
+    "dashboard.feature.mockInterview.detailed":
+      "यथार्थवादी इंटरव्यू परिदृश्य, आवाज विश्लेषण, बॉडी लैंग्वेज टिप्स और व्यक्तिगत सुधार योजनाएँ।",
+    "dashboard.feature.learningPath.description":
+      "आपके लक्ष्यों और कौशल स्तर के अनुसार संरचित लर्निंग पाठ्यक्रम।",
+    "dashboard.feature.learningPath.detailed":
+      "व्यक्तिगत लर्निंग यात्राएँ, माइलस्टोन ट्रैकिंग, संसाधन अनुशंसाएँ और प्रगति विज़ुअलाइज़ेशन।",
+    "dashboard.feature.companyPortal.description":
+      "छात्रों के लिए तैयार कंपनी के अवसर, इंटर्नशिप और नौकरी के अवसरों का अन्वेषण करें।",
+    "dashboard.feature.companyPortal.detailed":
+      "प्रत्यक्ष कंपनी कनेक्शन, इंटर्नशिप मिलान, नौकरी आवेदन ट्रैकिंग और करियर इवेंट अधिसूचनाएँ।",
+    "dashboard.feature.collegeAdmin.description":
+      "अकादमिक रिकॉर्ड और कैंपस गतिविधियों को प्रबंधित करने के लिए कॉलेज प्रशासन पैनल।",
+    "dashboard.feature.collegeAdmin.detailed":
+      "अकादमिक प्रदर्शन ट्रैकिंग, इवेंट प्रबंधन, छात्र सेवाएँ और प्रशासनिक उपकरण।",
+    "dashboard.feature.roadmap.description":
+      "अपनी लर्निंग यात्रा को मार्गदर्शन करने के लिए कोर्स-आधारित रोडमैप का अन्वेषण करें।",
+    "dashboard.feature.roadmap.detailed":
+      "संरचित कोर्स अनुक्रम, पूर्वापेक्षा मैपिंग, कौशल प्रगति पथ और करियर-संरेखित लर्निंग ट्रैक।",
+    "dashboard.feature.premium.description":
+      "अनन्य प्रीमियम सुविधाएँ, उन्नत AI उपकरण और व्यक्तिगत मार्गदर्शन अनलॉक करें।",
+    "dashboard.feature.premium.detailed":
+      "प्रीमियम कोर्स, इंटर्नशिप, उन्नत विश्लेषण, प्राथमिकता सहायता और अनन्य नेटवर्किंग अवसरों तक पहुँच।",
+    "dashboard.feature.coding3d.title": "3D इंटरैक्टिव कोडिंग गेम",
+    "dashboard.feature.coding3d.description":
+      "एक रीयल-टाइम 3D कोडिंग गेम जहाँ आपका कोड दुनिया को नियंत्रित करता है।",
+    "dashboard.feature.coding3d.detailed":
+      "भाषा-अज्ञेय तर्क नियंत्रण, लाइव क्रियाएँ, दृश्य परिणाम और गेम-शैली XP/रैंक फीडबैक।",
+    "dashboard.feature.coding3d.badge": "भविष्य",
 
     "studentForm.edit": "छात्र संपादित करें",
     "studentForm.add": "छात्र जोड़ें",
@@ -2149,6 +2821,51 @@ export const TRANSLATIONS = {
       "सेटिंग्स सफलतापूर्वक एक्सपोर्ट हो गईं!",
     "settings.data.toasts.deleteRequiresEmailConfirmation":
       "खाता डिलीट करने के लिए ईमेल पुष्टि आवश्यक है",
+
+    "settings.privacy.publicProfile.title": "सार्वजनिक प्रोफ़ाइल",
+    "settings.privacy.publicProfile.description":
+      "अपनी प्रोफ़ाइल को अन्य उपयोगकर्ताओं के लिए दृश्यमान बनाएं",
+    "settings.privacy.showProgress.title": "प्रगति दिखाएं",
+    "settings.privacy.showProgress.description":
+      "अपनी लर्निंग प्रगति को सार्वजनिक रूप से प्रदर्शित करें",
+    "settings.privacy.showAchievements.title": "उपलब्धियां दिखाएं",
+    "settings.privacy.showAchievements.description":
+      "अपनी प्रोफ़ाइल में अर्जित उपलब्धियां प्रदर्शित करें",
+    "settings.privacy.showActivity.title": "गतिविधि दिखाएं",
+    "settings.privacy.showActivity.description":
+      "दूसरों को आपकी हाल की गतिविधि दिखाएं",
+    "settings.privacy.allowMessages.title": "संदेशों की अनुमति दें",
+    "settings.privacy.allowMessages.description":
+      "अन्य उपयोगकर्ता आपको संदेश भेज सकें",
+    "settings.privacy.shareAnalytics.title": "एनालिटिक्स साझा करें",
+    "settings.privacy.shareAnalytics.description":
+      "प्लेटफ़ॉर्म को बेहतर बनाने के लिए गुमनाम उपयोग डेटा से मदद करें",
+    "settings.preferences.fontSize.label": "फॉंट आकार",
+    "settings.preferences.autoSave.title": "ऑटो सेव",
+    "settings.preferences.autoSave.description":
+      "अपना काम स्वचालित रूप से सेव करें",
+    "settings.preferences.compactMode.title": "कॉम्पैक्ट मोड",
+    "settings.preferences.compactMode.description":
+      "अधिक कॉम्पैक्ट इंटरफ़ेस लेआउट का उपयोग करें",
+    "settings.learning.dailyGoal.label": "दैनिक लर्निंग लक्ष्य",
+    "settings.learning.weekendReminders.title": "वीकेंड रिमाइंडर",
+    "settings.learning.weekendReminders.description":
+      "वीकेंड में लर्निंग रिमाइंडर प्राप्त करें",
+    "settings.learning.streakNotifications.title": "स्ट्रेक सूचनाएं",
+    "settings.learning.streakNotifications.description":
+      "अपनी लर्निंग स्ट्रेक के बारे में सूचित करें",
+    "settings.accessibility.reduceMotion.title": "मोशन कम करें",
+    "settings.accessibility.reduceMotion.description":
+      "एनीमेशन और ट्रांज़िशन कम करें",
+    "settings.accessibility.highContrast.title": "उच्च कंट्रास्ट",
+    "settings.accessibility.highContrast.description":
+      "बेहतर दृश्यता के लिए कंट्रास्ट बढ़ाएं",
+    "settings.accessibility.screenReader.title": "स्क्रीन रीडर सपोर्ट",
+    "settings.accessibility.screenReader.description":
+      "स्क्रीन रीडर के लिए ऑप्टिमाइज़ करें",
+    "settings.accessibility.keyboardNav.title": "कीबोर्ड नेविगेशन",
+    "settings.accessibility.keyboardNav.description":
+      "बेहतर कीबोर्ड नेविगेशन सपोर्ट",
 
     "dashboard.error.loadStats": "आँकड़े लोड नहीं हो पाए",
     "dashboard.hero.title": "आपके लर्निंग हब में स्वागत है",
@@ -2490,6 +3207,7 @@ export const TRANSLATIONS = {
     "tutor.toasts.copied": "क्लिपबोर्ड पर कॉपी हुआ!",
     "tutor.toasts.history_cleared": "चैट इतिहास साफ़ किया गया",
     "tutor.loginStreak": "लॉगिन स्ट्रीक",
+    "tutor.askAboutTopic": "{topic} के बारे में पूछें...",
     "tutor.welcomeDescription":
       "मैं आपका व्यक्तिगत लर्निंग असिस्टेंट हूं, Gemini AI द्वारा संचालित। मुझसे कुछ भी पूछें!",
     "tutor.upload.too_large": "फ़ाइल बहुत बड़ी है। अधिकतम {max}MB",
@@ -2520,5 +3238,237 @@ export const TRANSLATIONS = {
     "tutor.badge.gemini": "जेमिनी पावर्ड",
     "tutor.footer.usage":
       "AI ट्यूटर रीयल-टाइम लर्निंग सहायता देने के लिए Gemini API का उपयोग करता है",
+    "landing.feature.codeEval.detail.1": "सिंटेक्स सत्यापन",
+    "landing.feature.codeEval.detail.2": "प्रदर्शन मेट्रिक्स",
+    "landing.feature.codeEval.detail.3": "सर्वोत्तम प्रथाएँ",
+    "landing.feature.codingArena.detail.1": "दैनिक चुनौतियाँ",
+    "landing.feature.codingArena.detail.2": "प्रतिस्पर्धी कोडिंग",
+    "landing.feature.codingArena.detail.3": "कौशल मूल्यांकन",
+    "landing.feature.resume.detail.1": "ATS अनुकूलता",
+    "landing.feature.resume.detail.2": "कीवर्ड अनुकूलन",
+    "landing.feature.resume.detail.3": "प्रभाव स्कोरिंग",
+    "landing.feature.mock.detail.1": "तकनीकी साक्षात्कार",
+    "landing.feature.mock.detail.2": "व्यवहारिक प्रश्न",
+    "landing.feature.mock.detail.3": "प्रतिक्रिया विश्लेषण",
+    "landing.feature.careerDashboard.detail.1": "प्रगति ट्रैकिंग",
+    "landing.feature.careerDashboard.detail.2": "कौशल विश्लेषण",
+    "landing.feature.careerDashboard.detail.3": "करियर अंतर्दृष्टि",
+    "landing.feature.leaderboard.detail.1": "वैश्विक रैंकिंग",
+    "landing.feature.leaderboard.detail.2": "उपलब्धि बैज",
+    "landing.feature.leaderboard.detail.3": "प्रगति पुरस्कार",
+    "landing.feature.roadmaps.detail.1": "करियर पथ",
+    "landing.feature.roadmaps.detail.2": "कौशल प्रगति",
+    "landing.feature.roadmaps.detail.3": "उद्योग मानक",
+    "landing.feature.company.detail.1": "उम्मीदवार स्क्रीनिंग",
+    "landing.feature.company.detail.2": "मूल्यांकन निर्माण",
+    "landing.feature.company.detail.3": "भर्ती विश्लेषण",
+    "landing.feature.tutorSessions.detail.1": "व्यक्तिगत सीखना",
+    "landing.feature.tutorSessions.detail.2": "इंटरैक्टिव सेशन",
+    "landing.feature.tutorSessions.detail.3": "अवधारणा महारत",
+    "landing.feature.resources.detail.1": "दस्तावेजीकरण",
+    "landing.feature.resources.detail.2": "कोड उदाहरण",
+    "landing.feature.resources.detail.3": "सीखने का सामग्री",
+    "landing.feature.careerReadiness.detail.1": "साक्षात्कार तैयारी",
+    "landing.feature.careerReadiness.detail.2": "वेतन वार्ता",
+    "landing.feature.careerReadiness.detail.3": "नौकरी खोज टिप्स",
+    "landing.howItWorks.title": "LearnovateX कैसे काम करता है",
+    "landing.howItWorks.subtitle": "आपकी करियर सफलता की यात्रा में 3 सरल कदम",
+    "landing.step1.title": "AI ट्यूटर के साथ सीखें",
+    "landing.step1.description":
+      "Azure OpenAI द्वारा संचालित व्यक्तिगत स्पष्टीकरण और इंटरैक्टिव लर्निंग प्राप्त करें। अपने खुद के tempo में अवधारणाओं को मास्टर करें।",
+    "landing.step2.title": "कोडिंग एरीना में अभ्यास करें",
+    "landing.step2.description":
+      "इंटरैक्टिव कोडिंग समस्याओं से खुद को चुनौती दें, रीयल-टाइम फीडबैक प्राप्त करें, और अपनी समस्या-समाधान कौशल में सुधार करें।",
+    "landing.step3.title": "साक्षात्कार-तैयार हो जाएं और नियुक्ति प्राप्त करें",
+    "landing.step3.description":
+      "मॉक साक्षात्कार अभ्यास करें, अपना रिज्यूम ऑप्टिमाइज़ करें, और अपनी करियर तैयारी को ट्रैक करके अपनी सपनों की नौकरी प्राप्त करें।",
+    "landing.features.title": "सफलता के लिए आपको जो कुछ चाहिए",
+    "landing.features.subtitle":
+      "एक प्लेटफॉर्म, असीमित संभावनाएँ - AI द्वारा संचालित",
+    "landing.demo.title": "LearnovateX को एक्शन में देखें",
+    "landing.demo.subtitle":
+      "देखें कि हमारा AI-संचालित प्लेटफॉर्म लर्निंग और करियर तैयारी को कैसे बदलता है",
+    "landing.demo.note":
+      "हमारे AI-संचालित लर्निंग प्लेटफॉर्म को देखने के लिए वीडियो कंट्रोल्स का उपयोग करें",
+    "landing.forAll.title": "सभी के लिए बनाया गया",
+    "landing.forAll.subtitle":
+      "छात्रों से लेकर उद्यमों तक - व्यापक करियर विकास",
+    "codingArena.streak": "स्ट्रिक",
+    "codingArena.solved": "हल किया गया",
+    "codingArena.aiPowered": "AI-संचालित मूल्यांकन",
+    "codingArena.pause": "रोकें",
+    "codingArena.start": "शुरू करें",
+    "codingArena.programs": "प्रोग्राम",
+    "codingArena.chooseProblems":
+      "श्रेणी के अनुसार 1000+ कोडिंग समस्याओं में से चुनें।",
+    "codingArena.searchPlaceholder": "समस्याओं को खोजें (शीर्षक, टैग, कीवर्ड)",
+    "resume.analysis.atsCheck": "एटीएस अनुकूलता जांच",
+    "resume.analysis.keywordOpt": "कीवर्ड अनुकूलन",
+    "resume.analysis.industryMatch": "उद्योग मिलान",
+    "resume.analysis.careerPath": "करियर पथ विश्लेषण",
+    "resume.analysis.competitorBench": "प्रतियोगी बेंचमार्किंग",
+    "resume.analysis.generatingRecs": "सिफारिशें तैयार की जा रही हैं",
+    "resume.analysis.finalScoring": "अंतिम स्कोरिंग",
+    "resume.features.credibilityScore.title": "एआई विश्वसनीयता स्कोर",
+    "resume.features.credibilityScore.desc":
+      "उन्नत एमएल मॉडल रिज्यूम गुणवत्ता, प्रामाणिकता और बाजार प्रतिस्पर्धा का विश्लेषण करता है",
+    "resume.features.smartRecs.title": "स्मार्ट सिफारिशें",
+    "resume.features.smartRecs.desc":
+      "आपके रिज्यूम के प्रभाव को बेहतर बनाने के लिए व्यक्तिगत सुझाव",
+    "careerReadiness.connectionError.title": "कनेक्ट नहीं हो पाया",
+    "careerReadiness.connectionError.description":
+      "रीयल-टाइम ट्रैकिंग के लिए बैकएंड सर्वर से कनेक्शन आवश्यक है। कोई डेमो डेटा नहीं दिखाया गया — सभी मेट्रिक्स आपकी वास्तविक गतिविधि से हैं।",
+    "careerReadiness.prediction": "भविष्यवाणी",
+    "careerReadiness.atCurrentPace": "आपकी वर्तमान गति पर, अनुमानित",
+    "careerReadiness.daysToJobReady": "जॉब-रेडी होने तक दिन",
+    "careerReadiness.atCurrentLearningPace":
+      "आपकी वर्तमान लर्निंग गति पर, आप जॉब-रेडी हो सकते हैं",
+    "careerReadiness.days": "दिन",
+    "careerReadiness.confidence": "विश्वास",
+    "careerReadiness.basedOn": "इस आधार पर",
+    "careerReadiness.submissions": "सबमिशन",
+    "careerReadiness.resumes": "रेज़्यूमे",
+    "careerReadiness.interviews": "इंटरव्यू",
+    "careerReadiness.explainability": "स्पष्टीकरण",
+    "careerReadiness.weightedScoring":
+      "भारित स्कोरिंग + कोडिंग, रेज़्यूमे, इंटरव्यू और निरंतरता संकेतों का उपयोग करने वाली नियम-आधारित भविष्यवाणी",
+    "careerReadiness.codeAccuracyRate": "कोड सटीकता दर",
+    "careerReadiness.resumeReviews": "रेज़्यूमे समीक्षाएं",
+    "careerReadiness.mockInterviews": "मॉक इंटरव्यू",
+    "careerReadiness.aiCareerTwin": "एआई करियर ट्विन भविष्यवाणी",
+    "careerReadiness.nextMilestone": "अगला माइलस्टोन",
+    "careerReadiness.biggestBlocker": "सबसे बड़ा अवरोधक",
+    "careerReadiness.riskLevel": "जोखिम स्तर",
+    "careerReadiness.personalGoals": "व्यक्तिगत लक्ष्य और माइलस्टोन",
+    "careerReadiness.manageGoals": "लक्ष्य प्रबंधित करें",
+    "careerReadiness.whatIfCoding":
+      "यदि आप 14 दिनों तक रोजाना कोडिंग प्रैक्टिस करते हैं",
+    "careerReadiness.jobReadinessIncreases": "जॉब रेडीनेस बढ़ती है",
+    "careerReadiness.interviewReadinessImproves":
+      "इंटरव्यू रेडीनेस काफी सुधारती है",
+    "careerReadiness.addNewGoal": "नया लक्ष्य जोड़ें",
+    "careerReadiness.advancedAnalytics": "उन्नत विश्लेषण",
+    "careerReadiness.details": "विवरण",
+
+    "auth.passwordPolicy":
+      "न्यूनतम 8 वर्ण, 1 बड़ा अक्षर, 1 संख्या, 1 विशेष वर्ण",
+    "auth.validation.passwordMinLength":
+      "पासवर्ड कम से कम 8 वर्णों का होना चाहिए",
+    "auth.validation.passwordUppercase":
+      "पासवर्ड में कम से कम 1 बड़ा अक्षर होना चाहिए",
+    "auth.validation.passwordNumber":
+      "पासवर्ड में कम से कम 1 संख्या होनी चाहिए",
+    "auth.validation.passwordSpecial":
+      "पासवर्ड में कम से कम 1 विशेष वर्ण होना चाहिए",
+    "auth.validation.passwordsMismatch": "पासवर्ड मेल नहीं खाते",
+    "auth.forgotPassword.title": "पासवर्ड रीसेट करें",
+    "auth.forgotPassword.step.email":
+      "OTP प्राप्त करने के लिए अपना पंजीकृत ईमेल दर्ज करें",
+    "auth.forgotPassword.step.otp":
+      "अपने ईमेल पर भेजा गया 6-अंकीय OTP दर्ज करें",
+    "auth.forgotPassword.step.reset": "नया पासवर्ड बनाएं",
+    "auth.forgotPassword.otpSent":
+      "यदि ईमेल पंजीकृत है, तो OTP भेज दिया गया है।",
+    "auth.forgotPassword.debugOtp": "डिबग OTP",
+    "auth.forgotPassword.requestFailed": "अनुरोध विफल",
+    "auth.forgotPassword.invalidOtp": "6-अंकीय OTP दर्ज करें",
+    "auth.forgotPassword.otpVerified": "OTP सत्यापित",
+    "auth.forgotPassword.verificationFailed": "सत्यापन विफल",
+    "auth.forgotPassword.passwordUpdated": "पासवर्ड सफलतापूर्वक अपडेट किया गया",
+    "auth.forgotPassword.resetFailed": "रीसेट विफल",
+    "auth.forgotPassword.otpLabel": "OTP",
+    "auth.forgotPassword.otpPlaceholder": "6-अंकीय कोड",
+    "auth.forgotPassword.sendOtp": "OTP भेजें",
+    "auth.forgotPassword.sending": "भेज रहे हैं...",
+    "auth.forgotPassword.verifyOtp": "OTP सत्यापित करें",
+    "auth.forgotPassword.verifying": "सत्यापित कर रहे हैं...",
+    "auth.forgotPassword.changeEmail": "ईमेल बदलें",
+    "auth.forgotPassword.newPassword": "नया पासवर्ड",
+    "auth.forgotPassword.confirmPassword": "पासवर्ड पुष्टि करें",
+    "auth.forgotPassword.updatePassword": "पासवर्ड अपडेट करें",
+    "auth.forgotPassword.updating": "अपडेट कर रहे हैं...",
+    "auth.backToLogin": "लॉगिन पर वापस जाएं",
+    "auth.placeholder.email": "आपका@ईमेल.कॉम",
+    "footer.brand": "लर्नोवेटएक्स",
+    "footer.description":
+      "छात्रों, पेशेवरों और संगठनों के लिए बनाया गया एक व्यापक शिक्षण मंच। हमारी AI-संचालित उपकरणों के साथ अपनी कौशल को बढ़ाएं और अपने कैरियर को आगे बढ़ाएं।",
+    "footer.quickLinks": "त्वरित लिंक",
+    "footer.home": "होम",
+    "footer.courses": "कोर्स",
+    "footer.codingArena": "कोडिंग एरिना",
+    "footer.resumeAnalyzer": "रिज्यूम विश्लेषक",
+    "footer.mockInterview": "मॉक इंटरव्यू",
+    "footer.careerReadiness": "करियर तैयार",
+    "footer.connect": "कनेक्ट",
+    "footer.leaderboard": "लीडरबोर्ड",
+    "footer.achievements": "उपलब्धियां",
+    "footer.support": "सहायता",
+    "footer.helpCenter": "सहायता केंद्र",
+    "footer.contactUs": "हमसे संपर्क करें",
+    "footer.privacyPolicy": "गोपनीयता नीति",
+    "footer.termsOfService": "सेवा की शर्तें",
+    "footer.faq": "सामान्य प्रश्न",
+    "footer.newsletter": "न्यूज़लेटर",
+    "footer.newsletterDescription":
+      "नवीनतम अपडेट, टिप्स और संसाधनों के लिए हमारे न्यूज़लेटर की सदस्यता लें।",
+    "footer.emailPlaceholder": "आपका ईमेल दर्ज करें",
+    "footer.subscribe": "सब्स्क्राइब करें",
+    "footer.contact": "संपर्क",
+    "footer.email": "ईमेल",
+    "footer.phone": "फोन",
+    "footer.address": "पता",
+    "footer.addressValue": "123 शिक्षण स्ट्रीट, शिक्षा नगर, सीखें 12345",
+    "footer.followUs": "हमारे साथ जुड़ें",
+    "footer.copyright": "© 2024 लर्नोवेटएक्स। सभी अधिकार सुरक्षित।",
+    "footer.social.github": "GitHub",
+    "footer.social.twitter": "Twitter",
+    "footer.social.linkedin": "LinkedIn",
+    "footer.social.youtube": "YouTube",
+    "footer.social.instagram": "Instagram",
+    "footer.email": "support@learnovatex.example",
+    "search.dashboard.description": "अपनी सीखने की प्रगति और आंकड़े देखें",
+    "search.aiTutor.description": "अपने AI-संचालित ट्यूटर से चैट करें",
+    "search.codingArena.description":
+      "कोडिंग चुनौतियों और समस्याओं का अभ्यास करें",
+    "search.resources.description":
+      "अध्ययन सामग्री और संसाधनों को ब्राउज़ करें",
+    "search.careerReadiness.description": "अपना करियर तैयार स्कोर जांचें",
+    "search.premium.description":
+      "प्रीमियम सुविधाओं और योजनाओं का अन्वेषण करें",
+    "search.premiumCourses.description":
+      "प्रीमियम कोर्स ब्राउज़ करें और नामांकन करें",
+    "search.premiumInternships.description":
+      "प्रीमियम इंटर्नशिप खोजें और आवेदन करें",
+    "search.resumeAnalyzer.description":
+      "AI-संचालित रिज्यूम फीडबैक प्राप्त करें",
+    "search.mockInterview.description": "AI मॉक इंटरव्यू के साथ अभ्यास करें",
+    "search.myProfile.description": "अपना प्रोफाइल देखें और संपादित करें",
+    "search.settings.description": "अपनी ऐप सेटिंग्स प्रबंधित करें",
+    "search.leaderboard.description":
+      "देखें कि आप अपने साथियों में कहाँ रैंक हैं",
+    "search.learningPath.description":
+      "अपने व्यक्तिगत सीखने के पथ का पालन करें",
+    "search.category.pages": "पेज",
+    "search.category.premium": "प्रीमियम",
+    "search.category.account": "खाता",
+    "companyPortal.removedFromShortlist": "शॉर्टलिस्ट से हटाया गया",
+    "companyPortal.addedToShortlist": "शॉर्टलिस्ट में जोड़ा गया",
+    "companyPortal.failedToUpdateShortlist": "शॉर्टलिस्ट अपडेट करने में विफल",
+    "companyPortal.notFitForRequirements":
+      "वर्तमान आवश्यकताओं के लिए उपयुक्त नहीं",
+    "companyPortal.candidateRejected": "उम्मीदवार अस्वीकार कर दिया गया",
+    "companyPortal.failedToRejectCandidate":
+      "उम्मीदवार को अस्वीकार करने में विफल",
+    "companyPortal.candidateHired": "उम्मीदवार नियुक्त किया गया",
+    "companyPortal.offerExtended": "बधाई हो! उम्मीदवार को ऑफर भेजा गया",
+    "companyPortal.failedToProcessHiring": "नियुक्ति प्रक्रिया में विफल",
+    "studentGroups.title": "छात्र समूह प्रबंधन",
+    "studentGroups.placeholder.newGroup": "नया समूह नाम",
+    "studentGroups.addGroup": "समूह जोड़ें",
+    "studentGroups.students": "छात्र",
+    "studentGroups.remove": "हटाएं",
+    "studentGroups.addStudent": "छात्र जोड़ें...",
+    "studentGroups.default.webDev": "वेब डेवलपमेंट",
+    "studentGroups.default.dataScience": "डेटा साइंस",
   },
 };

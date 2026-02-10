@@ -58,7 +58,11 @@ const LandingPage = () => {
         "Real-time code analysis with complexity checks, optimization suggestions, and plagiarism detection."
       ),
       gradient: "from-orange-500 to-orange-600",
-      details: ["Syntax validation", "Performance metrics", "Best practices"],
+      details: [
+        t("landing.feature.codeEval.detail.1", "Syntax validation"),
+        t("landing.feature.codeEval.detail.2", "Performance metrics"),
+        t("landing.feature.codeEval.detail.3", "Best practices"),
+      ],
     },
     {
       icon: <Gamepad2 className="w-12 h-12 text-white" />,
@@ -68,7 +72,11 @@ const LandingPage = () => {
         "Challenge yourself with interactive coding problems, compete with peers, and improve your problem-solving skills."
       ),
       gradient: "from-orange-500 to-orange-600",
-      details: ["Daily challenges", "Competitive coding", "Skill assessment"],
+      details: [
+        t("landing.feature.codingArena.detail.1", "Daily challenges"),
+        t("landing.feature.codingArena.detail.2", "Competitive coding"),
+        t("landing.feature.codingArena.detail.3", "Skill assessment"),
+      ],
     },
     {
       icon: <FileText className="w-12 h-12 text-white" />,
@@ -78,7 +86,11 @@ const LandingPage = () => {
         "AI-powered resume analysis with credibility scoring, skill verification, and ATS optimization."
       ),
       gradient: "from-orange-500 to-orange-600",
-      details: ["ATS compatibility", "Keyword optimization", "Impact scoring"],
+      details: [
+        t("landing.feature.resume.detail.1", "ATS compatibility"),
+        t("landing.feature.resume.detail.2", "Keyword optimization"),
+        t("landing.feature.resume.detail.3", "Impact scoring"),
+      ],
     },
     {
       icon: <MessageSquare className="w-12 h-12 text-white" />,
@@ -89,9 +101,9 @@ const LandingPage = () => {
       ),
       gradient: "from-orange-500 to-orange-600",
       details: [
-        "Technical interviews",
-        "Behavioral questions",
-        "Feedback analysis",
+        t("landing.feature.mock.detail.1", "Technical interviews"),
+        t("landing.feature.mock.detail.2", "Behavioral questions"),
+        t("landing.feature.mock.detail.3", "Feedback analysis"),
       ],
     },
     {
@@ -102,7 +114,11 @@ const LandingPage = () => {
         "Track your progress, skill mastery, interview readiness, and career milestones in one comprehensive dashboard."
       ),
       gradient: "from-orange-500 to-orange-600",
-      details: ["Progress tracking", "Skill analytics", "Career insights"],
+      details: [
+        t("landing.feature.careerDashboard.detail.1", "Progress tracking"),
+        t("landing.feature.careerDashboard.detail.2", "Skill analytics"),
+        t("landing.feature.careerDashboard.detail.3", "Career insights"),
+      ],
     },
     {
       icon: <Trophy className="w-12 h-12 text-white" />,
@@ -115,7 +131,11 @@ const LandingPage = () => {
         "Compete with fellow learners, earn badges, and showcase your achievements in our gamified learning environment."
       ),
       gradient: "from-orange-500 to-orange-600",
-      details: ["Global rankings", "Achievement badges", "Progress rewards"],
+      details: [
+        t("landing.feature.leaderboard.detail.1", "Global rankings"),
+        t("landing.feature.leaderboard.detail.2", "Achievement badges"),
+        t("landing.feature.leaderboard.detail.3", "Progress rewards"),
+      ],
     },
     {
       icon: <BookOpen className="w-12 h-12 text-white" />,
@@ -125,7 +145,11 @@ const LandingPage = () => {
         "Follow structured career paths for Backend, Mobile, DevOps, Data Science, UI/UX, Cybersecurity, and QA engineering."
       ),
       gradient: "from-orange-500 to-orange-600",
-      details: ["Career paths", "Skill progression", "Industry standards"],
+      details: [
+        t("landing.feature.roadmaps.detail.1", "Career paths"),
+        t("landing.feature.roadmaps.detail.2", "Skill progression"),
+        t("landing.feature.roadmaps.detail.3", "Industry standards"),
+      ],
     },
     {
       icon: <Building2 className="w-12 h-12 text-white" />,
@@ -136,9 +160,9 @@ const LandingPage = () => {
       ),
       gradient: "from-orange-500 to-orange-600",
       details: [
-        "Candidate screening",
-        "Assessment creation",
-        "Hiring analytics",
+        t("landing.feature.company.detail.1", "Candidate screening"),
+        t("landing.feature.company.detail.2", "Assessment creation"),
+        t("landing.feature.company.detail.3", "Hiring analytics"),
       ],
     },
     {
@@ -150,9 +174,9 @@ const LandingPage = () => {
       ),
       gradient: "from-orange-500 to-orange-600",
       details: [
-        "Personalized learning",
-        "Interactive sessions",
-        "Concept mastery",
+        t("landing.feature.tutorSessions.detail.1", "Personalized learning"),
+        t("landing.feature.tutorSessions.detail.2", "Interactive sessions"),
+        t("landing.feature.tutorSessions.detail.3", "Concept mastery"),
       ],
     },
     {
@@ -163,7 +187,11 @@ const LandingPage = () => {
         "Access comprehensive learning resources, documentation, and tools to accelerate your development journey."
       ),
       gradient: "from-orange-500 to-orange-600",
-      details: ["Documentation", "Code examples", "Learning materials"],
+      details: [
+        t("landing.feature.resources.detail.1", "Documentation"),
+        t("landing.feature.resources.detail.2", "Code examples"),
+        t("landing.feature.resources.detail.3", "Learning materials"),
+      ],
     },
     {
       icon: <Shield className="w-12 h-12 text-white" />,
@@ -173,7 +201,11 @@ const LandingPage = () => {
         "Comprehensive career preparation with interview tips, salary negotiation, and job search strategies."
       ),
       gradient: "from-orange-500 to-orange-600",
-      details: ["Interview prep", "Salary negotiation", "Job search tips"],
+      details: [
+        t("landing.feature.careerReadiness.detail.1", "Interview prep"),
+        t("landing.feature.careerReadiness.detail.2", "Salary negotiation"),
+        t("landing.feature.careerReadiness.detail.3", "Job search tips"),
+      ],
     },
   ];
 
@@ -353,10 +385,13 @@ const LandingPage = () => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 relative">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
-              How LearnovateX Works
+              {t("landing.howItWorks.title", "How LearnovateX Works")}
             </h2>
             <p className="text-zinc-400 text-lg">
-              Your journey to career success in 3 simple steps
+              {t(
+                "landing.howItWorks.subtitle",
+                "Your journey to career success in 3 simple steps"
+              )}
             </p>
           </div>
 
@@ -370,11 +405,13 @@ const LandingPage = () => {
                 <div className="absolute -inset-2 bg-gradient-to-r from-orange-500/20 to-orange-500/20 rounded-full blur-lg group-hover:blur-xl transition-all duration-300"></div>
               </div>
               <h3 className="text-xl font-semibold text-white mb-3">
-                Learn with AI Tutor
+                {t("landing.step1.title", "Learn with AI Tutor")}
               </h3>
               <p className="text-zinc-400 leading-relaxed">
-                Get personalized explanations and interactive learning powered
-                by Azure OpenAI. Master concepts at your own pace.
+                {t(
+                  "landing.step1.description",
+                  "Get personalized explanations and interactive learning powered by Azure OpenAI. Master concepts at your own pace."
+                )}
               </p>
             </div>
 
@@ -387,11 +424,13 @@ const LandingPage = () => {
                 <div className="absolute -inset-2 bg-gradient-to-r from-orange-500/20 to-orange-500/20 rounded-full blur-lg group-hover:blur-xl transition-all duration-300"></div>
               </div>
               <h3 className="text-xl font-semibold text-white mb-3">
-                Practice in Coding Arena
+                {t("landing.step2.title", "Practice in Coding Arena")}
               </h3>
               <p className="text-zinc-400 leading-relaxed">
-                Challenge yourself with interactive coding problems, get
-                real-time feedback, and improve your problem-solving skills.
+                {t(
+                  "landing.step2.description",
+                  "Challenge yourself with interactive coding problems, get real-time feedback, and improve your problem-solving skills."
+                )}
               </p>
             </div>
 
@@ -404,11 +443,13 @@ const LandingPage = () => {
                 <div className="absolute -inset-2 bg-gradient-to-r from-orange-500/20 to-orange-500/20 rounded-full blur-lg group-hover:blur-xl transition-all duration-300"></div>
               </div>
               <h3 className="text-xl font-semibold text-white mb-3">
-                Get Interview-Ready & Hired
+                {t("landing.step3.title", "Get Interview-Ready & Hired")}
               </h3>
               <p className="text-zinc-400 leading-relaxed">
-                Practice mock interviews, optimize your resume, and track your
-                career readiness to land your dream job.
+                {t(
+                  "landing.step3.description",
+                  "Practice mock interviews, optimize your resume, and track your career readiness to land your dream job."
+                )}
               </p>
             </div>
           </div>
@@ -438,10 +479,13 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
-              Everything You Need to Succeed
+              {t("landing.features.title", "Everything You Need to Succeed")}
             </h2>
             <p className="text-zinc-400 text-lg">
-              One platform, unlimited possibilities - powered by AI
+              {t(
+                "landing.features.subtitle",
+                "One platform, unlimited possibilities - powered by AI"
+              )}
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -495,11 +539,13 @@ const LandingPage = () => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 relative">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
-              See LearnovateX in Action
+              {t("landing.demo.title", "See LearnovateX in Action")}
             </h2>
             <p className="text-zinc-400 text-lg">
-              Watch how our AI-powered platform transforms learning and career
-              preparation
+              {t(
+                "landing.demo.subtitle",
+                "Watch how our AI-powered platform transforms learning and career preparation"
+              )}
             </p>
           </div>
 
@@ -540,8 +586,10 @@ const LandingPage = () => {
 
             <div className="mt-6 text-center">
               <p className="text-zinc-400 text-sm">
-                Use the video controls to watch our AI-powered learning platform
-                in action
+                {t(
+                  "landing.demo.note",
+                  "Use the video controls to watch our AI-powered learning platform in action"
+                )}
               </p>
             </div>
           </div>
@@ -562,10 +610,13 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
-              Built for Everyone
+              {t("landing.forAll.title", "Built for Everyone")}
             </h2>
             <p className="text-zinc-400 text-lg">
-              From students to enterprises - comprehensive career development
+              {t(
+                "landing.forAll.subtitle",
+                "From students to enterprises - comprehensive career development"
+              )}
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

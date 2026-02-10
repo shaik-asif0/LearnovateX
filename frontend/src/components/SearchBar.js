@@ -6,6 +6,7 @@ import React, {
   useCallback,
 } from "react";
 import { useNavigate } from "react-router-dom";
+import { useI18n } from "../i18n/I18nProvider";
 import {
   Search,
   LayoutDashboard,
@@ -198,7 +199,7 @@ const ALL_SEARCH_ITEMS = [
     ],
     category: "Pages",
     description: "Get AI-powered resume feedback",
-    roles: ["job_seeker"],
+    roles: ["student", "job_seeker"],
   },
   {
     label: "Mock Interview",
@@ -217,7 +218,7 @@ const ALL_SEARCH_ITEMS = [
     ],
     category: "Pages",
     description: "Practice with AI mock interviews",
-    roles: ["job_seeker"],
+    roles: ["student", "job_seeker"],
   },
   {
     label: "My Profile",
@@ -408,6 +409,7 @@ const RECENT_KEY_PREFIX = "recentSearches:";
 
 const SearchBar = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const user = getUser();
   const inputRef = useRef(null);
   const containerRef = useRef(null);
@@ -430,12 +432,88 @@ const SearchBar = () => {
     }
   }, [recentKey]);
 
+  // Translated search items
+  const translatedSearchItems = useMemo(() => {
+    const getNavKey = (label) => {
+      const keyMap = {
+        Dashboard: "nav.dashboard",
+        "AI Tutor": "nav.aiTutor",
+        "Coding Arena": "nav.codingArena",
+        Resources: "nav.resources",
+        "Career Readiness": "nav.careerReadiness",
+        Premium: "nav.premium",
+        "Premium Courses": "nav.premium",
+        "Premium Internships": "nav.premium",
+        "Resume Analyzer": "nav.resumeAnalyzer",
+        "Mock Interview": "nav.mockInterview",
+        "My Profile": "nav.myProfile",
+        Settings: "nav.settings",
+        Leaderboard: "nav.leaderboard",
+        "Learning Path": "nav.learningPath",
+        Roadmap: "nav.roadmap",
+        Achievements: "nav.achievements",
+        "Company Portal": "nav.companyPortal",
+        "College Admin": "nav.collegeAdmin",
+        "3D Coding Game": "nav.codingGame3d",
+        "Course Learn": "nav.courseLearn",
+      };
+      return keyMap[label] || `nav.${label.toLowerCase().replace(/\s+/g, "")}`;
+    };
+
+    const getDescriptionKey = (description) => {
+      const descMap = {
+        "View your learning progress and stats": "search.dashboard.description",
+        "Chat with your AI-powered tutor": "search.aiTutor.description",
+        "Practice coding challenges and problems":
+          "search.codingArena.description",
+        "Browse study materials and resources": "search.resources.description",
+        "Check your career readiness score":
+          "search.careerReadiness.description",
+        "Explore premium features and plans": "search.premium.description",
+        "Browse and enroll in premium courses":
+          "search.premiumCourses.description",
+        "Find and apply for premium internships":
+          "search.premiumInternships.description",
+        "Get AI-powered resume feedback": "search.resumeAnalyzer.description",
+        "Practice with AI mock interviews": "search.mockInterview.description",
+        "View and edit your profile": "search.myProfile.description",
+        "Manage your app settings": "search.settings.description",
+        "See where you rank among peers": "search.leaderboard.description",
+        "Follow your personalized learning path":
+          "search.learningPath.description",
+      };
+      return (
+        descMap[description] ||
+        `search.${description.toLowerCase().replace(/\s+/g, "")}`
+      );
+    };
+
+    const getCategoryKey = (category) => {
+      const catMap = {
+        Pages: "search.category.pages",
+        Premium: "search.category.premium",
+        Account: "search.category.account",
+      };
+      return (
+        catMap[category] ||
+        `search.category.${category.toLowerCase().replace(/\s+/g, "")}`
+      );
+    };
+
+    return ALL_SEARCH_ITEMS.map((item) => ({
+      ...item,
+      label: t(getNavKey(item.label), item.label),
+      description: t(getDescriptionKey(item.description), item.description),
+      category: t(getCategoryKey(item.category), item.category),
+    }));
+  }, [t]);
+
   // Filter search items by role
   const roleFiltered = useMemo(() => {
-    return ALL_SEARCH_ITEMS.filter(
+    return translatedSearchItems.filter(
       (item) => !item.roles || item.roles.includes(user?.role)
     );
-  }, [user?.role]);
+  }, [translatedSearchItems, user?.role]);
 
   // Real-time fuzzy matching
   const suggestions = useMemo(() => {
@@ -639,7 +717,7 @@ const SearchBar = () => {
           }}
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
-          placeholder="Search pages, features..."
+          placeholder={t("search.placeholder", "Search pages, features...")}
           className="w-full pl-10 pr-16 py-2 bg-zinc-900 border border-zinc-700/60 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500/30 transition-all duration-200"
           autoComplete="off"
           spellCheck="false"

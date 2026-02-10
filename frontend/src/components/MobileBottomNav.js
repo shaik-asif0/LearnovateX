@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -9,6 +9,8 @@ import {
   User,
 } from "lucide-react";
 import { useI18n } from "../i18n/I18nProvider";
+import { getUser, toAbsoluteUploadsUrl } from "../lib/utils";
+import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 
 const MobileBottomNav = () => {
   const navigate = useNavigate();
@@ -39,6 +41,14 @@ const MobileBottomNav = () => {
     return location.pathname === path;
   };
 
+  const [user, setUser] = useState(() => getUser());
+
+  useEffect(() => {
+    const onAuthChange = () => setUser(getUser());
+    window.addEventListener("authChange", onAuthChange);
+    return () => window.removeEventListener("authChange", onAuthChange);
+  }, []);
+
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-800 bg-black/95 backdrop-blur">
       <div className="mx-auto max-w-7xl px-2">
@@ -58,7 +68,20 @@ const MobileBottomNav = () => {
                 }`}
                 aria-label={item.label}
               >
-                <Icon className="w-5 h-5" />
+                {item.path === "/profile" ? (
+                  <Avatar className="w-5 h-5">
+                    {user?.avatar_url && (
+                      <AvatarImage
+                        src={toAbsoluteUploadsUrl(user?.avatar_url)}
+                      />
+                    )}
+                    <AvatarFallback className="bg-white text-black text-xs font-semibold">
+                      {user?.name?.charAt(0)?.toUpperCase() ?? "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                ) : (
+                  <Icon className="w-5 h-5" />
+                )}
                 <span className="text-[10px] leading-none truncate max-w-[4.25rem]">
                   {item.label}
                 </span>

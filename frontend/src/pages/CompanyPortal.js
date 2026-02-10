@@ -117,8 +117,10 @@ import {
 } from "lucide-react";
 import axiosInstance from "../lib/axios";
 import { toast } from "sonner";
+import { useI18n } from "../i18n/I18nProvider";
 
 const CompanyPortal = () => {
+  const { t } = useI18n();
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -302,21 +304,29 @@ const CompanyPortal = () => {
     try {
       await axiosInstance.post(`/company/candidates/${candidateId}/action`, {
         action: isShortlisted ? "remove_shortlist" : "shortlist",
-        notes: isShortlisted ? "Removed from shortlist" : "Added to shortlist",
+        notes: isShortlisted
+          ? t("companyPortal.removedFromShortlist", "Removed from shortlist")
+          : t("companyPortal.addedToShortlist", "Added to shortlist"),
       });
 
       if (isShortlisted) {
         setShortlistedCandidates(
           shortlistedCandidates.filter((id) => id !== candidateId)
         );
-        toast.success("Removed from shortlist");
+        toast.success(
+          t("companyPortal.removedFromShortlist", "Removed from shortlist")
+        );
       } else {
         setShortlistedCandidates([...shortlistedCandidates, candidateId]);
-        toast.success("Added to shortlist");
+        toast.success(
+          t("companyPortal.addedToShortlist", "Added to shortlist")
+        );
       }
       fetchCandidates();
     } catch (error) {
-      toast.error("Failed to update shortlist");
+      toast.error(
+        t("companyPortal.failedToUpdateShortlist", "Failed to update shortlist")
+      );
     }
   };
 
@@ -324,12 +334,19 @@ const CompanyPortal = () => {
     try {
       await axiosInstance.post(`/company/candidates/${candidateId}/action`, {
         action: "reject",
-        notes: reason || "Not a fit for current requirements",
+        notes:
+          reason ||
+          t(
+            "companyPortal.notFitForRequirements",
+            "Not a fit for current requirements"
+          ),
       });
-      toast.success("Candidate rejected");
+      toast.success(t("companyPortal.candidateRejected", "Candidate rejected"));
       fetchCandidates();
     } catch (error) {
-      toast.error("Failed to reject candidate");
+      toast.error(
+        t("companyPortal.failedToRejectCandidate", "Failed to reject candidate")
+      );
     }
   };
 
@@ -337,12 +354,19 @@ const CompanyPortal = () => {
     try {
       await axiosInstance.post(`/company/candidates/${candidateId}/action`, {
         action: "hire",
-        notes: "Candidate hired",
+        notes: t("companyPortal.candidateHired", "Candidate hired"),
       });
-      toast.success("Congratulations! Offer extended to candidate");
+      toast.success(
+        t(
+          "companyPortal.offerExtended",
+          "Congratulations! Offer extended to candidate"
+        )
+      );
       fetchCandidates();
     } catch (error) {
-      toast.error("Failed to process hiring");
+      toast.error(
+        t("companyPortal.failedToProcessHiring", "Failed to process hiring")
+      );
     }
   };
 

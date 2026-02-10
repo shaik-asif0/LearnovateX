@@ -2519,7 +2519,8 @@ const CodingArena = () => {
                 className={`text-sm flex items-center gap-2 ${aiStatusInfo.color}`}
               >
                 <Bot className="w-4 h-4" />
-                {aiStatusInfo.text} • AI-powered evaluation
+                {aiStatusInfo.text} •{" "}
+                {t("codingArena.aiPowered", "AI-powered evaluation")}
               </p>
             </div>
           </div>
@@ -2532,7 +2533,7 @@ const CodingArena = () => {
                 <Flame className="w-3 h-3 text-white" />
               </div>
               <span className="text-sm text-white font-semibold">
-                {streak} streak
+                {streak} {t("codingArena.streak", "streak")}
               </span>
             </div>
             <div className="flex items-center gap-2 px-3 py-2 bg-zinc-900 rounded-lg">
@@ -2548,7 +2549,8 @@ const CodingArena = () => {
                 <Trophy className="w-3 h-3 text-white" />
               </div>
               <span className="text-sm text-white">
-                {submissions.filter((s) => s.passed).length} solved
+                {submissions.filter((s) => s.passed).length}{" "}
+                {t("codingArena.solved", "solved")}
               </span>
             </div>
             <Button
@@ -2566,7 +2568,9 @@ const CodingArena = () => {
               ) : (
                 <Play className="w-4 h-4 mr-1" />
               )}
-              {isTimerRunning ? "Pause" : "Start"}
+              {isTimerRunning
+                ? t("codingArena.pause", "Pause")
+                : t("codingArena.start", "Start")}
             </Button>
           </div>
         </div>
@@ -2586,7 +2590,9 @@ const CodingArena = () => {
                   >
                     <span className="flex items-center gap-2 min-w-0">
                       <BookOpen className="w-4 h-4 flex-shrink-0" />
-                      <span className="font-medium">Programs</span>
+                      <span className="font-medium">
+                        {t("codingArena.programs", "Programs")}
+                      </span>
                       <span className="text-zinc-400 text-xs truncate">
                         {currentProblem?.title}
                       </span>
@@ -2629,9 +2635,14 @@ const CodingArena = () => {
             <Dialog open={programsOpen} onOpenChange={setProgramsOpen}>
               <DialogContent className="w-[calc(100vw-2rem)] max-w-4xl bg-zinc-950 border-zinc-800 text-white">
                 <DialogHeader>
-                  <DialogTitle>Programs</DialogTitle>
+                  <DialogTitle>
+                    {t("codingArena.programs", "Programs")}
+                  </DialogTitle>
                   <DialogDescription className="text-zinc-400">
-                    Choose from 1000+ coding problems by category.
+                    {t(
+                      "codingArena.chooseProblems",
+                      "Choose from 1000+ coding problems by category."
+                    )}
                   </DialogDescription>
                 </DialogHeader>
 
@@ -2640,7 +2651,10 @@ const CodingArena = () => {
                     <Input
                       value={programSearch}
                       onChange={(e) => setProgramSearch(e.target.value)}
-                      placeholder="Search problems (title, tag, keyword)"
+                      placeholder={t(
+                        "codingArena.searchPlaceholder",
+                        "Search problems (title, tag, keyword)"
+                      )}
                       className="bg-zinc-950 border-zinc-800 text-white placeholder:text-zinc-500"
                     />
                   </div>

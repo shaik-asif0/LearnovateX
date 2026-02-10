@@ -151,7 +151,7 @@ const AuthPage = () => {
         <CardHeader className="text-center pb-4">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-center shadow-lg overflow-hidden">
             <img
-              src="/logo.jpeg"
+              src="/logo.png"
               alt="LearnovateX Logo"
               className="w-full h-full object-cover"
             />
