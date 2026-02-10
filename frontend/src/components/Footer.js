@@ -1,25 +1,24 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Github,
   Twitter,
   Linkedin,
-  Mail,
   Youtube,
   Instagram,
+  MapPin,
+  Phone,
+  Mail as MailIcon,
 } from "lucide-react";
-import { toast } from "sonner";
 import { useI18n } from "../i18n/I18nProvider";
 
 const Footer = () => {
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
   const { t, setLanguage, language } = useI18n();
 
   const socials = [
     {
       icon: <Github className="w-5 h-5" />,
       label: t("footer.social.github", "GitHub"),
-      href: "https://github.com/",
+      href: "https://github.com/shaik-asif0",
     },
     {
       icon: <Twitter className="w-5 h-5" />,
@@ -29,7 +28,7 @@ const Footer = () => {
     {
       icon: <Linkedin className="w-5 h-5" />,
       label: t("footer.social.linkedin", "LinkedIn"),
-      href: "https://www.linkedin.com/",
+      href: "https://www.linkedin.com/in/shaik-md-asif/",
     },
     {
       icon: <Youtube className="w-5 h-5" />,
@@ -39,47 +38,33 @@ const Footer = () => {
     {
       icon: <Instagram className="w-5 h-5" />,
       label: t("footer.social.instagram", "Instagram"),
-      href: "https://www.instagram.com/",
+      href: "https://www.instagram.com/_shaik.asif__/",
     },
   ];
 
-  const subscribe = async (e) => {
-    e.preventDefault();
-    if (!email || !email.includes("@")) {
-      toast.error(
-        t("footer.subscribe.invalidEmail", "Please enter a valid email")
-      );
-      return;
-    }
-    setLoading(true);
-    try {
-      // Placeholder for real subscription API call
-      await new Promise((res) => setTimeout(res, 700));
-      setEmail("");
-      toast.success(
-        t("footer.subscribe.success", "Subscribed! Check your inbox")
-      );
-    } catch (err) {
-      toast.error(t("footer.subscribe.failed", "Subscription failed"));
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Updated footer layout: brand + socials, quick links, location/contact + support
 
   return (
     <footer className="w-full bg-zinc-900 border-t border-zinc-800 text-zinc-300 py-8 sm:py-12 mt-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
-        <div className="col-span-1">
-          <h4 className="text-white text-xl font-semibold">
-            {t("footer.brand", "LearnovateX")}
-          </h4>
-          <p className="text-sm text-zinc-400 mt-2 max-w-md">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Column 1: Brand + description + socials */}
+        <div className="md:col-span-2 pr-6 md:pr-8 lg:pr-10">
+          <div className="flex items-center gap-4">
+            <h3 className="relative text-5xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-tight">
+              {t("footer.brand_prefix", "Learnovate")}
+              <span className="text-orange-500">
+                {t("footer.brand_accent", "X")}
+              </span>
+              {/* accent dot removed per design */}
+            </h3>
+          </div>
+          <p className="mt-3 text-sm text-zinc-400 max-w-md">
             {t(
               "footer.description",
               "Built for learners — tools, roadmaps and AI to help you grow. Join our community and stay updated."
             )}
           </p>
-          <div className="flex flex-wrap mt-4 gap-2">
+          <div className="flex items-center mt-4 gap-3">
             {socials.map((s) => (
               <a
                 key={s.label}
@@ -87,149 +72,121 @@ const Footer = () => {
                 target="_blank"
                 rel="noreferrer"
                 className="p-2 rounded-md hover:bg-zinc-800 transition-colors"
-                aria-label={s.label}
-                title={s.label}
               >
                 {s.icon}
               </a>
             ))}
-            <a
-              href="mailto:hello@learnovatex.example"
-              className="p-2 rounded-md hover:bg-zinc-800 transition-colors"
-              title="Email"
-            >
-              <Mail className="w-5 h-5" />
-            </a>
           </div>
         </div>
 
-        <div>
-          <h5 className="text-white font-medium mb-3">
+        {/* Column 2: Quick Links */}
+        <div className="md:col-span-1">
+          <h5 className="text-white font-semibold mb-4">
             {t("footer.quickLinks.title", "Quick Links")}
           </h5>
-          <ul className="text-zinc-400 space-y-2">
+          <ul className="text-zinc-400 space-y-3">
             <li>
-              <a href="/dashboard" className="hover:text-white">
-                {t("nav.dashboard", "Dashboard")}
+              <a href="/ai-tutor" className="hover:text-white">
+                {t("footer.links.aiTutor", "AI Tutor")}
               </a>
             </li>
             <li>
+              <a href="/coding-arena" className="hover:text-white">
+                {t("footer.links.codingArena", "Coding Arena")}
+              </a>
+            </li>
+            {/* <li>
+              <a href="/location" className="hover:text-white">
+                {t("footer.links.location", "Location")}
+              </a>
+            </li> */}
+            <li>
               <a href="/roadmap" className="hover:text-white">
-                {t("nav.roadmap", "Roadmaps")}
+                {t("footer.links.roadmap", "Roadmap")}
               </a>
             </li>
             <li>
               <a href="/learning-path" className="hover:text-white">
-                {t("nav.learningPath", "Learning Paths")}
-              </a>
-            </li>
-            <li>
-              <a href="/coding" className="hover:text-white">
-                {t("nav.codingArena", "Coding Arena")}
-              </a>
-            </li>
-            <li>
-              <a href="/resume" className="hover:text-white">
-                {t("nav.resumeAnalyzer", "Resume Analyzer")}
+                {t("footer.links.learningPath", "Learning Path")}
               </a>
             </li>
           </ul>
         </div>
 
-        <div>
-          <h5 className="text-white font-medium mb-3">
-            {t("footer.recent.title", "Recent")}
-          </h5>
-          <ul className="text-zinc-400 space-y-2 text-sm">
-            <li>
-              <a href="/blog/how-to-start" className="hover:text-white">
-                {t("footer.recent.buildRoadmap", "How to build a roadmap")}
-              </a>
-            </li>
-            <li>
-              <a href="/blog/ai-for-learners" className="hover:text-white">
-                {t("footer.recent.aiTools", "AI tools for learners")}
-              </a>
-            </li>
-            <li>
-              <a href="/blog/resume-tips" className="hover:text-white">
-                {t("footer.recent.resumeTips", "Resume tips for students")}
-              </a>
-            </li>
-          </ul>
-        </div>
+        {/* Column 3 removed per design: About/Terms/Privacy moved or removed. */}
 
-        <div>
-          <h5 className="text-white font-medium mb-3">
-            {t("footer.newsletter.title", "Get updates")}
+        {/* Column 4: Contact & Location */}
+        <div className="md:col-span-1">
+          <h5 className="text-white font-semibold mb-4">
+            {t("footer.contact.title", "Contact & Location")}
           </h5>
-          <form
-            onSubmit={subscribe}
-            className="flex flex-col sm:flex-row gap-2"
-          >
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={t("footer.newsletter.placeholder", "Your email")}
-              className="flex-1 bg-zinc-800 text-white px-3 py-2 rounded-md border border-zinc-700 focus:outline-none"
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-md font-medium disabled:opacity-60 w-full sm:w-auto"
-            >
-              {loading ? "..." : t("footer.newsletter.subscribe", "Subscribe")}
-            </button>
-          </form>
-          <div className="mt-4 text-zinc-400 text-sm">
-            <div className="mb-2">{t("footer.contact.title", "Contact")}</div>
+          <div className="text-zinc-400 text-sm space-y-3">
+            <div className="flex items-start gap-3">
+              <MapPin className="w-5 h-5 mt-1 text-zinc-300" />
+              <div>
+                <div className="font-medium text-zinc-200">
+                  {t(
+                    "footer.location.addressLine1",
+                    "LearnovateX Connect, NRIIT Campus"
+                  )}
+                </div>
+                <div>
+                  {t(
+                    "footer.location.addressLine2",
+                    "Visadala Rd, Guntur, Andhra Pradesh 522007"
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div className="flex items-center gap-3">
-              <Mail className="w-4 h-4" />
+              <MailIcon className="w-5 h-5 text-zinc-300" />
               <a
-                href={`mailto:${t(
-                  "footer.email",
-                  "support@learnovatex.example"
-                )}`}
+                href="mailto:shaikasif.nriit@gmail.com"
                 className="hover:text-white"
               >
-                {t("footer.email", "support@learnovatex.example")}
+                shaikasif.nriit@gmail.com
               </a>
             </div>
-            <div className="mt-3">
-              <label className="text-zinc-400 text-sm block mb-2 sm:mb-0 sm:inline sm:mr-2">
-                {t("settings.language", "Language")}
-              </label>
-              <select
-                className="bg-zinc-800 text-white px-2 py-1 rounded-md w-full sm:w-auto"
-                onChange={(e) => setLanguage(e.target.value)}
-                value={language}
-              >
-                <option value="en">{t("lang.en", "English")}</option>
-                <option value="te">{t("lang.te", "తెలుగు")}</option>
-                <option value="hi">{t("lang.hi", "हिन्दी")}</option>
-              </select>
+
+            <div className="flex items-center gap-3">
+              <Phone className="w-5 h-5 text-zinc-300" />
+              <div>
+                <div className="font-medium text-zinc-200">+91 95814 25100</div>
+              </div>
             </div>
+
+            {/* Support button moved to Contact column */}
           </div>
+          {/* <div className="mt-4">
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event("open-assistant"))}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white text-black rounded-md hover:opacity-95"
+            >
+              <MailIcon className="w-4 h-4" />{" "}
+              {t("footer.supportButton", "SUPPORT")}
+            </button>
+          </div> */}
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-8 text-xs text-zinc-600">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2">
-          <span>
+        <div className="border-t border-zinc-800 pt-4 flex flex-col md:flex-row md:justify-between md:items-center gap-2">
+          <div className="text-zinc-400">
+            <span className="block">
+              {t(
+                "footer.legal.registered",
+                "Registered office: NRIIT Campus, Visadala Rd, Guntur, Andhra Pradesh 522007"
+              )}
+            </span>
+            <span className="block mt-1">
+              {t("footer.legal.gstin", "GSTIN: 123456789")}
+            </span>
+          </div>
+          <div className="text-zinc-400 mt-3 md:mt-0">
             © {new Date().getFullYear()} {t("footer.brand", "LearnovateX")}.{" "}
             {t("footer.copyright", "All rights reserved.")}
-          </span>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <a href="/terms" className="hover:underline">
-              {t("footer.links.terms", "Terms")}
-            </a>
-            <a href="/privacy" className="hover:underline">
-              {t("footer.links.privacy", "Privacy")}
-            </a>
-            <a href="/contact" className="hover:underline">
-              {t("footer.links.contact", "Contact")}
-            </a>
           </div>
         </div>
       </div>

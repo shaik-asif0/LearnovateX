@@ -78,8 +78,8 @@ app = FastAPI()
 default_cors_origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    # "https://purple-river-029d38c00.2.azurestaticapps.net",
-    "https://learnovatex-gv5y.onrender.com",
+     "https://purple-river-029d38c00.2.azurestaticapps.net",
+    #"https://learnovatex-gv5y.onrender.com",
 ]
 
 # Add a function to detect offline or online mode
@@ -7150,10 +7150,10 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=int(os.environ.get("PORT", 8000))
-    )
+# if __name__ == "__main__":
+#     import uvicorn
+#     uvicorn.run(
+#         app,
+#         host="0.0.0.0",
+#         port=int(os.environ.get("PORT", 8000))
+#     )

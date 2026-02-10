@@ -45,6 +45,13 @@ const SupportChatWidget = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open]);
 
+  // allow other parts of the app to open the assistant by dispatching a global event
+  useEffect(() => {
+    const openHandler = () => setOpen(true);
+    window.addEventListener("open-assistant", openHandler);
+    return () => window.removeEventListener("open-assistant", openHandler);
+  }, []);
+
   useEffect(() => {
     if (!open) return;
     const el = listRef.current;

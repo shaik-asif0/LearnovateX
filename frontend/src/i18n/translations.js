@@ -256,6 +256,34 @@ export const TRANSLATIONS = {
     "support.q4": "How do I apply for internships?",
     "support.placeholder": "Ask about the app…",
 
+    /* Footer / branding */
+    "footer.brand_prefix": "Learnovate",
+    "footer.brand_accent": "X",
+    "footer.description":
+      "Built for learners — tools, roadmaps and AI to help you grow. Join our community and stay updated.",
+    "footer.quickLinks.title": "Quick Links",
+    "footer.links.about": "About Us",
+    "footer.links.terms": "Terms of Use",
+    "footer.links.privacy": "Privacy Policy",
+    "footer.links.refund": "Refund Policy",
+    "footer.links.icat": "iCAT",
+    "footer.links.aiTutor": "AI Tutor",
+    "footer.links.codingArena": "Coding Arena",
+    "footer.links.location": "Location",
+    "footer.links.roadmap": "Roadmap",
+    "footer.links.learningPath": "Learning Path",
+    "footer.contact.title": "Contact & Location",
+    "footer.location.addressLine1":
+      "LearnovateX Connect, NRIIT Campus Visadala Rd, Guntur, Andhra Pradesh 522007",
+    "footer.location.addressLine2": "",
+    "footer.location.city": "Pune, India",
+    "footer.location.mapUrl": "https://www.google.com/maps",
+    "footer.location.viewOnMap": "View on map",
+    "footer.supportButton": "SUPPORT",
+    "footer.legal.registered":
+      "Registered office: NRIIT Campus, Visadala Rd, Guntur, Andhra Pradesh 522007",
+    "footer.legal.gstin": "GSTIN: 123456789",
+
     "common.add": "Add",
     "common.added": "Added",
     "common.missing": "Missing",

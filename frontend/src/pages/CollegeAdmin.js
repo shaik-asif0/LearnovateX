@@ -177,6 +177,8 @@ const PremiumAdmin = () => {
                           updateStatus("enrollment", enrollment.id, "approved")
                         }
                         size="sm"
+                        className="relative pointer-events-auto"
+                        style={{ zIndex: 9999 }}
                       >
                         Approve
                       </Button>
@@ -186,6 +188,8 @@ const PremiumAdmin = () => {
                         }
                         variant="destructive"
                         size="sm"
+                        className="relative pointer-events-auto"
+                        style={{ zIndex: 9999 }}
                       >
                         Reject
                       </Button>
@@ -240,6 +244,8 @@ const PremiumAdmin = () => {
                           )
                         }
                         size="sm"
+                        className="relative pointer-events-auto"
+                        style={{ zIndex: 9999 }}
                       >
                         Approve
                       </Button>
@@ -253,6 +259,8 @@ const PremiumAdmin = () => {
                         }
                         variant="destructive"
                         size="sm"
+                        className="relative pointer-events-auto"
+                        style={{ zIndex: 9999 }}
                       >
                         Reject
                       </Button>
