@@ -7,7 +7,7 @@ export function cn(...inputs) {
 
 const getApiBaseUrl = () => {
   const envBaseUrl =
-    import.meta.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+    process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
   const trimmed = envBaseUrl.replace(/\/+$/, "");
 
   // If the app is served over HTTPS, browsers will block HTTP API calls (mixed content).

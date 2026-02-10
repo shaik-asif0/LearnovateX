@@ -731,8 +731,37 @@ def decode_token(token: str) -> dict:
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     token = credentials.credentials
-    payload = decode_token(token)
-    user = await fetch_sqlite_user(payload['email'])
+    try:
+        payload = decode_token(token)
+    except HTTPException:
+        logger.warning("Token decode failed or expired")
+        raise
+
+    # Look up the user in the DB
+    user = await fetch_sqlite_user(payload.get('email'))
+
+    # If user not found and we're running in a non-production/dev environment,
+    # create a lightweight demo user so local/dev tokens don't cause 404s.
+    if not user and ENVIRONMENT != 'production':
+        logger.info(f"Dev fallback: creating demo user for {payload.get('email')}")
+        try:
+            demo_user = {
+                'id': str(uuid.uuid4()),
+                'email': payload.get('email') or f"dev+{uuid.uuid4().hex[:6]}@example.local",
+                'password': hash_password('DevFallback!23'),
+                'name': payload.get('email', 'Dev User').split('@')[0],
+                'role': 'student',
+                'created_at': datetime.now(timezone.utc).isoformat(),
+                'avatar_url': None,
+                'profile_data': None,
+                'updated_at': None,
+            }
+            await store_sqlite_user(demo_user)
+            user = await fetch_sqlite_user(demo_user['email'])
+        except Exception as e:
+            logger.exception("Failed to create dev fallback user: %s", e)
+            raise HTTPException(status_code=404, detail="User not found")
+
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
