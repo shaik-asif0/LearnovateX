@@ -79,6 +79,7 @@ default_cors_origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
      "https://purple-river-029d38c00.2.azurestaticapps.net",
+     
     #"https://learnovatex-gv5y.onrender.com",
 ]
 
@@ -105,6 +106,10 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+# Log the effective CORS configuration for troubleshooting in deployments
+logging.getLogger(__name__).info(
+    f"CORS configured. allow_origins={cors_origins}, allow_origin_regex={cors_origin_regex}"
 )
 
 
@@ -1225,8 +1230,11 @@ def _insert_sqlite_user(user_doc: dict) -> bool:
             conn.commit()
             return cursor.rowcount > 0
     except sqlite3.IntegrityError as e:
-        logger.error(f"Failed to insert user: {e}")
-        raise
+        # Most common case here is a duplicate email created concurrently or previously.
+        # Log at warning level and return False instead of raising, so dev-fallback
+        # user creation doesn't spam the logs with stacktraces in normal operation.
+        logger.warning(f"User insert skipped due to integrity error (likely duplicate): {e}")
+        return False
     except Exception as e:
         logger.error(f"Database error during user insert: {e}")
         raise

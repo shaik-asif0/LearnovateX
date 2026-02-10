@@ -378,16 +378,12 @@ const MockInterview = () => {
   };
 
   const startInterview = async () => {
-    if (!micEnabled || !videoEnabled) {
-      toast.error("Please enable your microphone and camera to proceed.");
-      return;
-    }
-
     try {
       setLoading(true);
       setShowInstructions(false);
 
-      // Start camera
+      // Attempt to start camera and microphone; if permissions are denied
+      // the catch block will handle cleanup and show an error.
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
@@ -395,16 +391,35 @@ const MockInterview = () => {
       mediaStreamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
+        try {
+          await videoRef.current.play();
+        } catch (e) {
+          // ignore autoplay restrictions
+        }
       }
 
       setStarted(true);
       setDraftMeta(null);
       toast.success("Interview started! Good luck! 🎯");
     } catch (error) {
-      stopDictation();
-      stopCamera();
-      toast.error("Failed to start interview");
+      // If media devices cannot be acquired, proceed without them
+      console.warn("Failed to acquire media devices for interview:", error);
+      try {
+        stopDictation();
+      } catch (e) {
+        // ignore
+      }
+      try {
+        stopCamera();
+      } catch (e) {
+        // ignore
+      }
+      setVideoEnabled(false);
+      setMicEnabled(false);
+      mediaStreamRef.current = null;
+      setStarted(true);
+      setDraftMeta(null);
+      toast.success("Interview started (camera/microphone unavailable)");
     } finally {
       setLoading(false);
     }
