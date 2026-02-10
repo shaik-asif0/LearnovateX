@@ -37,7 +37,7 @@ from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # allow all for now
+    allow_origins=["https://purple-river-029d38c00.azurestaticapps.net"],  # allow all for now
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -106,10 +106,6 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-)
-# Log the effective CORS configuration for troubleshooting in deployments
-logging.getLogger(__name__).info(
-    f"CORS configured. allow_origins={cors_origins}, allow_origin_regex={cors_origin_regex}"
 )
 
 
@@ -1230,11 +1226,8 @@ def _insert_sqlite_user(user_doc: dict) -> bool:
             conn.commit()
             return cursor.rowcount > 0
     except sqlite3.IntegrityError as e:
-        # Most common case here is a duplicate email created concurrently or previously.
-        # Log at warning level and return False instead of raising, so dev-fallback
-        # user creation doesn't spam the logs with stacktraces in normal operation.
-        logger.warning(f"User insert skipped due to integrity error (likely duplicate): {e}")
-        return False
+        logger.error(f"Failed to insert user: {e}")
+        raise
     except Exception as e:
         logger.error(f"Database error during user insert: {e}")
         raise
