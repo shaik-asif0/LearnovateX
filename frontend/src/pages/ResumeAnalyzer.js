@@ -101,6 +101,8 @@ import { toast } from "sonner";
 import { useI18n } from "../i18n/I18nProvider";
 
 const ResumeAnalyzer = () => {
+  const { t } = useI18n();
+
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState(null);
   const [file, setFile] = useState(null);
@@ -576,8 +578,6 @@ const ResumeAnalyzer = () => {
       if (scoreIntervalRef.current) clearInterval(scoreIntervalRef.current);
     };
   }, []);
-
-  const { t } = useI18n();
 
   return (
     <div className="min-h-screen bg-black text-white">
