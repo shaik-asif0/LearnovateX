@@ -383,11 +383,13 @@ const MockInterview = () => {
       setShowInstructions(false);
 
       // First, generate questions from the API
-      const questionResponse = await axiosInstance.post("/interview/start", {
-        interview_type: interviewType,
-      });
+      // Send interview_type as a query parameter so backend receives it reliably
+      const questionResponse = await axiosInstance.post(
+        `/interview/start?interview_type=${encodeURIComponent(interviewType)}`
+      );
 
-      const generatedQuestions = questionResponse.data.questions || [];
+      const generatedQuestions =
+        (questionResponse.data && questionResponse.data.questions) || [];
       setQuestions(generatedQuestions);
       setAnswers(new Array(generatedQuestions.length).fill(""));
 
