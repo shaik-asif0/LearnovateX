@@ -2929,135 +2929,306 @@ def _check_internet_connectivity() -> bool:
         return False
 
 def _get_demo_response(prompt: str, response_type: str = "tutor") -> str:
-    """Generate demo responses when AWS is not configured"""
+    """Generate demo responses when AI is not configured"""
     
     if "code" in prompt.lower() or response_type == "code":
-        return """CORRECT: Yes
-TIME_COMPLEXITY: O(n) - Linear time complexity
+        # Check if the code is about "add two numbers"
+        if ("add" in prompt.lower() and "number" in prompt.lower()) or "add_two_numbers" in prompt.lower():
+            return """CORRECT: Yes
+TIME_COMPLEXITY: O(1) - Constant time complexity
 SPACE_COMPLEXITY: O(1) - Constant space complexity  
-QUALITY: 8
-SCORE: 85
+QUALITY: 9
+SCORE: 95
 SUGGESTIONS: 
-- Consider adding input validation
+- Consider adding input validation for non-numeric inputs
 - Add docstrings for better documentation
-- Use more descriptive variable names
-- Consider edge cases like empty inputs
+- Use type hints for function parameters
+- Consider edge cases like very large numbers
+- Optimize by using built-in sum() function for multiple numbers
+- Add comprehensive unit tests with edge cases
+- Consider using assertions for debugging
+- Implement proper error handling with try-except blocks
 
-Great job! Your code demonstrates solid programming practices. The logic is correct and efficient. 
-To improve further, consider adding error handling and unit tests."""
+Excellent! Your "add two numbers" program is correct and well-implemented. The logic is sound and efficient with O(1) time and space complexity. 
+To improve further, consider adding error handling for invalid inputs, comprehensive testing, and documentation for better code quality."""
+        else:
+            return """DEMO MODE: Code evaluation is only available for "add two numbers" programs in Python.
+
+Please submit a Python program that adds two numbers to see a full evaluation.
+
+Example program:
+```python
+def add_two_numbers(a, b):
+    return a + b
+
+# Test the function
+result = add_two_numbers(5, 3)
+print(f"5 + 3 = {result}")
+```
+
+Submit this or a similar "add two numbers" program to get a detailed evaluation."""
 
     elif "resume" in prompt.lower() or response_type == "resume":
-        return """CREDIBILITY_SCORE: 78
-FAKE_SKILLS: None detected
-SUGGESTIONS:
-- Add quantifiable achievements with metrics
-- Include more technical keywords for ATS optimization
-- Add a professional summary section
-- Include relevant certifications
-- Improve formatting for better readability
+        return """DEMO MODE: Resume Analysis & Improvement Suggestions
 
-ANALYSIS: The resume shows good foundational experience. Skills listed appear genuine and relevant to the target role. 
-Consider adding specific project outcomes and metrics to strengthen credibility. 
-The education section is well-presented. Work experience could benefit from more action verbs and quantifiable results."""
+📊 **OVERALL SCORE: 72/100**
+
+🔍 **ATS COMPATIBILITY ANALYSIS:**
+- ATS Score: 68% (Good - but can be improved)
+- Keyword Optimization: 65% (Missing some industry-specific terms)
+- Format Compatibility: 85% (Well-structured PDF format)
+
+🎯 **STRENGTHS IDENTIFIED:**
+✅ Strong educational background with relevant coursework
+✅ Clear work experience progression
+✅ Technical skills section well-organized
+✅ Professional contact information
+✅ Consistent formatting and clean design
+
+⚠️ **AREAS FOR IMPROVEMENT:**
+
+**1. Content Enhancement:**
+- Add specific metrics to achievements (e.g., "Improved system performance by 40%" instead of "Improved system performance")
+- Include quantifiable results for all bullet points
+- Add more industry-specific keywords like "Python", "JavaScript", "React", "Node.js", "SQL", "Git"
+- Expand on project descriptions with technologies used and outcomes
+
+**2. Professional Summary:**
+- Add a compelling 3-4 sentence professional summary at the top
+- Highlight key strengths and career objectives
+- Include years of experience and main expertise areas
+
+**3. Skills Section Optimization:**
+- Group skills by category (Technical Skills, Soft Skills, Tools & Technologies)
+- Add proficiency levels for technical skills
+- Include certifications and their issuing organizations
+- Add emerging technologies relevant to your target roles
+
+**4. Experience Section Improvements:**
+- Use strong action verbs (Developed, Implemented, Optimized, Led, etc.)
+- Start each bullet with quantifiable achievements
+- Include company size and industry context where relevant
+- Add promotion history and increased responsibilities
+
+**5. Education & Certifications:**
+- Include GPA if above 3.5
+- Add relevant coursework and projects
+- Include certifications with dates and issuing organizations
+- Add professional development courses
+
+**6. Formatting & Design:**
+- Ensure consistent font sizes and spacing
+- Use bullet points effectively (avoid paragraphs)
+- Optimize for both human readers and ATS systems
+- Consider adding a personal branding statement
+
+🚀 **RECOMMENDED ACTION ITEMS:**
+
+**Immediate (High Priority):**
+1. Rewrite 3-5 key achievements with specific metrics
+2. Add a professional summary section
+3. Research and add 5-10 relevant keywords for your target roles
+4. Update skills section with proficiency levels
+
+**Short-term (Medium Priority):**
+1. Obtain 1-2 relevant certifications
+2. Update project descriptions with technologies and outcomes
+3. Add LinkedIn profile and portfolio links
+4. Customize resume for each job application
+
+**Long-term (Low Priority):**
+1. Build a personal brand through LinkedIn and portfolio
+2. Network and gain endorsements for key skills
+3. Consider advanced certifications in your field
+4. Build case studies for major projects
+
+📈 **EXPECTED IMPROVEMENT:**
+With these changes, your resume score could increase to 85-90/100, significantly improving your chances of getting interviews.
+
+💡 **PRO TIP:** Always tailor your resume for each job application by incorporating keywords from the job description.
+
+DEMO LIMITATION: Full personalized resume analysis with industry-specific recommendations requires OpenAI API configuration."""
 
     elif "interview" in prompt.lower() or response_type == "interview":
         if "generate" in prompt.lower() or "Q1" not in prompt:
-            return """Q1: Tell me about a challenging project you worked on and how you overcame obstacles.
-Q2: How do you stay updated with the latest technologies in your field?
-Q3: Describe your approach to debugging a complex issue in production.
-Q4: How do you handle disagreements with team members on technical decisions?
-Q5: Where do you see yourself professionally in 5 years?"""
-        else:
-            return """READINESS_SCORE: 75
-STRENGTHS: Good communication skills, Technical knowledge, Problem-solving ability
-WEAKNESSES: Could provide more specific examples, Need deeper technical explanations, Consider STAR method for behavioral questions
+            return """DEMO MODE: Mock Interview Questions
 
-FEEDBACK: Overall, you demonstrated solid interview skills. Your answers show good understanding of concepts.
-To improve: Use specific examples from your experience, quantify achievements where possible, and practice the STAR method 
-(Situation, Task, Action, Result) for behavioral questions. Consider preparing 2-3 strong project stories you can adapt to different questions."""
+Q1: Tell me about yourself and your programming background.
+Q2: What programming languages are you most comfortable with?
+Q3: Can you explain what "add two numbers" means in programming?
+Q4: How do you approach solving a simple coding problem?
+Q5: What are your career goals in software development?
+
+DEMO LIMITATION: Full mock interview with personalized questions requires OpenAI API configuration."""
+        else:
+            return """DEMO MODE: Comprehensive Interview Evaluation & Feedback
+
+📊 **OVERALL INTERVIEW READINESS SCORE: 68/100**
+
+🎯 **PERFORMANCE BREAKDOWN:**
+- Communication Skills: 75/100 (Clear and confident delivery)
+- Technical Knowledge: 65/100 (Good fundamentals, room for depth)
+- Problem-Solving Approach: 70/100 (Logical thinking process)
+- Code Quality: 60/100 (Functional but could be optimized)
+
+💪 **STRENGTHS IDENTIFIED:**
+✅ Clear communication and articulation of thoughts
+✅ Good understanding of basic programming concepts
+✅ Logical approach to problem-solving
+✅ Willingness to learn and improve
+✅ Professional demeanor and enthusiasm
+✅ Basic knowledge of Python syntax and structure
+
+⚠️ **AREAS FOR IMPROVEMENT:**
+
+**1. Technical Depth & Accuracy:**
+- Strengthen understanding of time/space complexity analysis
+- Practice more algorithmic problems beyond basic operations
+- Learn common data structures (arrays, lists, dictionaries)
+- Study error handling and edge cases
+- Improve code optimization techniques
+
+**2. Problem-Solving Methodology:**
+- Develop systematic approach to coding problems
+- Practice explaining thought process step-by-step
+- Learn debugging techniques and common pitfalls
+- Study different algorithmic approaches
+- Practice with coding platforms (LeetCode, HackerRank)
+
+**3. Code Quality & Best Practices:**
+- Add proper documentation and comments
+- Use meaningful variable names
+- Implement input validation and error handling
+- Follow PEP 8 style guidelines
+- Write modular, reusable code
+
+**4. Communication Skills:**
+- Practice explaining technical concepts clearly
+- Work on active listening during interviews
+- Prepare concise yet comprehensive answers
+- Practice whiteboard coding explanations
+
+**5. Interview Preparation:**
+- Research common interview questions
+- Prepare behavioral interview responses (STAR method)
+- Build portfolio of projects
+- Practice mock interviews regularly
+
+🚀 **RECOMMENDED ACTION ITEMS:**
+
+**Immediate (High Priority - Next 1-2 weeks):**
+1. Complete 10-15 "add two numbers" variations with different constraints
+2. Study basic data structures and algorithms
+3. Practice explaining code solutions verbally
+4. Add error handling to all coding exercises
+5. Review and improve code documentation
+
+**Short-term (Medium Priority - Next 1-2 months):**
+1. Solve 50+ coding problems on LeetCode/HackerRank
+2. Build 3-5 small projects with proper documentation
+3. Practice 2-3 mock interviews per week
+4. Learn one new programming language or framework
+5. Obtain relevant certifications (if applicable)
+
+**Long-term (Low Priority - 3-6 months):**
+1. Contribute to open-source projects
+2. Build a comprehensive portfolio website
+3. Network with industry professionals
+4. Pursue advanced certifications
+5. Consider specialization in a specific technology stack
+
+📈 **EXPECTED IMPROVEMENT PROJECTIONS:**
+- 1 month: Score improvement to 75-80/100
+- 3 months: Score improvement to 85-90/100
+- 6 months: Score improvement to 90+/100
+
+💡 **PRO TIPS FOR INTERVIEW SUCCESS:**
+1. Always explain your thought process while coding
+2. Ask clarifying questions before starting solutions
+3. Test your code with multiple examples
+4. Consider edge cases and error scenarios
+5. Practice coding on paper/whiteboard, not just IDE
+6. Research the company and role thoroughly
+7. Prepare questions to ask the interviewer
+8. Follow up with thank-you notes after interviews
+
+🎯 **FOCUS AREAS FOR NEXT PRACTICE:**
+- Time/Space complexity analysis
+- Code optimization techniques
+- Error handling and validation
+- Clean code principles
+- Algorithmic thinking
+
+DEMO LIMITATION: Full personalized interview evaluation with industry-specific feedback requires OpenAI API configuration."""
 
     else:  # Default tutor response
-        if "REFERENCE MATERIAL" in (prompt or ""):
-            # Best-effort: extract the reference material block and summarize it.
-            # This keeps attachments useful even when Azure OpenAI is not configured.
-            material = ""
-            try:
-                m = re.search(
-                    r"REFERENCE MATERIAL\s*\(.*?\):\s*(.*?)\n\nInstructions:",
-                    prompt,
-                    flags=re.IGNORECASE | re.DOTALL,
-                )
-                if m:
-                    material = (m.group(1) or "").strip()
-            except Exception:
-                material = ""
+        # Check if the user is asking about "add two numbers"
+        if "add two numbers" in prompt.lower():
+            return """Great! Let's learn about adding two numbers in Python. This is a fundamental programming concept.
 
-            if not material:
-                # fallback: grab a chunk of the prompt
-                material = (prompt or "")[-2000:].strip()
+**What is "Add Two Numbers"?**
+Adding two numbers means taking two numeric values and calculating their sum.
 
-            # Extract student question (if present)
-            question = ""
-            try:
-                qm = re.search(r"Student Question:\s*(.*)", prompt, flags=re.IGNORECASE)
-                if qm:
-                    question = (qm.group(1) or "").strip()
-            except Exception:
-                question = ""
-
-            snippet = material[:1400].strip()
-            lines = [ln.strip() for ln in snippet.splitlines() if ln.strip()]
-            summary_points = lines[:5]
-            summary = "\n".join([f"- {p}" for p in summary_points]) if summary_points else snippet
-
-            return (
-                "Based on the reference material you provided, here’s a clear explanation:\n\n"
-                + (f"Question: {question}\n\n" if question else "")
-                + "Summary of the material:\n"
-                + (summary + "\n\n")
-                + "If you tell me what exactly you want (summary, key points, Q&A, explain a topic), I can tailor the answer."
-            )
-
-        return """Great question! Let me explain this concept step by step:
-
-**Overview:**
-This is a fundamental concept in programming that you'll use frequently.
-
-**Key Points:**
-1. **Definition**: Understanding the core concept is essential for building more complex solutions.
-
-2. **How it works**: 
-   - The process begins with input validation
-   - Data is then processed according to the algorithm
-   - Results are returned in a structured format
-
-3. **Example**:
+**Python Implementation:**
 ```python
-# Simple example demonstrating the concept
-def example_function(data):
-    # Process the data
-    result = process(data)
-    return result
+# Method 1: Simple function
+def add_two_numbers(a, b):
+    \"\"\"Add two numbers and return the result\"\"\"
+    return a + b
+
+# Method 2: Using operator directly
+result = 5 + 3  # result = 8
+
+# Method 3: With user input
+num1 = float(input("Enter first number: "))
+num2 = float(input("Enter second number: "))
+sum_result = num1 + num2
+print(f"The sum is: {sum_result}")
 ```
 
-4. **Best Practices**:
-   - Always validate inputs
-   - Use meaningful variable names
-   - Add comments for complex logic
-   - Test edge cases
+**Key Concepts:**
+1. **Data Types**: Numbers can be integers (int) or floating-point (float)
+2. **Operators**: The `+` operator adds two numbers
+3. **Input/Output**: Use `input()` for user input, `print()` for output
+4. **Type Conversion**: Use `int()` or `float()` to convert strings to numbers
 
-5. **Common Mistakes to Avoid**:
-   - Don't skip input validation
-   - Avoid deeply nested code
-   - Remember to handle errors gracefully
+**Best Practices:**
+- Always validate that inputs are actually numbers
+- Handle potential errors (like non-numeric input)
+- Use meaningful variable names
+- Add comments to explain your code
 
 **Practice Exercise:**
-Try implementing a simple version of this concept with the following requirements:
-- Accept user input
-- Validate the input
-- Process and return results
+Write a program that:
+1. Asks the user for two numbers
+2. Adds them together
+3. Displays the result
+4. Handles invalid input gracefully
 
-Would you like me to elaborate on any specific part?"""
+Would you like me to show you how to implement this step by step?"""
+        else:
+            return """DEMO MODE: AI Tutor
+
+I'm currently in demo mode and can only provide detailed explanations for "add two numbers" programs in Python.
+
+**Available Demo Topic:**
+- Adding two numbers in Python (with examples and explanations)
+
+**To get full AI tutoring on any programming topic:**
+1. Configure your OpenAI API key in the environment variables
+2. Set AI_MODE=openai in your .env file
+3. Restart the server
+
+**Example "Add Two Numbers" Program:**
+```python
+def add_numbers(a, b):
+    return a + b
+
+result = add_numbers(10, 20)
+print(f"Sum: {result}")  # Output: Sum: 30
+```
+
+Ask me about "add two numbers" to see a complete tutorial, or configure OpenAI API for full tutoring capabilities."""
 
 
 def _call_azure_openai_sync(prompt: str, system_instruction: str = None) -> str:
@@ -5066,9 +5237,130 @@ async def get_activity_heatmap(days: int = 180, current_user: dict = Depends(get
 
 # Mock Interview Routes
 @api_router.post("/interview/start")
+@api_router.post("/interview/start")
 async def start_interview(interview_type: str, current_user: dict = Depends(get_current_user)):
     session_id = f"{current_user['id']}_interview_{datetime.now().timestamp()}"
     
+    # Check if in demo mode
+    if AI_MODE == 'demo':
+        # Return demo questions based on interview type
+        if interview_type.lower() == 'technical':
+            questions = [
+                {
+                    "id": str(uuid.uuid4()),
+                    "question": "Explain the difference between an array and a linked list. What are the time complexities for insertion and deletion operations in both?",
+                    "type": "technical"
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "question": "How would you implement a stack using two queues? Explain the time complexity of push and pop operations.",
+                    "type": "technical"
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "question": "Write a function to detect if a linked list has a cycle. What is the time and space complexity of your solution?",
+                    "type": "technical"
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "question": "Explain the concept of dynamic programming. Give an example of a problem that can be solved using dynamic programming.",
+                    "type": "technical"
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "question": "How does a hash table work? What are the different collision resolution techniques?",
+                    "type": "technical"
+                }
+            ]
+        elif interview_type.lower() == 'behavioral':
+            questions = [
+                {
+                    "id": str(uuid.uuid4()),
+                    "question": "Tell me about a time when you faced a challenging problem at work. How did you approach solving it?",
+                    "type": "behavioral"
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "question": "Describe a situation where you had to work with a difficult team member. How did you handle it?",
+                    "type": "behavioral"
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "question": "Tell me about a project you worked on that failed. What did you learn from that experience?",
+                    "type": "behavioral"
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "question": "Describe a time when you had to learn a new technology or skill quickly. How did you approach it?",
+                    "type": "behavioral"
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "question": "Tell me about a time when you received constructive criticism. How did you respond?",
+                    "type": "behavioral"
+                }
+            ]
+        elif interview_type.lower() == 'hr':
+            questions = [
+                {
+                    "id": str(uuid.uuid4()),
+                    "question": "Why are you interested in working for our company?",
+                    "type": "hr"
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "question": "Where do you see yourself in 5 years?",
+                    "type": "hr"
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "question": "What are your salary expectations?",
+                    "type": "hr"
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "question": "What do you know about our company culture?",
+                    "type": "hr"
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "question": "Do you have any questions for us?",
+                    "type": "hr"
+                }
+            ]
+        else:
+            # Default technical questions
+            questions = [
+                {
+                    "id": str(uuid.uuid4()),
+                    "question": "Tell me about yourself and your background.",
+                    "type": interview_type
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "question": "What are your strengths and weaknesses?",
+                    "type": interview_type
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "question": "Why do you want to work here?",
+                    "type": interview_type
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "question": "Where do you see yourself in 5 years?",
+                    "type": interview_type
+                },
+                {
+                    "id": str(uuid.uuid4()),
+                    "question": "Do you have any questions for me?",
+                    "type": interview_type
+                }
+            ]
+        
+        return {"session_id": session_id, "questions": questions}
+    
+    # Original AI-powered implementation
     prompt = f"""
 Generate 5 {interview_type} interview questions for a candidate.
 Mix of easy, medium, and hard questions.

@@ -1951,7 +1951,7 @@ const CodingArena = () => {
 
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("python");
-  const [problemId, setProblemId] = useState("fibonacci");
+  const [problemId, setProblemId] = useState("add-two-numbers");
   const [loading, setLoading] = useState(false);
   const [evaluation, setEvaluation] = useState(null);
   const [timer, setTimer] = useState(0);
@@ -2067,6 +2067,22 @@ const CodingArena = () => {
   }, [evaluation]);
 
   const seedProblems = [
+    {
+      id: "add-two-numbers",
+      title: "Add Two Numbers",
+      difficulty: "Easy",
+      description:
+        "Write a function that takes two numbers as input and returns their sum. This is a fundamental programming concept that demonstrates basic arithmetic operations.",
+      examples: "Input: a=5, b=3\nOutput: 8\n\nInput: a=10, b=20\nOutput: 30",
+      starterCode: {
+        python:
+          'def add_two_numbers(a, b):\n    # Write your code here\n    # Add the two numbers and return the result\n    pass\n\n# Test your function\nresult = add_two_numbers(5, 3)\nprint(f"5 + 3 = {result}")\n\n# Test with different values\nresult2 = add_two_numbers(10, 20)\nprint(f"10 + 20 = {result2}")',
+        javascript:
+          "function addTwoNumbers(a, b) {\n    // Write your code here\n    // Add the two numbers and return the result\n}\n\n// Test your function\nlet result = addTwoNumbers(5, 3);\nconsole.log(`5 + 3 = ${result}`);\n\n// Test with different values\nlet result2 = addTwoNumbers(10, 20);\nconsole.log(`10 + 20 = ${result2}`);",
+        java: 'public class Solution {\n    public static int addTwoNumbers(int a, int b) {\n        // Write your code here\n        // Add the two numbers and return the result\n        return 0;\n    }\n    \n    public static void main(String[] args) {\n        // Test your function\n        int result = addTwoNumbers(5, 3);\n        System.out.println("5 + 3 = " + result);\n        \n        // Test with different values\n        int result2 = addTwoNumbers(10, 20);\n        System.out.println("10 + 20 = " + result2);\n    }\n}',
+      },
+      tags: ["Math", "Arithmetic", "Beginner"],
+    },
     {
       id: "fibonacci",
       title: "Fibonacci Series",

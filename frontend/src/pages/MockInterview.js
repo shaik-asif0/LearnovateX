@@ -382,6 +382,15 @@ const MockInterview = () => {
       setLoading(true);
       setShowInstructions(false);
 
+      // First, generate questions from the API
+      const questionResponse = await axiosInstance.post("/interview/start", {
+        interview_type: interviewType,
+      });
+
+      const generatedQuestions = questionResponse.data.questions || [];
+      setQuestions(generatedQuestions);
+      setAnswers(new Array(generatedQuestions.length).fill(""));
+
       // Attempt to start camera and microphone; if permissions are denied
       // the catch block will handle cleanup and show an error.
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -402,24 +411,55 @@ const MockInterview = () => {
       setDraftMeta(null);
       toast.success("Interview started! Good luck! 🎯");
     } catch (error) {
-      // If media devices cannot be acquired, proceed without them
-      console.warn("Failed to acquire media devices for interview:", error);
-      try {
-        stopDictation();
-      } catch (e) {
-        // ignore
+      console.error("Failed to start interview:", error);
+      // If question generation fails, proceed without questions but show error
+      if (error.response?.status === 401) {
+        toast.error("Please log in to start an interview");
+        return;
       }
+
+      // If it's a demo mode or API error, try to proceed with basic setup
       try {
-        stopCamera();
-      } catch (e) {
-        // ignore
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
+        mediaStreamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          try {
+            await videoRef.current.play();
+          } catch (e) {
+            // ignore autoplay restrictions
+          }
+        }
+        setStarted(true);
+        setDraftMeta(null);
+        toast.success(
+          "Interview started (demo mode - questions may be limited)"
+        );
+      } catch (mediaError) {
+        console.warn(
+          "Failed to acquire media devices for interview:",
+          mediaError
+        );
+        try {
+          stopDictation();
+        } catch (e) {
+          // ignore
+        }
+        try {
+          stopCamera();
+        } catch (e) {
+          // ignore
+        }
+        setVideoEnabled(false);
+        setMicEnabled(false);
+        mediaStreamRef.current = null;
+        setStarted(true);
+        setDraftMeta(null);
+        toast.success("Interview started (camera/microphone unavailable)");
       }
-      setVideoEnabled(false);
-      setMicEnabled(false);
-      mediaStreamRef.current = null;
-      setStarted(true);
-      setDraftMeta(null);
-      toast.success("Interview started (camera/microphone unavailable)");
     } finally {
       setLoading(false);
     }
