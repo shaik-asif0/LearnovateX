@@ -33,20 +33,24 @@ import shutil
 from openai import AzureOpenAI, OpenAI
 
 
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-origins = [
-    "https://purple-river-029d38c00.2.azurestaticapps.net/",
-    "http://localhost:3000"
-]
+# FIRST create app
+app = FastAPI()
 
+# THEN add middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/")
+def home():
+    return {"message": "Backend Running 🚀"}
 
 import os
 from fastapi import FastAPI
