@@ -34,14 +34,20 @@ from openai import AzureOpenAI, OpenAI
 
 
 from fastapi.middleware.cors import CORSMiddleware
-app = FastAPI()
+
+origins = [
+    "https://purple-river-029d38c00.2.azurestaticapps.net/",
+    "http://localhost:3000"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # allow all for now
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
