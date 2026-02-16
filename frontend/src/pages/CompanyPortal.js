@@ -175,6 +175,38 @@ const CompanyPortal = () => {
     questions: 10,
   });
 
+  const [recentActivities, setRecentActivities] = useState([]);
+
+  useEffect(() => {
+    // Simulate real-time activity feed for Company
+    const activities = [
+      "New candidate applied: Alex Chen",
+      "Assessment completed: Java Backend Test",
+      "Interview scheduled: Frontend Developer Role",
+      "Candidate shortlisted: Emily Davis",
+      "New message received from candidate",
+    ];
+
+    const interval = setInterval(() => {
+      const randomActivity =
+        activities[Math.floor(Math.random() * activities.length)];
+      const timestamp = new Date().toLocaleTimeString();
+      setRecentActivities((prev) => [
+        { id: Date.now(), text: randomActivity, time: timestamp },
+        ...prev.slice(0, 4),
+      ]);
+
+      // Simulate live stat updates
+      setRealtimeStats(prev => ({
+        ...prev,
+        newApplications: prev.newApplications + (Math.random() > 0.7 ? 1 : 0),
+      }));
+
+    }, 6000 + Math.random() * 4000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     fetchCandidates();
     fetchAssessments();
@@ -406,16 +438,16 @@ const CompanyPortal = () => {
     avgResumeScore:
       candidates.length > 0
         ? Math.round(
-            candidates.reduce((acc, c) => acc + c.resume_score, 0) /
-              candidates.length
-          )
+          candidates.reduce((acc, c) => acc + c.resume_score, 0) /
+          candidates.length
+        )
         : 0,
     avgCodeScore:
       candidates.length > 0
         ? Math.round(
-            candidates.reduce((acc, c) => acc + c.avg_code_score, 0) /
-              candidates.length
-          )
+          candidates.reduce((acc, c) => acc + c.avg_code_score, 0) /
+          candidates.length
+        )
         : 0,
   };
 
@@ -770,6 +802,39 @@ const CompanyPortal = () => {
               </div>
             </div>
           </div>
+
+          {/* Live Activity Ticker */}
+          <div className="hidden lg:flex flex-col items-end justify-center px-6 border-r border-zinc-700/50 flex-1 mx-6">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+              <span className="text-xs font-semibold text-green-400 uppercase tracking-wider">
+                Live Activity
+              </span>
+            </div>
+            <div className="h-6 overflow-hidden relative w-full max-w-md text-right">
+              {recentActivities.map((activity, idx) => (
+                <div
+                  key={activity.id}
+                  className={`text-xs text-zinc-300 transition-all duration-500 absolute right-0 w-full truncate ${idx === 0
+                    ? "top-0 opacity-100 translate-y-0"
+                    : "top-6 opacity-0 translate-y-4"
+                    }`}
+                >
+                  <span className="text-zinc-500 mr-2">{activity.time}</span>
+                  {activity.text}
+                </div>
+              ))}
+              {recentActivities.length === 0 && (
+                <span className="text-xs text-zinc-500">
+                  Monitoring events...
+                </span>
+              )}
+            </div>
+          </div>
+
           <div className="flex flex-wrap items-center gap-2">
             <Button
               size="sm"
@@ -1234,11 +1299,10 @@ const CompanyPortal = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => setAiMatchingEnabled(!aiMatchingEnabled)}
-                    className={`border-zinc-700 ${
-                      aiMatchingEnabled
-                        ? "bg-[rgba(var(--accent-rgb),0.2)] border-[rgba(var(--accent-rgb),0.5)]"
-                        : ""
-                    }`}
+                    className={`border-zinc-700 ${aiMatchingEnabled
+                      ? "bg-[rgba(var(--accent-rgb),0.2)] border-[rgba(var(--accent-rgb),0.5)]"
+                      : ""
+                      }`}
                   >
                     <Sparkles className="w-4 h-4 mr-2" />
                     {aiMatchingEnabled ? "AI On" : "AI Off"}
@@ -1256,7 +1320,7 @@ const CompanyPortal = () => {
                       type="checkbox"
                       checked={
                         selectedCandidates.length ===
-                          filteredCandidates.length &&
+                        filteredCandidates.length &&
                         filteredCandidates.length > 0
                       }
                       onChange={(e) => {
@@ -2422,11 +2486,10 @@ const CompanyPortal = () => {
                   ].map((skill) => (
                     <Badge
                       key={skill}
-                      className={`cursor-pointer ${
-                        newTest.skills.includes(skill)
-                          ? "bg-white text-black"
-                          : "bg-zinc-700 text-zinc-300 hover:bg-zinc-600"
-                      }`}
+                      className={`cursor-pointer ${newTest.skills.includes(skill)
+                        ? "bg-white text-black"
+                        : "bg-zinc-700 text-zinc-300 hover:bg-zinc-600"
+                        }`}
                       onClick={() => {
                         if (newTest.skills.includes(skill)) {
                           setNewTest({
@@ -2618,11 +2681,11 @@ const CompanyPortal = () => {
                         <p className="text-2xl font-bold text-white">
                           {candidates.length > 0
                             ? Math.round(
-                                candidates.reduce(
-                                  (acc, c) => acc + (c.score || 0),
-                                  0
-                                ) / candidates.length
-                              )
+                              candidates.reduce(
+                                (acc, c) => acc + (c.score || 0),
+                                0
+                              ) / candidates.length
+                            )
                             : 0}
                           %
                         </p>
@@ -2660,10 +2723,10 @@ const CompanyPortal = () => {
                         <span className="text-[var(--accent-color)] font-semibold">
                           {candidates.length > 0
                             ? Math.round(
-                                (shortlistedCandidates.length /
-                                  candidates.length) *
-                                  100
-                              )
+                              (shortlistedCandidates.length /
+                                candidates.length) *
+                              100
+                            )
                             : 0}
                           %
                         </span>

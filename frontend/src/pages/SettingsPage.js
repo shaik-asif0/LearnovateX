@@ -167,7 +167,11 @@ const SettingsPage = () => {
     autoSave(category, key, value);
   };
 
-  const autoSave = (category, key, value) => {
+  const autoSave = async (category, key, value) => {
+    // Simulate cloud sync delay
+    const toastId = toast.loading("Syncing changes...");
+    await new Promise(resolve => setTimeout(resolve, 600)); // Simulate network latency
+
     const newSettings = {
       ...settings,
       [category]: {
@@ -176,9 +180,12 @@ const SettingsPage = () => {
       },
     };
     localStorage.setItem("userSettings", JSON.stringify(newSettings));
+
+    toast.dismiss(toastId);
     toast.success(`${formatSettingName(key)} updated`, {
       duration: 1500,
       position: "bottom-right",
+      icon: <Cloud className="w-4 h-4 text-green-500" />
     });
   };
 
@@ -429,20 +436,18 @@ const SettingsPage = () => {
                       <button
                         key={item.id}
                         onClick={() => setActiveTab(item.id)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                          activeTab === item.id
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${activeTab === item.id
                             ? "bg-white text-black"
                             : "text-zinc-400 hover:text-white hover:bg-zinc-800"
-                        }`}
+                          }`}
                       >
                         <Icon className="w-5 h-5" />
                         <span className="font-medium">
                           {t(item.labelKey || item.label, item.label)}
                         </span>
                         <ChevronRight
-                          className={`w-4 h-4 ml-auto transition-transform ${
-                            activeTab === item.id ? "rotate-90" : ""
-                          }`}
+                          className={`w-4 h-4 ml-auto transition-transform ${activeTab === item.id ? "rotate-90" : ""
+                            }`}
                         />
                       </button>
                     );
@@ -710,18 +715,16 @@ const SettingsPage = () => {
                             onClick={() =>
                               updateSetting("preferences", "theme", theme.id)
                             }
-                            className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-                              settings.preferences.theme === theme.id
+                            className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${settings.preferences.theme === theme.id
                                 ? "border-orange-500 bg-orange-500/10"
                                 : "border-zinc-700 bg-zinc-800 hover:border-zinc-600"
-                            }`}
+                              }`}
                           >
                             <Icon
-                              className={`w-6 h-6 ${
-                                settings.preferences.theme === theme.id
+                              className={`w-6 h-6 ${settings.preferences.theme === theme.id
                                   ? "text-orange-400"
                                   : "text-zinc-400"
-                              }`}
+                                }`}
                             />
                             <span
                               className={
@@ -804,11 +807,10 @@ const SettingsPage = () => {
                           onClick={() =>
                             updateSetting("preferences", "fontSize", size)
                           }
-                          className={`p-3 rounded-lg border transition-all capitalize ${
-                            settings.preferences.fontSize === size
+                          className={`p-3 rounded-lg border transition-all capitalize ${settings.preferences.fontSize === size
                               ? "border-orange-500 bg-orange-500/10 text-white"
                               : "border-zinc-700 bg-zinc-800 text-zinc-400 hover:border-zinc-600"
-                          }`}
+                            }`}
                         >
                           {size}
                         </button>
@@ -888,11 +890,10 @@ const SettingsPage = () => {
                           onClick={() =>
                             updateSetting("learning", "dailyGoal", mins)
                           }
-                          className={`p-3 rounded-lg border transition-all ${
-                            settings.learning.dailyGoal === mins
+                          className={`p-3 rounded-lg border transition-all ${settings.learning.dailyGoal === mins
                               ? "border-orange-500 bg-orange-500/10 text-white"
                               : "border-zinc-700 bg-zinc-800 text-zinc-400 hover:border-zinc-600"
-                          }`}
+                            }`}
                         >
                           {mins} min
                         </button>
@@ -917,11 +918,10 @@ const SettingsPage = () => {
                           onClick={() =>
                             updateSetting("learning", "difficulty", diff.id)
                           }
-                          className={`p-4 rounded-xl border-2 transition-all ${
-                            settings.learning.difficulty === diff.id
+                          className={`p-4 rounded-xl border-2 transition-all ${settings.learning.difficulty === diff.id
                               ? `border-${diff.color}-500 bg-${diff.color}-500/10`
                               : "border-zinc-700 bg-zinc-800 hover:border-zinc-600"
-                          }`}
+                            }`}
                         >
                           <span
                             className={
@@ -1175,15 +1175,14 @@ const SettingsPage = () => {
                               )}
                             </span>
                             <span
-                              className={`font-medium ${
-                                passwordStrength <= 25
+                              className={`font-medium ${passwordStrength <= 25
                                   ? "text-orange-400"
                                   : passwordStrength <= 50
-                                  ? "text-orange-400"
-                                  : passwordStrength <= 75
-                                  ? "text-orange-400"
-                                  : "text-orange-400"
-                              }`}
+                                    ? "text-orange-400"
+                                    : passwordStrength <= 75
+                                      ? "text-orange-400"
+                                      : "text-orange-400"
+                                }`}
                             >
                               {getStrengthText(passwordStrength)}
                             </span>

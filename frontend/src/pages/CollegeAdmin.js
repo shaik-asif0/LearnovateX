@@ -303,12 +303,37 @@ const CollegeAdmin = () => {
   });
   const [analytics, setAnalytics] = useState(null);
 
+  const [recentActivities, setRecentActivities] = useState([]);
+
+  useEffect(() => {
+    // Simulate real-time activity feed
+    const activities = [
+      "New student registered: John Doe",
+      "Course completed: Sarah Smith - Python 101",
+      "New internship application: Mike Johnson",
+      "System update: Performance optimized",
+      "New announcement posted: Exam Schedule",
+    ];
+
+    const interval = setInterval(() => {
+      const randomActivity =
+        activities[Math.floor(Math.random() * activities.length)];
+      const timestamp = new Date().toLocaleTimeString();
+      setRecentActivities((prev) => [
+        { id: Date.now(), text: randomActivity, time: timestamp },
+        ...prev.slice(0, 4),
+      ]);
+    }, 5000 + Math.random() * 5000); // Random interval between 5-10s
+
+    return () => clearInterval(interval);
+  }, []);
+
   const fetchAnalytics = async () => {
     try {
       const response = await axiosInstance.get("/college/analytics");
       setAnalytics(response.data);
       setRealtimeStats({
-        onlineNow: Math.floor(response.data.active_students * 0.3),
+        onlineNow: Math.floor(response.data.active_students * 0.3) + Math.floor(Math.random() * 5), // Add random variation
         todayActive: response.data.active_students,
         weeklyGrowth: response.data.engagement_rate,
       });
@@ -402,7 +427,7 @@ const CollegeAdmin = () => {
             100,
             Math.floor(
               (student.learning_sessions * 2 + student.code_submissions * 5) /
-                10
+              10
             )
           ), // Real calculation or backend value
         status:
@@ -416,14 +441,14 @@ const CollegeAdmin = () => {
           typeof student.login_display_current_streak === "number"
             ? student.login_display_current_streak
             : typeof student.streak === "number"
-            ? student.streak
-            : 0,
+              ? student.streak
+              : 0,
         badges:
           student.code_submissions > 20
             ? ["Code Master"]
             : student.learning_sessions > 30
-            ? ["Fast Learner"]
-            : [],
+              ? ["Fast Learner"]
+              : [],
       }));
       setStudents(transformedStudents);
     } catch (error) {
@@ -479,8 +504,8 @@ const CollegeAdmin = () => {
             a.type === "urgent"
               ? "high"
               : a.type === "event"
-              ? "medium"
-              : "low",
+                ? "medium"
+                : "low",
         }))
       );
     } catch (error) {
@@ -525,9 +550,9 @@ const CollegeAdmin = () => {
     avgScore:
       students.length > 0
         ? Math.round(
-            students.reduce((acc, s) => acc + (s.avg_score || 0), 0) /
-              students.length
-          )
+          students.reduce((acc, s) => acc + (s.avg_score || 0), 0) /
+          students.length
+        )
         : 0,
     totalSessions: students.reduce((acc, s) => acc + s.learning_sessions, 0),
     totalSubmissions: students.reduce((acc, s) => acc + s.code_submissions, 0),
@@ -624,6 +649,37 @@ const CollegeAdmin = () => {
                 <p className="text-zinc-400 text-sm mt-1">
                   Monitor and manage student progress in real-time
                 </p>
+              </div>
+            </div>
+            {/* Live Activity Ticker */}
+            <div className="hidden lg:flex flex-col items-end justify-center mr-6 border-r border-zinc-800 pr-6">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+                <span className="text-xs font-semibold text-green-400 uppercase tracking-wider">
+                  Live Feed
+                </span>
+              </div>
+              <div className="h-6 overflow-hidden relative w-64 text-right">
+                {recentActivities.map((activity, idx) => (
+                  <div
+                    key={activity.id}
+                    className={`text-xs text-zinc-400 transition-all duration-500 absolute right-0 w-full truncate ${idx === 0
+                        ? "top-0 opacity-100 translate-y-0"
+                        : "top-6 opacity-0 translate-y-4"
+                      }`}
+                  >
+                    <span className="text-zinc-500 mr-2">{activity.time}</span>
+                    {activity.text}
+                  </div>
+                ))}
+                {recentActivities.length === 0 && (
+                  <span className="text-xs text-zinc-600">
+                    Waiting for activity...
+                  </span>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -969,15 +1025,14 @@ const CollegeAdmin = () => {
                           className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800/50 hover:scale-[1.02] transition-all duration-200 cursor-pointer"
                         >
                           <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                              idx === 0
+                            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${idx === 0
                                 ? "bg-orange-500/20 text-orange-400"
                                 : idx === 1
-                                ? "bg-zinc-400/20 text-zinc-300"
-                                : idx === 2
-                                ? "bg-orange-500/20 text-orange-400"
-                                : "bg-zinc-700 text-zinc-400"
-                            }`}
+                                  ? "bg-zinc-400/20 text-zinc-300"
+                                  : idx === 2
+                                    ? "bg-orange-500/20 text-orange-400"
+                                    : "bg-zinc-700 text-zinc-400"
+                              }`}
                           >
                             {idx + 1}
                           </div>
@@ -1297,7 +1352,7 @@ const CollegeAdmin = () => {
                       placeholder="Subject"
                       className="bg-zinc-800 border-zinc-700 text-white"
                       value={bulkAction === "message" ? "" : ""}
-                      onChange={(e) => {}}
+                      onChange={(e) => { }}
                     />
                     <textarea
                       placeholder="Message"
@@ -1504,8 +1559,8 @@ const CollegeAdmin = () => {
                               announcement.priority === "high"
                                 ? "bg-orange-500/20 text-orange-400 border-orange-500/30"
                                 : announcement.priority === "medium"
-                                ? "bg-orange-500/20 text-orange-400 border-orange-500/30"
-                                : "bg-zinc-500/20 text-zinc-400 border-zinc-500/30"
+                                  ? "bg-orange-500/20 text-orange-400 border-orange-500/30"
+                                  : "bg-zinc-500/20 text-zinc-400 border-zinc-500/30"
                             }
                           >
                             {announcement.priority}

@@ -42,6 +42,9 @@ import CourseEnrollmentPage from "./pages/CourseEnrollmentPage";
 import InternshipApplicationPage from "./pages/InternshipApplicationPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import InteractiveCodingGamePrompt from "./pages/InteractiveCodingGamePrompt";
+import AboutPage from "./pages/AboutPage";
+import BlogPage from "./pages/BlogPage";
+import ContactPage from "./pages/ContactPage";
 
 const ProtectedRoute = ({ children }) => {
   return isAuthenticated() ? children : <Navigate to="/auth" />;
@@ -224,9 +227,8 @@ const AppContent = () => {
     <>
       {isAuth && <NavigationBar />}
       <div
-        className={`app-content ${isAuth ? "app-content--with-nav" : ""} ${
-          showMobileBottomNav ? "pb-20 md:pb-0" : ""
-        }`}
+        className={`app-content ${isAuth ? "app-content--with-nav" : ""} ${showMobileBottomNav ? "pb-20 md:pb-0" : ""
+          }`}
       >
         <Routes>
           <Route
@@ -283,6 +285,9 @@ const AppContent = () => {
               isAuth ? <Navigate to="/dashboard" /> : <ForgotPasswordPage />
             }
           />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/contact" element={<ContactPage />} />
           <Route
             path="/dashboard"
             element={

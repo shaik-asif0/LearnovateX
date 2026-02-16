@@ -30,6 +30,8 @@ import {
   Palette,
   Bell,
   Trash2,
+  Info,
+  Newspaper,
 } from "lucide-react";
 import {
   Sheet,
@@ -65,9 +67,8 @@ const NavigationBar = () => {
   const notifLongPressTimerRef = useRef(null);
   const [readIds, setReadIds] = useState(() => {
     try {
-      const key = `readNotifications:${
-        user?.id || user?._id || user?.email || "anonymous"
-      }`;
+      const key = `readNotifications:${user?.id || user?._id || user?.email || "anonymous"
+        }`;
       const raw = localStorage.getItem(key);
       return new Set(raw ? JSON.parse(raw) : []);
     } catch {
@@ -77,9 +78,8 @@ const NavigationBar = () => {
 
   const [deletedIds, setDeletedIds] = useState(() => {
     try {
-      const key = `deletedNotifications:${
-        user?.id || user?._id || user?.email || "anonymous"
-      }`;
+      const key = `deletedNotifications:${user?.id || user?._id || user?.email || "anonymous"
+        }`;
       const raw = localStorage.getItem(key);
       return new Set(raw ? JSON.parse(raw) : []);
     } catch {
@@ -89,9 +89,8 @@ const NavigationBar = () => {
 
   const persistReadIds = (nextSet) => {
     try {
-      const key = `readNotifications:${
-        user?.id || user?._id || user?.email || "anonymous"
-      }`;
+      const key = `readNotifications:${user?.id || user?._id || user?.email || "anonymous"
+        }`;
       localStorage.setItem(key, JSON.stringify(Array.from(nextSet)));
     } catch {
       // ignore
@@ -100,9 +99,8 @@ const NavigationBar = () => {
 
   const persistDeletedIds = (nextSet) => {
     try {
-      const key = `deletedNotifications:${
-        user?.id || user?._id || user?.email || "anonymous"
-      }`;
+      const key = `deletedNotifications:${user?.id || user?._id || user?.email || "anonymous"
+        }`;
       localStorage.setItem(key, JSON.stringify(Array.from(nextSet)));
     } catch {
       // ignore
@@ -159,9 +157,9 @@ const NavigationBar = () => {
     const expanded =
       h.length === 3
         ? h
-            .split("")
-            .map((c) => c + c)
-            .join("")
+          .split("")
+          .map((c) => c + c)
+          .join("")
         : h;
     const bigint = parseInt(expanded, 16);
     const r = (bigint >> 16) & 255;
@@ -380,7 +378,7 @@ const NavigationBar = () => {
   ];
 
   const filteredMainNav = mainNavItems.filter(
-    (item) => !item.roles || item.roles.includes(user?.role)
+    (item) => !item.roles || item.roles.length === 0 || item.roles.includes(user?.role)
   );
   const initial = user?.name?.charAt(0)?.toUpperCase() ?? "U";
   const isActive = (path) => location.pathname === path;
@@ -393,9 +391,8 @@ const NavigationBar = () => {
 
   return (
     <nav
-      className={`fixed top-0 z-50 w-full bg-black border-b border-zinc-800 transition-transform duration-300 ${
-        isNavVisible ? "translate-y-0" : "-translate-y-full"
-      }`}
+      className={`fixed top-0 z-50 w-full bg-black border-b border-zinc-800 transition-transform duration-300 ${isNavVisible ? "translate-y-0" : "-translate-y-full"
+        }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
@@ -445,13 +442,11 @@ const NavigationBar = () => {
                   key={item.path}
                   onClick={() => navigate(item.path)}
                   title={item.label}
-                  className={`relative flex items-center ${
-                    showIconOnly ? "justify-center" : "gap-2"
-                  } px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 hover:scale-105 hoverable mx-1
-                    ${
-                      isPremium
-                        ? `text-black shadow-md border hover:opacity-95`
-                        : active
+                  className={`relative flex items-center ${showIconOnly ? "justify-center" : "gap-2"
+                    } px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 hover:scale-105 hoverable mx-1
+                    ${isPremium
+                      ? `text-black shadow-md border hover:opacity-95`
+                      : active
                         ? `text-white glow`
                         : `text-zinc-400 hover:text-white`
                     }
@@ -459,18 +454,17 @@ const NavigationBar = () => {
                   style={
                     isPremium
                       ? {
-                          minWidth: 110,
-                          backgroundColor: "var(--accent-color)",
-                          borderColor: "var(--accent-color)",
-                        }
+                        minWidth: 110,
+                        backgroundColor: "var(--accent-color)",
+                        borderColor: "var(--accent-color)",
+                      }
                       : {}
                   }
                 >
                   {showIconOnly ? (
                     <Icon
-                      className={`w-5 h-5 ${
-                        active ? "text-white" : "text-zinc-400"
-                      }`}
+                      className={`w-5 h-5 ${active ? "text-white" : "text-zinc-400"
+                        }`}
                       style={{
                         color: active ? "var(--accent-color)" : undefined,
                       }}
@@ -546,9 +540,8 @@ const NavigationBar = () => {
                             onTouchStart={() => startNotifLongPress(n?.id)}
                             onTouchEnd={cancelNotifLongPress}
                             onTouchCancel={cancelNotifLongPress}
-                            className={`flex flex-col items-start gap-1 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-zinc-800 ${
-                              isUnread ? "bg-white/5" : ""
-                            }`}
+                            className={`flex flex-col items-start gap-1 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-zinc-800 ${isUnread ? "bg-white/5" : ""
+                              }`}
                           >
                             <div className="w-full flex items-center justify-between gap-2">
                               <span className="text-sm font-medium text-white">
@@ -646,11 +639,10 @@ const NavigationBar = () => {
                       key={opt.color}
                       onClick={() => handleAccentColorChange(opt.color)}
                       title={opt.name}
-                      className={`w-8 h-8 rounded-full border-2 transition-transform ${
-                        accentColor === opt.color
-                          ? "scale-110 border-white"
-                          : "border-zinc-700 hover:border-zinc-500"
-                      }`}
+                      className={`w-8 h-8 rounded-full border-2 transition-transform ${accentColor === opt.color
+                        ? "scale-110 border-white"
+                        : "border-zinc-700 hover:border-zinc-500"
+                        }`}
                       style={{ backgroundColor: opt.color }}
                     />
                   ))}
@@ -753,32 +745,32 @@ const NavigationBar = () => {
                 </div>
                 {(user?.role === "company" ||
                   user?.role === "college_admin") && (
-                  <>
-                    <DropdownMenuSeparator className="bg-zinc-800" />
-                    <div className="p-1">
-                      {user?.role === "company" && (
-                        <DropdownMenuItem
-                          onClick={() => navigate("/company")}
-                          className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg cursor-pointer"
-                        >
-                          <Building2 className="w-4 h-4" />
-                          <span>
-                            {t("nav.companyPortal", "Company Portal")}
-                          </span>
-                        </DropdownMenuItem>
-                      )}
-                      {user?.role === "college_admin" && (
-                        <DropdownMenuItem
-                          onClick={() => navigate("/college")}
-                          className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-orange-500 rounded-lg cursor-pointer"
-                        >
-                          <GraduationCap className="w-4 h-4" />
-                          <span>{t("nav.collegeAdmin", "College Admin")}</span>
-                        </DropdownMenuItem>
-                      )}
-                    </div>
-                  </>
-                )}
+                    <>
+                      <DropdownMenuSeparator className="bg-zinc-800" />
+                      <div className="p-1">
+                        {user?.role === "company" && (
+                          <DropdownMenuItem
+                            onClick={() => navigate("/company")}
+                            className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg cursor-pointer"
+                          >
+                            <Building2 className="w-4 h-4" />
+                            <span>
+                              {t("nav.companyPortal", "Company Portal")}
+                            </span>
+                          </DropdownMenuItem>
+                        )}
+                        {user?.role === "college_admin" && (
+                          <DropdownMenuItem
+                            onClick={() => navigate("/college")}
+                            className="flex items-center gap-3 px-3 py-2.5 text-zinc-300 hover:text-white hover:bg-orange-500 rounded-lg cursor-pointer"
+                          >
+                            <GraduationCap className="w-4 h-4" />
+                            <span>{t("nav.collegeAdmin", "College Admin")}</span>
+                          </DropdownMenuItem>
+                        )}
+                      </div>
+                    </>
+                  )}
                 <DropdownMenuSeparator className="bg-zinc-800" />
                 <div className="p-1">
                   <DropdownMenuItem
@@ -850,11 +842,11 @@ const NavigationBar = () => {
                         style={
                           isPremium
                             ? {
-                                backgroundColor:
-                                  "rgba(var(--accent-rgb), 0.14)",
-                                border:
-                                  "1px solid rgba(var(--accent-rgb), 0.28)",
-                              }
+                              backgroundColor:
+                                "rgba(var(--accent-rgb), 0.14)",
+                              border:
+                                "1px solid rgba(var(--accent-rgb), 0.28)",
+                            }
                             : {}
                         }
                       >
