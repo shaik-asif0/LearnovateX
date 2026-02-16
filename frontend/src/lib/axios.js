@@ -13,6 +13,18 @@ const axiosInstance = axios.create({
 const cache = new Map();
 
 const isOnline = () => navigator.onLine;
+const isLocalhostRequest = (config) => {
+  const base = config?.baseURL || "";
+  const path = config?.url || "";
+  const combined = `${base}${path}`;
+  return (
+    combined.includes("localhost") ||
+    combined.includes("127.0.0.1") ||
+    (typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1"))
+  );
+};
 
 // Retry configuration for mobile
 const retryConfig = {
@@ -50,7 +62,7 @@ axiosInstance.interceptors.request.use(
     const isAuthEndpoint = config.url.includes("/auth/");
 
     // If offline and not auth endpoint, try to return cached data
-    if (!isOnline() && !isAuthEndpoint) {
+    if (!isOnline() && !isAuthEndpoint && !isLocalhostRequest(config)) {
       const cacheKey = `${config.method}-${config.url}`;
       const cached = localStorage.getItem(`api-cache-${cacheKey}`);
       if (cached) {

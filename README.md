@@ -10,62 +10,82 @@ A full-stack platform that combines **AI tutoring**, **automated code evaluation
 
 ### For Students & Job Seekers
 
-- **🧠 AI Personal Tutor**: Get step-by-step explanations for Python, Java, DSA, SQL, and Aptitude
-- **💻 Coding Arena**: Practice coding with real-time AI evaluation and complexity analysis
-- **📄 Resume Intelligence**: Upload your resume for AI-powered credibility scoring and improvement suggestions
-- **🎯 Mock Interviews**: Practice technical and behavioral interviews with AI feedback
-- **📈 Career Dashboard**: Track your progress, scores, and readiness metrics
+- **🧠 AI Personal Tutor**: Step-by-step explanations for Python, Java, DSA, SQL, and Aptitude, with conversation history and difficulty levels.
+- **💻 Coding Arena**: Practice coding with real-time AI evaluation, code correctness, complexity analysis, and optimization suggestions. Monaco Editor for a VS Code-like experience.
+- **📄 Resume Intelligence**: Upload your resume (PDF/DOCX) for AI-powered credibility scoring, fake skill detection, gap analysis, and improvement suggestions. ATS-compliant PDF generation.
+- **🎯 Mock Interviews**: Practice technical, behavioral, and HR interviews with AI-generated questions and detailed feedback.
+- **📈 Career Dashboard**: Visualize progress, code scores, interview readiness, and receive personalized improvement suggestions.
+- **📹 YouTube Transcript Extraction**: Extract and analyze transcripts from YouTube videos for learning and resume enrichment.
+- **🖼️ OCR for Images**: Extract text from images (requires Tesseract) for resume and document analysis.
 
 ### For Companies
 
-- **🏢 Company Portal**: View job seeker profiles with AI-analyzed resume and code scores
-- **✅ Candidate Ranking**: Automatically rank candidates based on skills and performance
-- **📊 Assessment Tools**: Create and manage coding tests
+- **🏢 Company Portal**: View job seeker profiles with AI-analyzed resume and code scores.
+- **✅ Candidate Ranking**: Automatically rank candidates based on skills, code, and interview performance.
+- **📊 Assessment Tools**: Create, manage, and evaluate coding tests and assessments.
+- **📂 Candidate Management**: Track candidate progress, submissions, and readiness.
 
 ### For Colleges
 
-- **🏫 College Admin Panel**: Monitor student progress and learning activity
-- **📉 Analytics**: Track batch performance and placement readiness
-- **👥 Student Management**: View learning sessions and code submissions
+- **🏫 College Admin Panel**: Monitor student progress, learning activity, and code submissions.
+- **📉 Analytics**: Track batch performance, placement readiness, and generate reports.
+- **👥 Student Management**: View learning sessions, code submissions, and analytics for all students.
 
-## 📶 Offline Functionality
+### Platform-wide
 
-The platform is designed to work seamlessly both online and offline:
+- **🔐 Secure Authentication**: JWT-based authentication, password hashing, and protected API routes.
+- **🌐 PWA & Offline Mode**: Full offline support, demo/sample AI responses, and local data persistence.
+- **🛡️ Role-based Access**: Distinct experiences for students, job seekers, companies, and college admins.
+- **📊 Advanced Analytics**: Visual dashboards, performance metrics, and improvement tracking.
+- **🧩 Extensible Plugin Architecture**: Modular backend and frontend for easy feature addition (see `plugins/` in frontend).
 
-- **📱 Progressive Web App (PWA)**: Install the app on your device for offline access
-- **🎯 Demo Mode**: When AI is not configured (or when you’re offline), AI features use demo/sample responses
-- **💾 Local Data Storage**: All user data, progress, and submissions are stored locally
-- **🔄 Automatic Detection**: The app detects online/offline status and adjusts functionality accordingly
-- **⚡ Fast Loading**: Cached resources ensure quick loading even on slow connections
+## 📶 Offline, Demo, and AI Modes
+
+The platform is designed for seamless use in any environment:
+
+- **📱 Progressive Web App (PWA)**: Installable for offline access on any device.
+- **🎯 Demo Mode**: When AI is not configured or offline, all AI features use demo/sample responses for uninterrupted experience.
+- **💾 Local Data Storage**: User data, progress, and submissions are stored locally and sync when online.
+- **🔄 Automatic Detection**: App detects online/offline status and adjusts features accordingly.
+- **⚡ Fast Loading**: Cached resources for quick loading, even on slow connections.
 
 **Offline Capabilities:**
 
-- View all dashboards and progress
+- View dashboards, progress, and analytics
 - Access learning materials and roadmaps
-- Practice coding problems (evaluation in demo mode)
+- Practice coding problems (AI evaluation in demo mode)
 - Review resume analysis (sample feedback)
 - Take mock interviews (sample questions and feedback)
 - All data persists locally and syncs when back online
 
-## 🛠️ Tech Stack
+## 🛠️ Tech Stack & Major Dependencies
 
 ### Backend
 
 - **FastAPI**: High-performance Python web framework
-- **SQLite**: Lightweight database for data storage
-- **Azure OpenAI (optional)**: Real-time AI tutoring, code evaluation, and analysis when configured
-- **PyJWT**: Authentication and authorization
-- **SMTP (optional)**: Email-based OTP for password reset when configured
+- **SQLite**: Lightweight, file-based database
+- **Azure OpenAI / OpenAI**: Real-time AI tutoring, code evaluation, and analysis (configurable)
+- **PyJWT, python-jose, passlib, bcrypt**: Authentication, authorization, and password security
+- **PyPDF2, python-docx**: PDF and DOCX resume parsing
+- **youtube-transcript-api**: YouTube transcript extraction for learning and resume enrichment
+- **Pillow, pytesseract**: OCR for extracting text from images (optional, requires Tesseract)
+- **reportlab**: ATS-compliant PDF resume generation
+- **SMTP (optional)**: Email-based OTP for password reset
+- **Uvicorn, Gunicorn**: ASGI servers for development and production
 
 ### Frontend
 
 - **React 18**: Modern UI library
 - **React Router**: Client-side routing
 - **Monaco Editor**: VS Code-like code editor
-- **Recharts**: Beautiful data visualizations
-- **Shadcn/UI**: Beautiful, accessible components
+- **Recharts**: Data visualizations
+- **Shadcn/UI**: Accessible, beautiful UI components
 - **Tailwind CSS**: Utility-first CSS framework
 - **Sonner**: Toast notifications
+- **Radix UI**: Advanced UI primitives
+- **Axios**: HTTP client
+- **Embla Carousel, Lucide, Three.js**: UI/UX enhancements
+- **Plugin Support**: Modular plugin architecture for extensibility (see `frontend/plugins/`)
 
 ## 🚀 Getting Started
 
@@ -166,14 +186,16 @@ yarn build
 # Serve the build folder with any static server
 ```
 
-## 👤 User Roles
+## 👤 User Roles & Flows
 
-The platform supports 4 different user roles:
+The platform supports 4 user roles, each with tailored features:
 
-1. **Student**: Access to learning features (tutor, coding, career dashboard)
-2. **Job Seeker**: All student features + resume analysis and mock interviews
-3. **Company**: Candidate management and hiring tools
-4. **College Admin**: Student tracking and batch analytics
+1. **Student**: Access AI tutor, coding arena, and career dashboard.
+2. **Job Seeker**: All student features plus resume analysis and mock interviews.
+3. **Company**: Candidate management, assessment tools, and hiring analytics.
+4. **College Admin**: Student tracking, batch analytics, and placement readiness.
+
+**Role-based onboarding and dashboards ensure a personalized experience for each user type.**
 
 ## 📚 API Documentation
 
@@ -269,7 +291,7 @@ REACT_APP_API_BASE_URL=http://localhost:8000
 
 ### 2. Coding Arena
 
-- Built-in Monaco code editor (VS Code experience)
+- Monaco code editor (VS Code experience)
 - Multiple language support
 - AI evaluates:
   - Code correctness
@@ -281,13 +303,15 @@ REACT_APP_API_BASE_URL=http://localhost:8000
 
 ### 3. Resume Analyzer
 
-- Upload PDF resumes
+- Upload PDF or DOCX resumes
 - AI extracts and analyzes content
 - Provides:
   - Credibility score (0-100)
-  - Detects potentially fake skills
+  - Fake skill detection
   - Gap analysis
   - Improvement suggestions
+  - ATS-compliant PDF generation
+  - OCR for image-based resumes (optional)
 
 ### 4. Mock Interview
 
@@ -309,6 +333,14 @@ REACT_APP_API_BASE_URL=http://localhost:8000
   - Interviews taken
   - Learning sessions
 - Personalized improvement suggestions
+
+### 6. YouTube Transcript Extraction
+
+- Extract and analyze transcripts from YouTube videos for learning and resume enrichment
+
+### 7. OCR for Images
+
+- Extract text from images for resume and document analysis (requires Tesseract)
 
 ## 💻 Code Structure
 
@@ -333,38 +365,43 @@ REACT_APP_API_BASE_URL=http://localhost:8000
 └── README.md
 ```
 
-## 🛡️ Security Features
+## 🛡️ Security & Privacy Features
 
-- JWT-based authentication
+- JWT-based authentication and authorization
 - Password hashing with bcrypt
-- Protected API routes
-- CORS configuration
-- Environment-based secrets
+- Protected API routes and CORS configuration
+- Environment-based secrets and configuration
+- Role-based access control
+- Local data storage for privacy in offline/demo mode
 
 ## 💡 Key Design Decisions
 
-1. **Demo vs Azure AI**: `AI_MODE=demo` keeps the app usable without cloud keys; `AI_MODE=azure` enables real responses
-2. **SQLite Database**: Lightweight SQLite for easy local setup and deployments without extra services
-3. **Monaco Editor**: Professional code editing experience in the browser
-4. **Shadcn/UI**: Beautiful, accessible components without the bloat
-5. **Role-based Access**: Different experiences for students, companies, and colleges
+1. **Demo vs Azure/OpenAI**: `AI_MODE=demo` for offline/sample AI, `AI_MODE=azure` or `AI_MODE=openai` for real AI responses.
+2. **SQLite Database**: Lightweight, easy to set up, and portable for local and demo use.
+3. **Monaco Editor**: Professional code editing in the browser.
+4. **Shadcn/UI & Radix**: Accessible, beautiful UI with minimal bloat.
+5. **Role-based Access**: Personalized dashboards and flows for each user type.
+6. **Plugin Architecture**: Modular design for easy extensibility (see `frontend/plugins/`).
+7. **Offline-first**: All features work in demo mode without cloud dependencies.
 
 ## 🚀 Future Enhancements
 
-- Real-time collaboration features
-- Voice-based mock interviews
-- Advanced plagiarism detection
-- Integration with LinkedIn
+- Real-time collaboration (pair programming, group interviews)
+- Voice-based mock interviews and feedback
+- Advanced plagiarism and code similarity detection
+- LinkedIn and job portal integrations
 - Mobile app (React Native)
-- Advanced analytics and reporting
-- Email notifications
-- Social features (discussion forums)
+- Advanced analytics, reporting, and export features
+- Email and push notifications
+- Social features (discussion forums, peer reviews)
+- Cloud database support (PostgreSQL, Azure SQL)
 
-## 🐛 Known Issues
+## 🐛 Known Issues & Limitations
 
-- PDF parsing may struggle with complex resume formats
-- Code execution is simulated (not actual execution)
+- PDF parsing may struggle with complex or non-standard resume formats
+- Code execution is simulated (no sandboxed execution)
 - Large file uploads may timeout
+- OCR requires Tesseract to be installed on the system
 
 ## 🚀 Deployment to Azure
 
@@ -457,12 +494,13 @@ If you prefer manual deployment:
 
 ## 🤝 Contributing
 
-This is a project template. Feel free to:
+Contributions are welcome! To contribute:
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
 4. Submit a pull request
+5. For major features, open an issue first to discuss your idea
 
 ## 📝 License
 
@@ -510,4 +548,4 @@ Built with ❤️ using FastAPI, React, SQLite, and Azure OpenAI
 
 **Need help?** Check the API documentation at `/docs` or review the code comments.
 
-**Happy Learning! 🚀**
+**Happy Learning and Coding! 🚀**
